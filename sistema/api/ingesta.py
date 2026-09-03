@@ -6,8 +6,9 @@ fuentes de Tarija cableadas dentro del indexador; con eso, el primer Codigo naci
 migrar 3.646 documentos.
 
 Un adaptador recibe un directorio y devuelve `Documento`s. Nada mas. El resto (uid unico y
-estable, chunks con solape, citas, cola de revision, y la VERIFICACION de que no se perdio
-nada) es comun y vive aca, asi que ninguna fuente nueva puede olvidarse de la parte que importa.
+estable, chunks con solape, citas, cola de revision, procedencia y la VERIFICACION de que no se
+perdio nada) es comun y vive aca, asi que ninguna fuente nueva puede olvidarse de la parte que
+importa.
 
 **Por que el uid termina en un hash, con el caso medido:** la primera version lo armaba con
 tipo+numero+anio, y para la Gaceta de Tarija `anio` viene vacio. Tres RPA con numero 022 de
@@ -15,16 +16,29 @@ gestiones distintas generaban el mismo uid y el ultimo pisaba a los otros dos: e
 documentos y quedaron 3.313. **Peor que fallar: borraba datos y reportaba exito.** Ahora el uid
 lleva los 8 primeros caracteres del sha256, que no cambia entre corridas y es unico por
 construccion, y la ingesta verifica el conteo al cerrar.
+
+**Y por que el uid repetido ya NO reescribe (este cambio):** con el hash dentro del uid, un uid
+repetido significa "el mismo texto ofrecido otra vez", no una colision. El codigo anterior
+borraba el documento y lo reinsertaba, asi que la fuente de la copia anterior desaparecia y el
+contador la llamaba `reemplazados`. Eran 40 procedencias legitimas sin registrar. Ahora el
+documento canonico queda intacto y cada aparicion deja su fila en `documento_aliases`, con un
+invariante duro: **todo documento ofrecido deja rastro, o la corrida sale en ROJO.**
 """
 import argparse
 import hashlib
 import json
 import re
 import sqlite3
+import sys
 import time
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# El modulo hermano se importa por ruta explicita para que la ingesta funcione tanto ejecutada
+# como script desde cualquier directorio como importada desde los tests.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import alias as procedencia  # noqa: E402
 
 TAM_CHUNK = 1800
 SOLAPE = 200
@@ -113,7 +127,7 @@ def trozar(texto: str, tam: int = TAM_CHUNK, solape: int = SOLAPE) -> list:
 
 
 class Corpus:
-    """Escritura al corpus. Idempotente por uid: reingerir una fuente no duplica."""
+    """Escritura al corpus. Idempotente por uid, y sin destruir procedencias."""
 
     def __init__(self, ruta: str, esquema: str = ""):
         nuevo = not Path(ruta).exists()
@@ -122,10 +136,18 @@ class Corpus:
         if nuevo or esquema:
             sql = Path(esquema or (Path(__file__).parent / "esquema.sql")).read_text(encoding="utf-8")
             self.con.executescript(sql)
+        # La tabla de procedencia se instala siempre: una base vieja la gana sin migracion.
+        procedencia.instalar(self.con)
         self.ofrecidos = 0
         self.escritos = 0
         self.chunks = 0
-        self.reemplazados = 0
+        self.duplicados_contenido = 0
+        self.alias_nuevos = 0
+        self.alias_repetidos = 0
+        self.sin_rastro = []
+        self.docs_inicial = self.con.execute("SELECT COUNT(*) FROM documentos").fetchone()[0]
+        self.alias_inicial = self.con.execute(
+            "SELECT COUNT(*) FROM documento_aliases").fetchone()[0]
 
     def registrar_fuente(self, fuente_id, nombre, jurisdiccion, departamento="", organo="",
                          url_base="", licencia="fuente oficial del Estado boliviano"):
@@ -138,17 +160,28 @@ class Corpus:
              time.strftime("%Y-%m-%d")))
         self.con.commit()
 
+    def _anotar_procedencia(self, doc_id: int, uid: str, d: Documento):
+        nueva = procedencia.registrar(
+            self.con, doc_id=doc_id, uid=uid, fuente_id=d.fuente_id,
+            fuente_url=d.fuente_url, archivo=d.archivo, sha256=d.hash())
+        if nueva:
+            self.alias_nuevos += 1
+        else:
+            self.alias_repetidos += 1
+
     def agregar(self, d: Documento):
         self.ofrecidos += 1
         uid = d.uid()
         fila = self.con.execute("SELECT doc_id FROM documentos WHERE uid = ?", (uid,)).fetchone()
         if fila:
-            # Mismo uid = mismo documento (el hash lo garantiza): es una reingesta, no una
-            # colision. Se reescribe para que la actualizacion mensual no duplique.
-            self.con.execute("DELETE FROM chunks WHERE doc_id = ?", (fila["doc_id"],))
-            self.con.execute("DELETE FROM documentos WHERE doc_id = ?", (fila["doc_id"],))
-            self.con.execute("DELETE FROM revision WHERE uid = ?", (uid,))
-            self.reemplazados += 1
+            # Mismo uid = MISMO TEXTO (el hash esta dentro del uid). No es una colision y no es
+            # una perdida: es el mismo documento listado otra vez, en otro archivo, en otra
+            # gestion o en otra fuente. Antes se borraba y se reinsertaba, y con eso la
+            # procedencia anterior desaparecia. Ahora el canonico no se toca y la aparicion
+            # queda registrada, asi que la cita puede nombrar TODAS sus fuentes.
+            self.duplicados_contenido += 1
+            self._anotar_procedencia(fila["doc_id"], uid, d)
+            return
 
         cur = self.con.execute(
             "INSERT INTO documentos (uid, fuente_id, jurisdiccion, departamento, organo, "
@@ -160,6 +193,7 @@ class Corpus:
              d.magistrado, (d.partes or "")[:400], d.vigente, d.derogada_por, d.fuente_url,
              d.hash(), d.via_texto, d.confianza, len(d.texto), d.archivo))
         doc_id = cur.lastrowid
+        self._anotar_procedencia(doc_id, uid, d)
 
         encabezado = " | ".join(str(x) for x in (d.numero, d.tipo_norma, d.titulo, d.materia,
                                                 d.sala, d.anio, d.partes) if x)
@@ -188,17 +222,54 @@ class Corpus:
             self.con.commit()
 
     def verificar(self) -> dict:
-        """Lo ofrecido por los adaptadores tiene que estar en la base. Si no, es perdida de datos.
+        """Todo documento ofrecido tiene que dejar RASTRO. Si no, es perdida de datos.
 
-        Existe porque la version anterior entrego 3.313 de 3.646 y lo unico que lo delato fue un
-        contador. Un pipeline que no puede detectar su propia perdida no esta medido.
+        La version anterior comparaba `ofrecidos - reemplazados` contra el conteo de la tabla, y
+        con eso un documento deduplicado y un documento perdido se veian igual. El invariante de
+        ahora es mas fuerte y por eso puede dar rojo:
+
+        1. cada ofrecido dejo un alias nuevo o repitio uno exacto -> `sin_rastro` en 0;
+        2. los alias nuevos contados en memoria coinciden con las filas escritas en la base;
+        3. los documentos canonicos nuevos coinciden con los insertados;
+        4. ningun documento quedo sin al menos una procedencia.
         """
+        self.con.commit()
         en_base = self.con.execute("SELECT COUNT(*) FROM documentos").fetchone()[0]
-        esperados = self.ofrecidos - self.reemplazados
-        return {"ofrecidos": self.ofrecidos, "reemplazados": self.reemplazados,
-                "esperados_nuevos": esperados, "en_base": en_base,
-                "perdidos": max(esperados - en_base, 0),
-                "veredicto": "VERDE" if en_base >= esperados else "ROJO: se perdieron documentos"}
+        alias_en_base = self.con.execute(
+            "SELECT COUNT(*) FROM documento_aliases").fetchone()[0]
+        aud = procedencia.auditar(self.con)
+        rastro = self.alias_nuevos + self.alias_repetidos
+        sin_rastro = self.ofrecidos - rastro
+        delta_docs = en_base - self.docs_inicial
+        delta_alias = alias_en_base - self.alias_inicial
+
+        motivos = []
+        if sin_rastro != 0:
+            motivos.append("hay " + str(sin_rastro) + " documentos ofrecidos sin procedencia "
+                                                      "registrada")
+        if delta_alias != self.alias_nuevos:
+            motivos.append("los alias escritos (" + str(delta_alias) + ") no coinciden con los "
+                           "contados (" + str(self.alias_nuevos) + ")")
+        if delta_docs != self.escritos:
+            motivos.append("los documentos escritos (" + str(delta_docs) + ") no coinciden con "
+                           "los insertados (" + str(self.escritos) + ")")
+        if aud["documentos_sin_procedencia"]:
+            motivos.append(str(aud["documentos_sin_procedencia"]) + " documentos quedaron sin "
+                           "ninguna fuente")
+
+        return {
+            "ofrecidos": self.ofrecidos,
+            "canonicos_nuevos": self.escritos,
+            "duplicados_por_contenido": self.duplicados_contenido,
+            "alias_nuevos": self.alias_nuevos,
+            "alias_reintento_exacto": self.alias_repetidos,
+            "sin_rastro": sin_rastro,
+            "en_base": en_base,
+            "alias_en_base": alias_en_base,
+            "documentos_sin_procedencia": aud["documentos_sin_procedencia"],
+            "contenidos_con_varias_fuentes": aud["hashes_con_multiples_procedencias"],
+            "veredicto": "VERDE" if not motivos else "ROJO: " + "; ".join(motivos),
+        }
 
     def cerrar(self):
         self.con.commit()
@@ -330,10 +401,11 @@ def main() -> int:
     ch = con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
     rev = con.execute("SELECT COUNT(*) FROM revision WHERE resuelto = 0").fetchone()[0]
     porj = con.execute("SELECT jurisdiccion, COUNT(*) FROM documentos GROUP BY 1").fetchall()
+    al = con.execute("SELECT COUNT(*) FROM documento_aliases").fetchone()[0]
     con.close()
 
     print()
-    print("documentos:", tot, "| chunks:", ch)
+    print("documentos canonicos:", tot, "| chunks:", ch, "| procedencias:", al)
     print("por jurisdiccion:", dict(porj))
     print("cola de revision humana:", rev)
     print("segundos:", round(time.time() - t0, 1),
@@ -341,7 +413,7 @@ def main() -> int:
     print()
     print("VERIFICACION:", json.dumps(ver, ensure_ascii=False))
     if ver["veredicto"] != "VERDE":
-        print("ROJO: la ingesta perdio documentos. NO usar esta base.")
+        print("ROJO: la ingesta no pudo dar cuenta de todos los documentos. NO usar esta base.")
         return 3
     return 0
 
