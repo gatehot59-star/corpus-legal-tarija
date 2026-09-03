@@ -17,12 +17,18 @@ documentos y quedaron 3.313. **Peor que fallar: borraba datos y reportaba exito.
 lleva los 8 primeros caracteres del sha256, que no cambia entre corridas y es unico por
 construccion, y la ingesta verifica el conteo al cerrar.
 
-**Y por que el uid repetido ya NO reescribe (este cambio):** con el hash dentro del uid, un uid
-repetido significa "el mismo texto ofrecido otra vez", no una colision. El codigo anterior
-borraba el documento y lo reinsertaba, asi que la fuente de la copia anterior desaparecia y el
-contador la llamaba `reemplazados`. Eran 40 procedencias legitimas sin registrar. Ahora el
-documento canonico queda intacto y cada aparicion deja su fila en `documento_aliases`, con un
-invariante duro: **todo documento ofrecido deja rastro, o la corrida sale en ROJO.**
+**Y por que el uid repetido ya NO reescribe:** con el hash dentro del uid, un uid repetido
+significa "el mismo texto ofrecido otra vez", no una colision. El codigo anterior borraba el
+documento y lo reinsertaba, asi que la fuente de la copia anterior desaparecia y el contador la
+llamaba `reemplazados`. Eran 40 procedencias legitimas sin registrar. Ahora el documento canonico
+queda intacto y cada aparicion deja su fila en `documento_aliases`.
+
+**Y el invariante del CENSO, que es la correccion mas cara del proyecto.** El guard anterior
+comparaba *lo que el adaptador ofrece* contra lo que quedo en la base. Eso **compara el error
+consigo mismo**: el adaptador de Tarija listaba un directorio, 247 documentos descargados vivian
+en otro, y la verificacion cerro en VERDE con `perdidos: 0` mientras faltaba el 24% del corpus
+departamental (2.928.976 caracteres, 2019 al 24%, 2020 y 2026 en cero). Ahora `verificar()`
+acepta el **censo de la fuente** y exige que el adaptador haya ofrecido ese numero.
 """
 import argparse
 import hashlib
@@ -39,6 +45,7 @@ from pathlib import Path
 # como script desde cualquier directorio como importada desde los tests.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import alias as procedencia  # noqa: E402
+import fuente_tarija  # noqa: E402
 import normalizar  # noqa: E402
 
 TAM_CHUNK = 1800
@@ -222,17 +229,18 @@ class Corpus:
         if self.escritos % 500 == 0:
             self.con.commit()
 
-    def verificar(self) -> dict:
-        """Todo documento ofrecido tiene que dejar RASTRO. Si no, es perdida de datos.
+    def verificar(self, censo: int = 0) -> dict:
+        """Todo documento ofrecido tiene que dejar RASTRO, y el adaptador tiene que ofrecer TODO.
 
-        La version anterior comparaba `ofrecidos - reemplazados` contra el conteo de la tabla, y
-        con eso un documento deduplicado y un documento perdido se veian igual. El invariante de
-        ahora es mas fuerte y por eso puede dar rojo:
+        Cinco chequeos, y el primero es el que faltaba:
 
-        1. cada ofrecido dejo un alias nuevo o repitio uno exacto -> `sin_rastro` en 0;
-        2. los alias nuevos contados en memoria coinciden con las filas escritas en la base;
-        3. los documentos canonicos nuevos coinciden con los insertados;
-        4. ningun documento quedo sin al menos una procedencia.
+        1. **el adaptador ofrecio tantos documentos como declara el censo de la fuente.** Sin
+           esto, un adaptador que no ve un documento nunca lo ofrece y el conteo cierra en VERDE:
+           asi 247 documentos quedaron afuera y la verificacion dijo `perdidos: 0`;
+        2. cada ofrecido dejo un alias nuevo o repitio uno exacto -> `sin_rastro` en 0;
+        3. los alias nuevos contados en memoria coinciden con las filas escritas en la base;
+        4. los documentos canonicos nuevos coinciden con los insertados;
+        5. ningun documento quedo sin al menos una procedencia.
         """
         self.con.commit()
         en_base = self.con.execute("SELECT COUNT(*) FROM documentos").fetchone()[0]
@@ -245,6 +253,10 @@ class Corpus:
         delta_alias = alias_en_base - self.alias_inicial
 
         motivos = []
+        if censo and self.ofrecidos != censo:
+            motivos.append("el adaptador ofrecio " + str(self.ofrecidos) + " de " + str(censo) +
+                           " que declara el censo de la fuente: faltan " +
+                           str(censo - self.ofrecidos))
         if sin_rastro != 0:
             motivos.append("hay " + str(sin_rastro) + " documentos ofrecidos sin procedencia "
                                                       "registrada")
@@ -259,6 +271,7 @@ class Corpus:
                            "ninguna fuente")
 
         return {
+            "censo_de_la_fuente": censo or None,
             "ofrecidos": self.ofrecidos,
             "canonicos_nuevos": self.escritos,
             "duplicados_por_contenido": self.duplicados_contenido,
@@ -282,6 +295,9 @@ class Corpus:
 # Adaptadores. Uno por fuente. Agregar la normativa nacional = escribir otro de este tamano.
 # --------------------------------------------------------------------------------------
 
+INFORMES = {}
+
+
 def citas_de(p: Path) -> str:
     idx = p.with_name(p.stem + ".indice.txt")
     if not idx.exists():
@@ -292,25 +308,24 @@ def citas_de(p: Path) -> str:
 
 
 def adaptador_gaceta_tarija(base: Path):
-    """Leyes y resoluciones de la Asamblea Legislativa Departamental de Tarija."""
-    regs = base / "corpus" / "registros.jsonl"
-    if not regs.exists():
-        return
-    porarch = {}
-    for l in regs.read_text(encoding="utf-8").splitlines():
-        if l.strip():
-            r = json.loads(l)
-            if r.get("archivo_texto"):
-                porarch[r["archivo_texto"]] = r
-    for p in sorted((base / "corpus" / "texto").glob("*.txt")):
-        if p.name.endswith(".indice.txt"):
+    """Leyes y resoluciones de la Asamblea Legislativa Departamental de Tarija.
+
+    **Recorre el MANIFEST, no un directorio.** La version anterior hacia `glob` de una carpeta y
+    los 247 documentos que viven en otra no existian para ella: entraron 784 de 1.031. El detalle
+    de la resolucion de texto y de la confianza esta en `fuente_tarija.py`.
+    """
+    fuente = fuente_tarija.FuenteTarija(base)
+    if not fuente.censo:
+        print("  AVISO: no hay indices/manifest.jsonl -> se corre SIN CENSO y no se puede "
+              "detectar un documento que el adaptador no vea", flush=True)
+    for fila in fuente.manifest:
+        hallado = fuente.resolver(fila)
+        if not hallado:
             continue
-        r = porarch.get(p.name, {})
-        es_ley = (r.get("fuente_id") or "") == "tarija_leyes"
-        # El anio sale del TITULO, nunca del nombre de archivo: ahi el hash finge anos
-        # (a5771928 -> "1928", 2c1a2054 -> "2054"). Ver normalizar.py y su falsador.
-        meta = normalizar.metadatos_de(r.get("titulo"))
+        r = hallado["registro"]
+        meta = normalizar.metadatos_de(fila.get("titulo") or r.get("titulo"))
         comp = meta["compilado"]
+
         revisiones = [{"tipo": "cita_ambigua",
                        "detalle": str(c.get("crudo", "")) + " -> " + str(c.get("canonico_probable", "")),
                        "contexto": c.get("contexto", "")}
@@ -324,18 +339,40 @@ def adaptador_gaceta_tarija(base: Path):
                             str(comp["hasta"]) + ": contiene " + str(comp["contiene"]) +
                             " resoluciones que no tienen registro propio"),
                 "contexto": meta.get("gestion", "")})
+        if hallado["via"] == "extraido":
+            # Se declara la via: este texto no paso el OCR masivo ni su gate de calidad.
+            revisiones.append({
+                "tipo": "texto_sin_gate",
+                "detalle": "texto de la etapa extraer, sin OCR masivo ni control de calidad "
+                           "ni citas normalizadas",
+                "contexto": str(fila.get("ruta_texto") or "")})
+
+        tipo_manifest = str(fila.get("tipo_norma") or "")
+        es_ley = ("ley" in tipo_manifest.lower()
+                  or (r.get("fuente_id") or "") == "tarija_leyes")
         tipo = ("Ley Departamental" if es_ley else
                 ("Compilado de Resoluciones del Pleno" if comp else "Resolucion del Pleno"))
+
         yield Documento(
             fuente_id="tarija_gaceta", jurisdiccion="departamental", departamento="Tarija",
             organo="Asamblea Legislativa Departamental de Tarija",
             tipo_norma=tipo,
-            numero=str(r.get("numero") or ""), anio=meta["anio"],
-            titulo=r.get("titulo") or "", texto=p.read_text(encoding="utf-8", errors="replace"),
-            fuente_url=r.get("fuente_url") or "https://www.tarija.gob.bo/gaceta-oficial",
-            sha256=r.get("sha256_real") or "", via_texto=r.get("via") or "ocr",
-            confianza="revision_humana" if r.get("estado") == "REVISION_HUMANA" else "media",
-            archivo=p.name, citas=citas_de(p), revision=revisiones)
+            numero=str(fila.get("numero") or r.get("numero") or ""),
+            # `gestion` viene del manifest y esta en 1.000 de 1.031. Medido: coincide EXACTAMENTE
+            # con lo que sale del titulo (754 = 754, mismo desglose por anio), o sea dos vias
+            # independientes con el mismo resultado. Se prefiere el campo de la fuente.
+            anio=str(fila.get("gestion") or "") or meta["anio"],
+            fecha=str(fila.get("fecha_promulgacion") or ""),
+            titulo=str(fila.get("titulo") or r.get("titulo") or ""),
+            texto=hallado["texto"],
+            fuente_url=str(fila.get("fuente_url") or r.get("fuente_url")
+                           or "https://www.tarija.gob.bo/gaceta-oficial"),
+            sha256=str(fila.get("sha256") or r.get("sha256_real") or ""),
+            via_texto=("ocr" if hallado["via"] == "ocr" else "texto_extraido"),
+            confianza=fuente_tarija.confianza_de(fila, r, hallado["via"]),
+            archivo=hallado["ruta"].name, citas=hallado["citas"], revision=revisiones)
+
+    INFORMES["tarija_gaceta"] = fuente.informe()
 
 
 def adaptador_jurisprudencia_tsj(base: Path):
@@ -349,10 +386,12 @@ def adaptador_jurisprudencia_tsj(base: Path):
             r = json.loads(l)
             if r.get("archivo_texto"):
                 porarch[r["archivo_texto"]] = r
+    vistos = 0
     for p in sorted((base / "jurisprudencia" / "texto").glob("*.txt")):
         if p.name.endswith(".indice.txt"):
             continue
         r = porarch.get(p.name, {})
+        vistos += 1
         yield Documento(
             fuente_id="tsj_genesis", jurisdiccion="jurisprudencia",
             departamento=r.get("departamento") or "", organo="Tribunal Supremo de Justicia",
@@ -367,6 +406,13 @@ def adaptador_jurisprudencia_tsj(base: Path):
             sha256=r.get("sha256_pdf") or "", via_texto=r.get("via") or "",
             confianza="alta" if r.get("via") == "html_oficial" else "media",
             archivo=p.name, citas=citas_de(p))
+    # El censo de GENESIS es su propio jsonl de resoluciones: si un texto no esta en disco, se
+    # nota aca y no en una lectura de directorio.
+    INFORMES["tsj_genesis"] = {
+        "censo_manifest": sum(1 for l in regs.read_text(encoding="utf-8").splitlines()
+                              if l.strip()),
+        "resueltos_por_ocr": vistos, "resueltos_por_extraccion": 0,
+        "sin_texto": 0, "faltantes": []}
 
 
 ADAPTADORES = {
@@ -395,6 +441,7 @@ def main() -> int:
     pedidas = [x.strip() for x in a.fuentes.split(",") if x.strip()] or list(ADAPTADORES)
 
     t0 = time.time()
+    censo_total = 0
     for fid in pedidas:
         if fid not in ADAPTADORES:
             print("ROJO: no hay adaptador para", fid, "| disponibles:", ", ".join(ADAPTADORES))
@@ -408,8 +455,20 @@ def main() -> int:
             if a.limite and n >= a.limite:
                 break
         print("  " + fid + ": " + str(n) + " documentos", flush=True)
+        inf = INFORMES.get(fid)
+        if inf:
+            print("    censo de la fuente:", inf["censo_manifest"],
+                  "| por OCR:", inf["resueltos_por_ocr"],
+                  "| por extraccion:", inf["resueltos_por_extraccion"],
+                  "| SIN TEXTO:", inf["sin_texto"], flush=True)
+            if inf["sin_texto"]:
+                print("    faltantes (muestra):",
+                      json.dumps(inf["faltantes"][:3], ensure_ascii=False), flush=True)
+            # Lo que la fuente entrego MENOS lo que no tiene texto en ninguna via. Los que no
+            # tienen texto quedan declarados arriba, no escondidos en el total.
+            censo_total += inf["censo_manifest"] - inf["sin_texto"]
 
-    ver = corpus.verificar()
+    ver = corpus.verificar(censo=censo_total if not a.limite else 0)
     corpus.cerrar()
 
     con = corpus.con
