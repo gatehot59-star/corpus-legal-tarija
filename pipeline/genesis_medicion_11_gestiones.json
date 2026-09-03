@@ -1,0 +1,32 @@
+{
+ "corrida": "run 33760686756, Actions x64, 12 jobs (uno por gestion)",
+ "fecha": "2026-09-03",
+ "gestiones_cerradas": 11,
+ "gestiones_lanzadas": 12,
+ "pendiente": "2025 seguia corriendo al momento de esta medicion",
+ "resoluciones": 2664,
+ "estados": {"OK": 2664},
+ "caracteres": 64682493,
+ "vias": {
+  "html_oficial": 2539,
+  "texto_nativo_pdf": 120,
+  "ocr_pdf_escaneado": 5
+ },
+ "tipos": {
+  "Auto Supremo": 2600,
+  "Sentencia": 59,
+  "Resolucion": 5
+ },
+ "por_gestion": {
+  "2015": 345, "2016": 303, "2017": 240, "2018": 235, "2019": 248,
+  "2020": 179, "2021": 268, "2022": 271, "2023": 160, "2024": 216, "2026": 199
+ },
+ "segundos_ocr_total": 312.8,
+ "documento_con_mas_paginas": {
+  "nro_resolucion": "AS/1909/2025-EA",
+  "paginas": 62,
+  "segundos_ocr": 0.0,
+  "nota": "salio por texto nativo, no necesito OCR"
+ },
+ "hipotesis_refutada": "Supuse que 2025 se colgaba por un PDF de cientos de paginas OCReado completo (este bajador no tenia tope). El mayor de 2.664 documentos tiene 62 paginas y 0,0 s de OCR. La hipotesis es falsa y el motivo real queda NO MEDIDO."
+}
