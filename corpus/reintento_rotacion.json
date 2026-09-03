@@ -1,0 +1,74 @@
+[
+ {
+  "archivo": "tarija_rpa-030-add5631a.txt",
+  "estado": "OK",
+  "rotacion_aplicada": 180,
+  "osd_opina": {
+   "rotate": "180",
+   "confianza": "6.65"
+  },
+  "anclas": 17,
+  "chars": 1110,
+  "citas_a_revisar": 0
+ },
+ {
+  "archivo": "tarija_rpa-024-ff96effb.txt",
+  "estado": "OK",
+  "rotacion_aplicada": 180,
+  "osd_opina": {
+   "rotate": "180",
+   "confianza": "8.08"
+  },
+  "anclas": 19,
+  "chars": 1159,
+  "citas_a_revisar": 0
+ },
+ {
+  "archivo": "tarija_rpa-079-7f528fe9.txt",
+  "estado": "OK",
+  "rotacion_aplicada": 180,
+  "osd_opina": {
+   "rotate": "180",
+   "confianza": "6.66"
+  },
+  "anclas": 21,
+  "chars": 1352,
+  "citas_a_revisar": 0
+ },
+ {
+  "archivo": "tarija_rpa-022-4c346149.txt",
+  "estado": "OK",
+  "rotacion_aplicada": 180,
+  "osd_opina": {
+   "rotate": "180",
+   "confianza": "9.81"
+  },
+  "anclas": 20,
+  "chars": 1261,
+  "citas_a_revisar": 0
+ },
+ {
+  "archivo": "tarija_rpa-023-02983705.txt",
+  "estado": "OK",
+  "rotacion_aplicada": 180,
+  "osd_opina": {
+   "rotate": "180",
+   "confianza": "5.90"
+  },
+  "anclas": 22,
+  "chars": 1235,
+  "citas_a_revisar": 0
+ },
+ {
+  "archivo": "tarija_rpa-029-7d2de773.txt",
+  "estado": "OK",
+  "rotacion_aplicada": 180,
+  "osd_opina": {
+   "rotate": "180",
+   "confianza": "5.47"
+  },
+  "anclas": 19,
+  "chars": 1150,
+  "citas_a_revisar": 0
+ }
+]

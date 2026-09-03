@@ -1,18 +1,12 @@
 {
- "documentos": 784,
- "estados": {
-  "OK": 778,
-  "REVISION_HUMANA": 6
- },
- "por_fuente": {
-  "tarija_leyes": 402,
-  "tarija_rpa": 382
- },
- "paginas_ocr": 2644,
- "caracteres": 4109119,
+ "documentos": 0,
+ "estados": {},
+ "por_fuente": {},
+ "paginas_ocr": 0,
+ "caracteres": 0,
  "archivos_texto": 1568,
- "segundos_cpu": 9887.7,
- "seg_por_pagina": 3.74,
- "citas_a_revisar": 6,
- "cola_revision_humana": 12
+ "segundos_cpu": 0,
+ "seg_por_pagina": null,
+ "citas_a_revisar": 0,
+ "cola_revision_humana": 0
 }
