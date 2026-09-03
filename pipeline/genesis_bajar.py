@@ -7,20 +7,25 @@ Medido el 2026-09-03 antes de escribir esto:
     ese PDF baja **200 sin credencial**. Esa es la via.
   - Hay **TRES** tipos de resolucion: Auto Supremo (1), Sentencia (2), Resolucion (3). La
     primera corrida uso solo el 1 sin preguntar, asi que bajo un tercio del universo creyendo
-    que era todo. El default ahora son los tres.
-  - De 194 resoluciones reales: 116 traian texto nativo en el PDF, 73 el HTML oficial, y solo
-    **5 necesitaron OCR**. La afirmacion previa de que "el PDF escaneado no tiene capa de
-    texto" era una generalizacion de n=1 y quedo refutada.
+    que era todo.
+  - De 2.664 resoluciones reales: 2.539 por HTML oficial, 120 con texto nativo en el PDF, y
+    solo **5 necesitaron OCR**. Total: 312,8 s de OCR para once gestiones.
 
-Tres decisiones con su motivo:
+**Por que hay timeout y tope de paginas, con el caso medido:** la gestion 2025 colgo un job de
+Actions por casi dos horas. Yo primero "refute" la hipotesis del PDF gigante mirando las
+paginas de los documentos que YA habian terminado, que es sesgo de supervivencia: el que cuelga
+no esta en esa muestra. Reproducido en brain-env, el culpable era el documento 48 de 198: un
+PDF de 1.977.159 bytes, 22 paginas y **cero texto nativo**, OCReandose pagina por pagina. No
+hacia falta un monstruo de cientos de paginas; alcanzan varios de veinte en serie.
+
+Tres decisiones de diseno con su motivo:
 
 1. **El HTML gana sobre el PDF cuando existe.** Es el texto oficial tal cual lo emitio el TSJ,
    sin un OCR en el medio. Preferir el escaneo cuando hay texto limpio es agregar error gratis.
 2. **Se guarda el JSON crudo de cada resolucion, siempre.** Los metadatos (magistrado, materia,
    demandante, forma de resolucion) son la mitad del valor para un estudio, y sobreviven aunque
    el texto falle.
-3. **El PDF no se commitea.** Se guarda su URL y su sha256; el texto es el producto. Igual que
-   con la Gaceta: el corpus es reproducible desde la fuente, no un espejo de binarios.
+3. **El PDF no se commitea.** Se guarda su URL y su sha256; el texto es el producto.
 """
 import argparse
 import hashlib
@@ -97,7 +102,11 @@ def stem_seguro(*partes) -> str:
 
 
 def ocr_pdf(datos: bytes, args) -> tuple:
-    """OCR del PDF escaneado. Devuelve (texto, paginas, segundos)."""
+    """Extrae texto del PDF. Devuelve (texto, paginas, segundos, motivo).
+
+    El timeout NO es prolijidad: un solo documento escaneado de 22 paginas colgo un job de
+    Actions casi dos horas, con 198 documentos en serie detras esperandolo.
+    """
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         pdf = tmp / "r.pdf"
@@ -107,22 +116,32 @@ def ocr_pdf(datos: bytes, args) -> tuple:
         for l in cp.stdout.splitlines():
             if l.startswith("Pages:"):
                 pags = int(l.split(":", 1)[1].strip() or 0)
-        # Primero se prueba la capa nativa: si el PDF ya trae texto, OCRearlo es tirar plata.
-        # Medido: 116 de 194 resoluciones la tenian.
+        # Primero la capa nativa: si el PDF ya trae texto, OCRearlo es tirar plata.
+        # Medido: 120 de 2.664 la tenian, y esas salieron en 0,0 s.
         cp = subprocess.run([args.pdftotext, str(pdf), "-"], capture_output=True, text=True)
         if len(cp.stdout.strip()) > 200 * max(pags, 1):
-            return cp.stdout, pags, 0.0
+            return cp.stdout, pags, 0.0, ""
+        if pags > args.max_paginas:
+            return "", pags, 0.0, "tope de paginas: " + str(pags) + " > " + str(args.max_paginas)
         t0 = time.time()
-        subprocess.run([args.pdftoppm, "-r", str(args.dpi), "-gray", "-png",
-                        str(pdf), str(tmp / "p")], capture_output=True, text=True)
-        textos = []
-        for png in sorted(tmp.glob("p-*.png"), key=lambda p: int(p.stem.split("-")[-1])):
-            subprocess.run([args.tesseract, str(png), str(png.with_suffix("")),
-                            "-l", args.lang, "--psm", str(args.psm)],
-                           capture_output=True, text=True)
-            t = png.with_suffix(".txt")
-            textos.append(t.read_text(encoding="utf-8", errors="replace") if t.exists() else "")
-        return "\n\f\n".join(textos), pags, round(time.time() - t0, 1)
+        try:
+            subprocess.run([args.pdftoppm, "-r", str(args.dpi), "-gray", "-png",
+                            str(pdf), str(tmp / "p")], capture_output=True, text=True,
+                           timeout=args.timeout_doc)
+            textos = []
+            for png in sorted(tmp.glob("p-*.png"), key=lambda p: int(p.stem.split("-")[-1])):
+                restante = args.timeout_doc - (time.time() - t0)
+                if restante <= 5:
+                    return ("\n\f\n".join(textos), pags, round(time.time() - t0, 1),
+                            "timeout de " + str(args.timeout_doc) + " s en la pagina " + png.stem)
+                subprocess.run([args.tesseract, str(png), str(png.with_suffix("")),
+                                "-l", args.lang, "--psm", str(args.psm)],
+                               capture_output=True, text=True, timeout=restante)
+                t = png.with_suffix(".txt")
+                textos.append(t.read_text(encoding="utf-8", errors="replace") if t.exists() else "")
+        except subprocess.TimeoutExpired:
+            return "", pags, round(time.time() - t0, 1), "timeout de " + str(args.timeout_doc) + " s"
+        return "\n\f\n".join(textos), pags, round(time.time() - t0, 1), ""
 
 
 def procesar(meta: dict, salida: Path, args) -> dict:
@@ -167,12 +186,18 @@ def procesar(meta: dict, salida: Path, args) -> dict:
             return reg
         reg["sha256_pdf"] = hashlib.sha256(b2).hexdigest()
         reg["bytes_pdf"] = len(b2)
-        texto, pags, seg = ocr_pdf(b2, args)
+        texto, pags, seg, motivo = ocr_pdf(b2, args)
         reg.update(paginas=pags, segundos=seg, chars=len(texto),
                    via="ocr_pdf_escaneado" if seg else "texto_nativo_pdf")
-        reg["estado"] = "OK" if len(texto) > 500 else "REVISION_HUMANA"
-        if reg["estado"] != "OK":
-            reg["motivo"] = "el texto extraido tiene " + str(len(texto)) + " chars"
+        if motivo:
+            reg.update(estado="TIMEOUT_OCR" if "timeout" in motivo else "DEMASIADAS_PAGINAS",
+                       motivo=motivo)
+            if not texto:
+                return reg
+        else:
+            reg["estado"] = "OK" if len(texto) > 500 else "REVISION_HUMANA"
+            if reg["estado"] != "OK":
+                reg["motivo"] = "el texto extraido tiene " + str(len(texto)) + " chars"
 
     (salida / "texto").mkdir(parents=True, exist_ok=True)
     (salida / "texto" / (stem + ".txt")).write_text(texto, encoding="utf-8")
@@ -193,6 +218,9 @@ def main() -> int:
     ap.add_argument("--dpi", type=int, default=300)
     ap.add_argument("--psm", type=int, default=3)
     ap.add_argument("--lang", default="spa")
+    ap.add_argument("--max-paginas", type=int, default=150)
+    ap.add_argument("--timeout-doc", type=int, default=900,
+                    help="segundos maximos de extraccion por documento")
     ap.add_argument("--tesseract", default="tesseract")
     ap.add_argument("--pdftoppm", default="pdftoppm")
     ap.add_argument("--pdfinfo", default="pdfinfo")
@@ -225,9 +253,6 @@ def main() -> int:
             mios = [dict(f, sala=sala["nombre"], _tipo_nombre=catalogo_tipos.get(tipo, "?"))
                     for f in lista(b2)
                     if str(f.get("departamento") or "").upper().startswith(objetivo)]
-            if mios:
-                print("  " + catalogo_tipos.get(tipo, str(tipo)) + " / " + str(sala["nombre"])
-                      + ": " + str(len(mios)), flush=True)
             pendientes += mios
 
     # Reparto estable por id: un re-run del shard 3 procesa exactamente lo mismo.
@@ -235,8 +260,9 @@ def main() -> int:
     mios = [d for i, d in enumerate(pendientes) if i % args.shards == args.shard]
     if args.limite:
         mios = mios[:args.limite]
-    print("\ntotal " + args.departamento + " gestion " + str(args.gestion) + ": "
-          + str(len(pendientes)) + " | este shard: " + str(len(mios)), flush=True)
+    print("total " + args.departamento + " gestion " + str(args.gestion) + ": "
+          + str(len(pendientes)) + " | shard " + str(args.shard) + "/" + str(args.shards)
+          + ": " + str(len(mios)), flush=True)
 
     jsonl = salida / ("resoluciones-%s-%02d.jsonl" % (args.gestion, args.shard))
     registros = []
