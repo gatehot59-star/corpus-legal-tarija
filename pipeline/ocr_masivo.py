@@ -6,16 +6,21 @@ Decisiones de arquitectura, con su motivo medido:
    `fuente_url` del manifiesto y **verifica el sha256** que ya se midio el 2026-09-02. Si
    el hash no coincide, el documento se marca `HASH_DISTINTO` y NO se OCRea: un PDF que
    cambio en el servidor es una noticia, no un archivo a procesar en silencio.
-2. **Un shard por job, 20 jobs.** 2.624 paginas a 11,1 s/pagina medidos en Actions x64 son
-   8,1 h en serie y ~25 min de reloj shardeado. El taller (Celeron sin AVX, 51,3 s/pagina)
-   tardaria 37 h, por eso esto no corre ahi.
+2. **Un shard por job, 20 jobs.** Medido en la corrida real: **5,08 s/pagina** en Actions
+   x64, o sea 2.624 paginas son 3,7 h de CPU y ~11 min de reloj shardeado. (La estimacion
+   previa de 11,1 s/pagina venia del A/B con dos PSM y salio pesimista por mas del doble.)
+   El taller, a 51,3 s/pagina, tardaria 37 h; por eso esto no corre ahi.
 3. **El conteo de paginas se toma de `pdfinfo`, no de pdfplumber.** Medido: los 19
    documentos que figuraban con 0 paginas son PDFs SANOS que `pdfinfo` abre y cuenta
    (1-2 paginas cada uno). El cero era del lector, no del archivo.
-4. **Cada shard escribe su propio JSONL y su propio directorio de texto.** Nada de un
+4. **Los nombres de archivo se normalizan con `stem_seguro()`.** Esto no es prolijidad: 18
+   de 20 shards murieron subiendo su artefacto porque 41 documentos no traen `numero` y el
+   codigo escribia "?" literal, que upload-artifact rechaza. El OCR estaba bien; el nombre, no.
+5. **Cada shard escribe su propio JSONL y su propio directorio de texto.** Nada de un
    manifiesto compartido entre 20 jobs concurrentes: se consolidan despues.
-5. **El gate de calidad corre por documento y su veredicto queda en el registro.** Un OCR
-   que nadie midio no entra al corpus como si estuviera bien.
+6. **El gate de calidad corre por documento y su veredicto queda en el registro.** Es
+   `gate_v2`: el v1 media densidad de lexico legal y rechazaba leyes sustantivas con OCR
+   perfecto, incluida la Ley 007 que tiene 38/40 datos juridicos verificados.
 """
 import argparse
 import hashlib
@@ -30,22 +35,27 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+import gate_v2
 import normalizar_citas as nc
 
 UA = "Mozilla/5.0 (corpus-legal-tarija; OCR masivo; +https://github.com/gatehot59-star)"
 
-# Lexico legal para el gate: si una pagina no tiene NADA de esto, el OCR salio mal.
-LEXICO = [
-    "articulo", "ley", "resolucion", "asamblea", "departamental", "tarija", "gobierno",
-    "autonomo", "sancion", "promulga", "decreto", "presupuesto", "bolivia", "sesion",
-    "aprobar", "considerando", "disposicion", "vigente", "gestion", "presidente",
-]
 
+def stem_seguro(fuente_id, numero, sha_prefijo: str) -> str:
+    """Nombre de archivo que sobrevive a upload-artifact, a Windows y al glob del consolidador.
 
-def plano(s: str) -> str:
-    s = unicodedata.normalize("NFD", s)
-    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
-    return s.lower()
+    Escrito despues de que 18 de 20 shards fallaran al subir su artefacto: 41 de los 784
+    documentos no traen `numero` y el codigo escribia "?" literal, que upload-artifact v4
+    rechaza junto con * : " < > | y la barra.
+    """
+    def limpiar(valor, respaldo):
+        s = str(valor or "").strip()
+        s = unicodedata.normalize("NFD", s)
+        s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+        s = re.sub(r"[^A-Za-z0-9._-]+", "_", s).strip("_.-")
+        return s or respaldo
+
+    return limpiar(fuente_id, "sin-fuente") + "-" + limpiar(numero, "sin-numero") + "-" + sha_prefijo
 
 
 def sha256_bytes(b: bytes) -> str:
@@ -79,31 +89,12 @@ def contar_paginas(pdf: Path, pdfinfo: str) -> int:
     return 0
 
 
-def gate(texto_por_pagina: list) -> dict:
-    """Veredicto de calidad por documento. Umbrales del gate ya validado sobre 20 paginas:
-    >=120 caracteres por pagina y >=15% de lexico legal."""
-    filas = []
-    for n, t in enumerate(texto_por_pagina, start=1):
-        p = plano(t)
-        palabras = re.findall(r"[a-z]{3,}", p)
-        hits = sum(1 for w in palabras if w in LEXICO)
-        pct = round(100.0 * hits / len(palabras), 1) if palabras else 0.0
-        filas.append({"pagina": n, "chars": len(t), "palabras": len(palabras),
-                      "pct_lexico_legal": pct,
-                      "ok": len(t) >= 120 and pct >= 15.0})
-    buenas = sum(1 for f in filas if f["ok"])
-    total = len(filas) or 1
-    return {"paginas_ok": buenas, "paginas": len(filas),
-            "pct_paginas_ok": round(100.0 * buenas / total, 1),
-            "veredicto": "APTO" if buenas / total >= 0.5 else "REVISION_HUMANA",
-            "detalle": filas}
-
-
 def procesar(doc: dict, tmp: Path, salida_txt: Path, args) -> dict:
     """Un documento de punta a punta. Nunca lanza: devuelve el registro con su estado."""
-    num = doc.get("numero") or "?"
-    reg = {"numero": num, "fuente_id": doc.get("fuente_id"), "md5": doc.get("md5"),
-           "sha256_esperado": doc.get("sha256"), "titulo": (doc.get("titulo") or "")[:180],
+    num = doc.get("numero") or ""
+    reg = {"numero": num or "(sin numero)", "fuente_id": doc.get("fuente_id"),
+           "md5": doc.get("md5"), "sha256_esperado": doc.get("sha256"),
+           "titulo": (doc.get("titulo") or "")[:180],
            "confidencialidad": doc.get("confidencialidad"), "estado": "", "motivo": "",
            "maquina": args.maquina, "instrumento": f"tesseract {args.lang} psm {args.psm}"}
 
@@ -133,7 +124,8 @@ def procesar(doc: dict, tmp: Path, salida_txt: Path, args) -> dict:
                    motivo=f"el servidor devolvio otro archivo: esperado {esperado[:12]} real {real[:12]}")
         return reg
 
-    pdf = tmp / f"doc-{num}-{real[:8]}.pdf"
+    stem = stem_seguro(doc.get("fuente_id"), num, real[:8])
+    pdf = tmp / (stem + ".pdf")
     pdf.write_bytes(crudo)
     paginas = contar_paginas(pdf, args.pdfinfo)
     reg["paginas"] = paginas
@@ -146,7 +138,7 @@ def procesar(doc: dict, tmp: Path, salida_txt: Path, args) -> dict:
         return reg
 
     t0 = time.time()
-    base = tmp / f"img-{num}-{real[:8]}"
+    base = tmp / ("img-" + stem)
     cp = subprocess.run([args.pdftoppm, "-r", str(args.dpi), "-gray", "-png",
                          str(pdf), str(base)], capture_output=True, text=True)
     if cp.returncode != 0:
@@ -166,21 +158,20 @@ def procesar(doc: dict, tmp: Path, salida_txt: Path, args) -> dict:
 
     segundos = time.time() - t0
     texto = "\n\f\n".join(textos)
-    g = gate(textos)
-    citas = nc.extraer(texto, documento=f"{doc.get('fuente_id')}-{num}")
+    g = gate_v2.evaluar(textos)
+    citas = nc.extraer(texto, documento=stem)
 
     salida_txt.mkdir(parents=True, exist_ok=True)
-    stem = f"{doc.get('fuente_id')}-{num}-{real[:8]}"
-    (salida_txt / f"{stem}.txt").write_text(texto, encoding="utf-8")
-    (salida_txt / f"{stem}.indice.txt").write_text(citas["texto_indice"], encoding="utf-8")
+    (salida_txt / (stem + ".txt")).write_text(texto, encoding="utf-8")
+    (salida_txt / (stem + ".indice.txt")).write_text(citas["texto_indice"], encoding="utf-8")
 
     reg.update(estado="OK" if g["veredicto"] == "APTO" else "REVISION_HUMANA",
-               motivo="" if g["veredicto"] == "APTO" else "el gate de calidad no pasa",
+               motivo="" if g["veredicto"] == "APTO" else g["motivo"],
                chars=len(texto), segundos=round(segundos, 1),
                seg_por_pagina=round(segundos / max(paginas, 1), 1),
                exits_tesseract=exits, gate=g,
                citas=citas["total_citas"], citas_a_revisar=citas["total_revision"],
-               revision_citas=citas["revision_humana"], archivo_texto=f"{stem}.txt")
+               revision_citas=citas["revision_humana"], archivo_texto=stem + ".txt")
     return reg
 
 
@@ -194,7 +185,7 @@ def main() -> int:
     ap.add_argument("--dpi", type=int, default=300)
     ap.add_argument("--psm", type=int, default=3)
     ap.add_argument("--lang", default="spa")
-    ap.add_argument("--max-paginas", type=int, default=40)
+    ap.add_argument("--max-paginas", type=int, default=120)
     ap.add_argument("--tesseract", default="tesseract")
     ap.add_argument("--pdftoppm", default="pdftoppm")
     ap.add_argument("--pdfinfo", default="pdfinfo")

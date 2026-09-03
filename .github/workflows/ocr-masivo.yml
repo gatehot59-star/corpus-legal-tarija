@@ -1,0 +1,161 @@
+name: ocr-masivo
+
+# OCR de los 784 documentos escaneados del corpus legal de Tarija, en 20 shards paralelos.
+#
+# Corre ACA y no en brain-env por dos razones medidas:
+#   - velocidad: 5,08 s/pagina medidos en Actions x64 contra 51,3 s/pagina en el Celeron
+#     N4020. Las 2.624 paginas son ~11 min de reloj shardeado aca y 37 h alla.
+#   - costo: este repo es PUBLICO, asi que los minutos son gratis e ilimitados.
+#
+# El job commitea su propio resultado: el texto de los logs de Actions no es legible para
+# un agente, asi que un resultado que solo vive en el log es invisible.
+
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: 'Cantidad de shards'
+        default: '20'
+      limite:
+        description: 'Docs por shard (0 = todos)'
+        default: '0'
+  push:
+    branches:
+      - 'ocr/masivo-**'
+
+concurrency:
+  group: ocr-masivo-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.p.outputs.shards }}
+      limite: ${{ steps.p.outputs.limite }}
+      matriz: ${{ steps.p.outputs.matriz }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Falsadores ANTES de gastar horas de CPU (citas, gate y nombres de archivo)
+        working-directory: pipeline
+        run: |
+          python test_citas.py
+          python test_gate_v2.py
+          python test_stem.py
+      - id: p
+        name: Armar la matriz de shards
+        run: |
+          SH="${{ github.event.inputs.shards }}"
+          LI="${{ github.event.inputs.limite }}"
+          SH="${SH:-20}"
+          LI="${LI:-0}"
+          echo "shards=$SH" >> $GITHUB_OUTPUT
+          echo "limite=$LI" >> $GITHUB_OUTPUT
+          echo "matriz=$(python -c "import json,sys; print(json.dumps(list(range(int(sys.argv[1])))))" $SH)" >> $GITHUB_OUTPUT
+
+  ocr:
+    needs: preparar
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: ${{ fromJson(needs.preparar.outputs.matriz) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Tesseract y Poppler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils tesseract-ocr tesseract-ocr-spa
+          tesseract --version | head -2
+          pdftoppm -v 2>&1 | head -1
+
+      - name: OCR del shard ${{ matrix.shard }}
+        working-directory: pipeline
+        run: |
+          python ocr_masivo.py \
+            --manifiesto ../indices/manifest.jsonl \
+            --shard ${{ matrix.shard }} \
+            --shards ${{ needs.preparar.outputs.shards }} \
+            --limite ${{ needs.preparar.outputs.limite }} \
+            --salida ../salida \
+            --maquina actions-x64
+
+      - name: Verificar que ningun nombre rompa la subida (el bug que tiro 18 de 20 shards)
+        if: always()
+        run: |
+          MALOS=$(find salida -name '*[?*:"<>|]*' | head -20)
+          if [ -n "$MALOS" ]; then
+            echo "ROJO: hay archivos con caracteres que upload-artifact rechaza:"
+            echo "$MALOS"
+            exit 1
+          fi
+          echo "VERDE: $(find salida -type f | wc -l) archivos, ningun caracter prohibido"
+
+      - name: Publicar el shard como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocr-shard-${{ matrix.shard }}
+          path: salida
+          retention-days: 14
+
+      - name: Resumen del shard en el job summary
+        if: always()
+        run: |
+          echo "## shard ${{ matrix.shard }}" >> $GITHUB_STEP_SUMMARY
+          cat salida/resumen-*.json >> $GITHUB_STEP_SUMMARY || echo "sin resumen" >> $GITHUB_STEP_SUMMARY
+
+  consolidar:
+    needs: ocr
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Bajar todos los shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ocr-shard-*
+          path: crudo
+          merge-multiple: true
+
+      - name: Consolidar y medir
+        run: python pipeline/consolidar.py --crudo crudo --salida corpus
+
+      - name: Declarar cuantos shards llegaron de los que se lanzaron
+        run: |
+          LLEGARON=$(ls crudo/shard-*.jsonl 2>/dev/null | wc -l)
+          echo "shards con resultado: $LLEGARON de ${{ needs.preparar.outputs.shards }}" | tee -a $GITHUB_STEP_SUMMARY
+          echo "shards_llegaron=$LLEGARON" >> corpus/COBERTURA.txt
+          echo "shards_lanzados=20" >> corpus/COBERTURA.txt
+
+      - name: Commitear el corpus de texto
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f corpus
+          git commit -m "corpus(ocr): OCR de los escaneados consolidado, run ${GITHUB_RUN_ID}" || echo "sin cambios"
+          for i in 1 2 3 4 5; do
+            git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && break
+            sleep $((i * 6))
+          done
+
+      - name: Resumen consolidado
+        if: always()
+        run: cat corpus/RESUMEN.md >> $GITHUB_STEP_SUMMARY || echo "sin resumen consolidado" >> $GITHUB_STEP_SUMMARY
