@@ -18,6 +18,15 @@ El detector de orientacion de Tesseract (`--psm 0`, osd.traineddata) se consulta
 le cree solo: dio "Orientation in degrees: 0" con confianza 23 en una pagina derecha, y una
 confianza de 23 no distingue nada. Asi que el juez es el gate sobre el texto resultante, que
 es una medicion del producto y no una prediccion sobre la imagen.
+
+DOS ERRORES CORREGIDOS EN LA PRIMERA CORRIDA DE ESTE ARCHIVO, y quedan escritos porque el
+segundo se me escapo dos veces:
+
+1. `pdftoppm -rotate` **no existe**: lo asumi sin verificar. El sintoma fue silencioso (tres
+   rotaciones devolviendo lista vacia y el loop salteandolas), asi que el log solo mostraba
+   "0 grados". Ahora se rota el PNG con Pillow.
+2. El comentario decia que rotar el raster "degrada el trazo". **Falso** para 90/180/270: son
+   permutaciones exactas de pixeles. Y como se rasteriza una sola vez, tambien es mas rapido.
 """
 import argparse
 import json
@@ -26,49 +35,61 @@ import tempfile
 import time
 from pathlib import Path
 
+from PIL import Image
+
 import gate_v2
 import normalizar_citas as nc
 from ocr_masivo import bajar
 
+# Los nombres de PIL son antihorarios: para GIRAR la pagina 90 grados horario hay que
+# aplicar ROTATE_270. Escrito explicito porque invertirlo da un texto igual de ilegible.
+TRANSPOSICION = {90: Image.Transpose.ROTATE_270,
+                 180: Image.Transpose.ROTATE_180,
+                 270: Image.Transpose.ROTATE_90}
 
-def ocr_rotado(pdf: Path, grados: int, tmp: Path, args) -> list:
-    """Rasteriza con rotacion y devuelve el texto por pagina. Rota con pdftoppm, que no
-    reinterpola dos veces: rasterizar y despues rotar el PNG degrada el trazo."""
-    base = tmp / f"rot{grados}"
-    cmd = [args.pdftoppm, "-r", str(args.dpi), "-gray", "-png"]
-    if grados:
-        cmd += ["-rotate", str(grados)]
-    cmd += [str(pdf), str(base)]
-    cp = subprocess.run(cmd, capture_output=True, text=True)
+
+def rasterizar(pdf: Path, tmp: Path, pdftoppm: str, dpi: int) -> list:
+    """Rasteriza a 0 grados UNA sola vez. Devuelve los PNG en orden de pagina."""
+    base = tmp / "pag"
+    cp = subprocess.run([pdftoppm, "-r", str(dpi), "-gray", "-png", str(pdf), str(base)],
+                        capture_output=True, text=True)
     if cp.returncode != 0:
+        print("    ROJO pdftoppm exit " + str(cp.returncode) + ": " + cp.stderr.strip()[:150])
         return []
+    return sorted(base.parent.glob(base.name + "-*.png"),
+                  key=lambda p: int(p.stem.split("-")[-1]))
+
+
+def ocr_rotado(pngs: list, grados: int, tmp: Path, args) -> list:
+    """OCR de las paginas rotadas `grados`, reusando la rasterizacion."""
     textos = []
-    for png in sorted(base.parent.glob(base.name + "-*.png")):
-        subprocess.run([args.tesseract, str(png), str(png.with_suffix("")),
+    for i, png in enumerate(pngs, start=1):
+        if grados:
+            destino = tmp / f"rot{grados}-{i}.png"
+            with Image.open(png) as im:
+                im.transpose(TRANSPOSICION[grados]).save(destino)
+        else:
+            destino = png
+        salida = tmp / f"txt{grados}-{i}"
+        subprocess.run([args.tesseract, str(destino), str(salida),
                         "-l", args.lang, "--psm", str(args.psm)],
                        capture_output=True, text=True)
-        t = png.with_suffix(".txt")
+        t = salida.with_suffix(".txt")
         textos.append(t.read_text(encoding="utf-8", errors="replace") if t.exists() else "")
-        png.unlink(missing_ok=True)
+        if grados:
+            destino.unlink(missing_ok=True)
         t.unlink(missing_ok=True)
     return textos
 
 
-def osd(pdf: Path, tmp: Path, args) -> dict:
+def osd(pngs: list, args) -> dict:
     """Lo que OPINA el detector de orientacion. Se registra como dato, no como decision."""
-    base = tmp / "osd"
-    subprocess.run([args.pdftoppm, "-r", "150", "-gray", "-png", "-f", "1", "-l", "1",
-                    str(pdf), str(base)], capture_output=True, text=True)
-    pngs = sorted(base.parent.glob(base.name + "-*.png"))
     if not pngs:
         return {}
     cp = subprocess.run([args.tesseract, "--psm", "0", str(pngs[0]), "-"],
                         capture_output=True, text=True)
-    salida = cp.stdout + cp.stderr
-    for p in pngs:
-        p.unlink(missing_ok=True)
     d = {}
-    for linea in salida.splitlines():
+    for linea in (cp.stdout + cp.stderr).splitlines():
         if ":" in linea:
             k, v = linea.split(":", 1)
             d[k.strip()] = v.strip()
@@ -84,7 +105,6 @@ def main() -> int:
     ap.add_argument("--lang", default="spa")
     ap.add_argument("--tesseract", default="tesseract")
     ap.add_argument("--pdftoppm", default="pdftoppm")
-    ap.add_argument("--pdfinfo", default="pdfinfo")
     args = ap.parse_args()
 
     base = Path(args.corpus)
@@ -124,28 +144,30 @@ def main() -> int:
                 continue
             pdf = tmp / "doc.pdf"
             pdf.write_bytes(crudo)
-            opinion = osd(pdf, tmp, args)
+            pngs = rasterizar(pdf, tmp, args.pdftoppm, args.dpi)
+            if not pngs:
+                resultados.append({"archivo": archivo, "estado": "RASTERIZADO_FALLIDO"})
+                continue
+            opinion = osd(pngs, args)
 
             elegido, mejor = None, None
             for grados in (180, 90, 270, 0):
                 t0 = time.time()
-                textos = ocr_rotado(pdf, grados, tmp, args)
-                if not textos:
-                    continue
+                textos = ocr_rotado(pngs, grados, tmp, args)
                 g = gate_v2.evaluar(textos)
                 print(f"  {archivo} {grados:3d} grados: {g['veredicto']}, "
-                      f"{g['anclas_legales']} anclas, {time.time() - t0:.0f}s", flush=True)
+                      f"{g['anclas_legales']} anclas, {len(''.join(textos))} chars, "
+                      f"{time.time() - t0:.0f}s", flush=True)
                 if mejor is None or g["anclas_legales"] > mejor[1]["anclas_legales"]:
                     mejor = (grados, g, textos)
                 if g["veredicto"] == "APTO":
                     elegido = (grados, g, textos)
                     break
 
-            usado = elegido or mejor
-            if usado is None:
-                resultados.append({"archivo": archivo, "estado": "RASTERIZADO_FALLIDO"})
-                continue
-            grados, g, textos = usado
+            for p in pngs:
+                p.unlink(missing_ok=True)
+
+            grados, g, textos = elegido or mejor
             texto = "\n\f\n".join(textos)
             citas = nc.extraer(texto, documento=archivo)
             if elegido:
