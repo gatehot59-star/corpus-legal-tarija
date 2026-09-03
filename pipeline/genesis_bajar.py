@@ -5,8 +5,12 @@ Medido el 2026-09-03 antes de escribir esto:
   - `GET /resoluciones/{id}/pdf` sigue ROTO (500 de Puppeteer del TSJ). NO se usa.
   - El detalle trae `url_pdf_escaneado` en otro host (`apigestortsj.organojudicial.gob.bo`), y
     ese PDF baja **200 sin credencial**. Esa es la via.
-  - 2 de 8 resoluciones muestreadas traen el texto completo en HTML: esas NO necesitan OCR.
-  - El PDF escaneado no tiene capa de texto (5 chars en 5 paginas): el resto SI necesita OCR.
+  - Hay **TRES** tipos de resolucion: Auto Supremo (1), Sentencia (2), Resolucion (3). La
+    primera corrida uso solo el 1 sin preguntar, asi que bajo un tercio del universo creyendo
+    que era todo. El default ahora son los tres.
+  - De 194 resoluciones reales: 116 traian texto nativo en el PDF, 73 el HTML oficial, y solo
+    **5 necesitaron OCR**. La afirmacion previa de que "el PDF escaneado no tiene capa de
+    texto" era una generalizacion de n=1 y quedo refutada.
 
 Tres decisiones con su motivo:
 
@@ -104,6 +108,7 @@ def ocr_pdf(datos: bytes, args) -> tuple:
             if l.startswith("Pages:"):
                 pags = int(l.split(":", 1)[1].strip() or 0)
         # Primero se prueba la capa nativa: si el PDF ya trae texto, OCRearlo es tirar plata.
+        # Medido: 116 de 194 resoluciones la tenian.
         cp = subprocess.run([args.pdftotext, str(pdf), "-"], capture_output=True, text=True)
         if len(cp.stdout.strip()) > 200 * max(pags, 1):
             return cp.stdout, pags, 0.0
@@ -126,7 +131,7 @@ def procesar(meta: dict, salida: Path, args) -> dict:
            "fecha_emision": meta.get("fecha_emision"),
            "departamento": meta.get("departamento"), "sala": meta.get("sala"),
            "gestion": args.gestion, "jurisdiccion": "nacional_tsj",
-           "tipo_norma": meta.get("tipo_resolucion") or "Auto Supremo",
+           "tipo_norma": meta.get("tipo_resolucion") or meta.get("_tipo_nombre") or "?",
            "confidencialidad": "PUBLICO", "estado": "", "motivo": "", "via": ""}
 
     s, b = pedir(BASE + "/resoluciones/" + str(rid))
@@ -139,7 +144,8 @@ def procesar(meta: dict, salida: Path, args) -> dict:
         reg[k] = d.get(k)
     reg["url_pdf_escaneado"] = d.get("url_pdf_escaneado") or ""
 
-    stem = stem_seguro("tsj", meta.get("departamento"), meta.get("nro_resolucion"), rid)
+    stem = stem_seguro("tsj", meta.get("departamento"), args.gestion,
+                       meta.get("nro_resolucion"), rid)
     (salida / "meta").mkdir(parents=True, exist_ok=True)
     (salida / "meta" / (stem + ".json")).write_text(
         json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -166,7 +172,7 @@ def procesar(meta: dict, salida: Path, args) -> dict:
                    via="ocr_pdf_escaneado" if seg else "texto_nativo_pdf")
         reg["estado"] = "OK" if len(texto) > 500 else "REVISION_HUMANA"
         if reg["estado"] != "OK":
-            reg["motivo"] = "el OCR devolvio " + str(len(texto)) + " chars"
+            reg["motivo"] = "el texto extraido tiene " + str(len(texto)) + " chars"
 
     (salida / "texto").mkdir(parents=True, exist_ok=True)
     (salida / "texto" / (stem + ".txt")).write_text(texto, encoding="utf-8")
@@ -178,7 +184,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--departamento", default="Tarija")
     ap.add_argument("--gestion", type=int, default=2026)
-    ap.add_argument("--tipo", type=int, default=1)
+    ap.add_argument("--tipos", default="1,2,3",
+                    help="ids de tipo de resolucion; 1=Auto Supremo 2=Sentencia 3=Resolucion")
     ap.add_argument("--salida", default="salida-genesis")
     ap.add_argument("--limite", type=int, default=0)
     ap.add_argument("--shard", type=int, default=0)
@@ -200,23 +207,30 @@ def main() -> int:
         print("ROJO: /catalogos/salas dio", s, b[:120])
         return 2
     salas = lista(b)
-    print("salas:", len(salas), flush=True)
+    s, b = pedir(BASE + "/catalogos/tipos_resoluciones")
+    catalogo_tipos = {t["id"]: t["nombre"] for t in (lista(b) if s == 200 else [])}
+    tipos = [int(x) for x in args.tipos.split(",") if x.strip()]
+    print("salas: " + str(len(salas)) + " | tipos: "
+          + ", ".join(str(t) + "=" + catalogo_tipos.get(t, "?") for t in tipos), flush=True)
 
     objetivo = args.departamento.upper()
     pendientes = []
-    for sala in salas:
-        s2, b2 = pedir(BASE + "/resoluciones/busqueda_por_gestion",
-                       {"idSala": sala["id"], "gestion": args.gestion, "idTipoRes": args.tipo})
-        if s2 != 200:
-            print("  sala", sala["nombre"], "HTTP", s2, flush=True)
-            continue
-        filas = lista(b2)
-        mios = [dict(f, sala=sala["nombre"]) for f in filas
-                if str(f.get("departamento") or "").upper().startswith(objetivo)]
-        if mios:
-            print("  " + str(sala["nombre"]) + ": " + str(len(mios)) + " de " + args.departamento, flush=True)
-        pendientes += mios
+    for tipo in tipos:
+        for sala in salas:
+            s2, b2 = pedir(BASE + "/resoluciones/busqueda_por_gestion",
+                           {"idSala": sala["id"], "gestion": args.gestion, "idTipoRes": tipo})
+            if s2 != 200:
+                print("  " + str(sala["nombre"]) + " tipo " + str(tipo) + ": HTTP " + str(s2), flush=True)
+                continue
+            mios = [dict(f, sala=sala["nombre"], _tipo_nombre=catalogo_tipos.get(tipo, "?"))
+                    for f in lista(b2)
+                    if str(f.get("departamento") or "").upper().startswith(objetivo)]
+            if mios:
+                print("  " + catalogo_tipos.get(tipo, str(tipo)) + " / " + str(sala["nombre"])
+                      + ": " + str(len(mios)), flush=True)
+            pendientes += mios
 
+    # Reparto estable por id: un re-run del shard 3 procesa exactamente lo mismo.
     pendientes.sort(key=lambda f: f["id"])
     mios = [d for i, d in enumerate(pendientes) if i % args.shards == args.shard]
     if args.limite:
@@ -224,7 +238,7 @@ def main() -> int:
     print("\ntotal " + args.departamento + " gestion " + str(args.gestion) + ": "
           + str(len(pendientes)) + " | este shard: " + str(len(mios)), flush=True)
 
-    jsonl = salida / ("resoluciones-%02d.jsonl" % args.shard)
+    jsonl = salida / ("resoluciones-%s-%02d.jsonl" % (args.gestion, args.shard))
     registros = []
     for i, meta in enumerate(mios, start=1):
         reg = procesar(meta, salida, args)
@@ -237,19 +251,19 @@ def main() -> int:
         with jsonl.open("a", encoding="utf-8") as f:
             f.write(json.dumps(reg, ensure_ascii=False) + "\n")
 
-    conteo = {}
-    vias = {}
+    conteo, vias, portipo = {}, {}, {}
     for r in registros:
         conteo[r["estado"]] = conteo.get(r["estado"], 0) + 1
         if r["via"]:
             vias[r["via"]] = vias.get(r["via"], 0) + 1
-    resumen = {"departamento": args.departamento, "gestion": args.gestion, "tipo": args.tipo,
+        portipo[r["tipo_norma"]] = portipo.get(r["tipo_norma"], 0) + 1
+    resumen = {"departamento": args.departamento, "gestion": args.gestion, "tipos": tipos,
                "shard": args.shard, "shards": args.shards, "resoluciones": len(registros),
-               "estados": conteo, "vias": vias,
+               "estados": conteo, "vias": vias, "por_tipo": portipo,
                "caracteres": sum(r.get("chars", 0) or 0 for r in registros),
                "paginas_ocr": sum(r.get("paginas") or 0 for r in registros),
                "segundos": round(sum(r.get("segundos") or 0 for r in registros), 1)}
-    (salida / ("resumen-%02d.json" % args.shard)).write_text(
+    (salida / ("resumen-%s-%02d.json" % (args.gestion, args.shard))).write_text(
         json.dumps(resumen, ensure_ascii=False, indent=1), encoding="utf-8")
     print("\nRESUMEN:", json.dumps(resumen, ensure_ascii=False), flush=True)
     return 0

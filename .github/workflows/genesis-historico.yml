@@ -1,0 +1,166 @@
+name: genesis-historico
+
+# Historico COMPLETO de jurisprudencia del TSJ para un departamento: 12 gestiones
+# (2015-2026) x 3 tipos de resolucion x 15 salas.
+#
+# Matriza por GESTION, una por job: 12 jobs en paralelo, cada uno con sus 3 tipos y sus 15
+# salas. Se eligio asi y no por shard global porque el reparto por gestion es estable y
+# legible: si 2019 falla, se re-corre 2019 y nada mas.
+#
+# Medido antes de lanzar:
+#   - Hay TRES tipos de resolucion. La corrida anterior uso solo Auto Supremo sin preguntar.
+#   - 2015 sola tiene 345 resoluciones de Tarija con los tres tipos, contra 194 de 2026 con uno.
+#   - De 194 procesadas: 116 con texto nativo, 73 con HTML oficial, solo 5 con OCR.
+
+on:
+  workflow_dispatch:
+    inputs:
+      departamento:
+        description: 'Departamento a filtrar'
+        default: 'Tarija'
+  push:
+    branches:
+      - 'historico/**'
+
+concurrency:
+  group: genesis-historico-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        gestion: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Tesseract y Poppler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils tesseract-ocr tesseract-ocr-spa
+
+      - name: Bajar gestion ${{ matrix.gestion }}, los 3 tipos
+        working-directory: pipeline
+        run: |
+          DEP="${{ github.event.inputs.departamento }}"
+          python genesis_bajar.py \
+            --departamento "${DEP:-Tarija}" \
+            --gestion ${{ matrix.gestion }} \
+            --tipos 1,2,3 \
+            --salida ../salida-historico
+
+      - name: Verificar que ningun nombre rompa la subida
+        if: always()
+        run: |
+          MALOS=$(find salida-historico -name '*[?*:"<>|]*' | head -20)
+          if [ -n "$MALOS" ]; then echo "ROJO: nombres invalidos:"; echo "$MALOS"; exit 1; fi
+          echo "VERDE: $(find salida-historico -type f | wc -l) archivos"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: historico-${{ matrix.gestion }}
+          path: salida-historico
+          retention-days: 14
+
+      - name: Resumen de la gestion
+        if: always()
+        run: |
+          echo "## gestion ${{ matrix.gestion }}" >> $GITHUB_STEP_SUMMARY
+          cat salida-historico/resumen-*.json >> $GITHUB_STEP_SUMMARY || echo "sin resumen" >> $GITHUB_STEP_SUMMARY
+
+  consolidar:
+    needs: bajar
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: historico-*
+          path: crudo
+          merge-multiple: true
+
+      - name: Consolidar el historico
+        run: |
+          mkdir -p jurisprudencia/texto jurisprudencia/meta
+          cp -r crudo/texto/. jurisprudencia/texto/ 2>/dev/null || true
+          cp -r crudo/meta/. jurisprudencia/meta/ 2>/dev/null || true
+          cat crudo/resoluciones-*.jsonl > jurisprudencia/resoluciones.jsonl 2>/dev/null || true
+          python - <<'PY'
+          import collections, json
+          from pathlib import Path
+          p = Path("jurisprudencia/resoluciones.jsonl")
+          regs = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()] if p.exists() else []
+          # Un id puede venir dos veces si dos tipos lo listan: se deduplica y se declara.
+          vistos, unicos = set(), []
+          for r in regs:
+              if r["id"] in vistos:
+                  continue
+              vistos.add(r["id"])
+              unicos.append(r)
+          dup = len(regs) - len(unicos)
+          est = collections.Counter(r["estado"] for r in unicos)
+          vias = collections.Counter(r.get("via") or "-" for r in unicos)
+          tipos = collections.Counter(r.get("tipo_norma") or "?" for r in unicos)
+          gest = collections.Counter(r.get("gestion") for r in unicos)
+          salas = collections.Counter(r.get("sala") or "?" for r in unicos)
+          seg = sum(r.get("segundos") or 0 for r in unicos)
+          chars = sum(r.get("chars") or 0 for r in unicos)
+          Path("jurisprudencia/resoluciones.jsonl").write_text(
+              "\n".join(json.dumps(r, ensure_ascii=False) for r in unicos) + "\n", encoding="utf-8")
+          md = ["# Jurisprudencia del TSJ - historico completo", "",
+                f"**{len(unicos)} resoluciones unicas** · {chars} caracteres · "
+                f"{sum(r.get('paginas') or 0 for r in unicos)} paginas · {round(seg/3600,2)} h de CPU",
+                "", f"Duplicados por id descartados al consolidar: {dup}.", "",
+                "| estado | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in est.most_common()]
+          md += ["", "| tipo de resolucion | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in tipos.most_common()]
+          md += ["", "| via de obtencion del texto | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in vias.most_common()]
+          md += ["", "| gestion | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in sorted(gest.items(), key=lambda x: str(x[0]))]
+          md += ["", "| sala | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in salas.most_common()]
+          md += ["", "El HTML oficial del TSJ gana sobre el escaneo cuando existe: es el texto tal",
+                 "cual lo emitio el tribunal, sin un OCR en el medio.", ""]
+          Path("jurisprudencia/RESUMEN.md").write_text("\n".join(md), encoding="utf-8")
+          print("\n".join(md))
+          PY
+
+      - name: Declarar cobertura
+        run: |
+          LLEGARON=$(ls crudo/resumen-*.json 2>/dev/null | wc -l)
+          echo "gestiones con resultado: $LLEGARON de 12" | tee -a $GITHUB_STEP_SUMMARY
+          echo "gestiones_con_resultado=$LLEGARON" > jurisprudencia/COBERTURA.txt
+          echo "gestiones_lanzadas=12" >> jurisprudencia/COBERTURA.txt
+
+      - name: Commitear
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f jurisprudencia
+          git commit -m "corpus(genesis): historico completo de jurisprudencia, run ${GITHUB_RUN_ID}" || echo "sin cambios"
+          for i in 1 2 3 4 5; do
+            git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && break
+            sleep $((i * 6))
+          done
+
+      - name: Resumen
+        if: always()
+        run: cat jurisprudencia/RESUMEN.md >> $GITHUB_STEP_SUMMARY || echo "sin resumen" >> $GITHUB_STEP_SUMMARY
