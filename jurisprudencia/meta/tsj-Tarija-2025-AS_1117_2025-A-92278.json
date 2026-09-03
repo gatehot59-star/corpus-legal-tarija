@@ -1,0 +1,19 @@
+{
+ "id": 92278,
+ "nro_resolucion": "AS/1117/2025-A",
+ "nro_expediente": "TJ 325/2024",
+ "fecha_emision": "23/09/2025",
+ "demandante": "Ministerio Público",
+ "demandado": "Fernando Onofre De La Via",
+ "departamento": "Tarija",
+ "sala": "Sala Penal",
+ "tipo_resolucion": "Auto Supremo",
+ "subtipo_resolucion": null,
+ "magistrado": "Ricardo Torres Echalar",
+ "materia": "Penal",
+ "procesos": "Tráfico de Sustancias Controladas",
+ "formas_resoluciones": "Inadmisible",
+ "contenido": null,
+ "tiene_html": false,
+ "url_pdf_escaneado": "https://apigestortsj.organojudicial.gob.bo/api/v1/documentos/ce1e300b-8957-4f56-817c-5679685bb58c/pdf"
+}

@@ -1,0 +1,209 @@
+SALA PLENA
+
+
+SENTENCIA: 576/2015.
+
+FECHA: Sucre, 7 de diciembre de 2015.
+
+EXPEDIENTE Nº: 471/2010.
+
+PROCESO : Contencioso Administrativo.
+
+PARTES: Cooperativa de Servicios de Telecomunicaciones de Tarija (COSETT) CONTRA EL Ministerio de Obras Públicas, Servicios y Vivienda.
+
+MAGISTRADA RELATORA: Maritza Suntura Juaniquina.
+
+
+Pronunciada dentro del proceso contencioso administrativo interpuesto por la Cooperativa de Servicios de Telecomunicaciones de Tarija (COSETT) impugnando la Resolución Ministerial Nº 210 de 23 de julio de 2010, pronunciada por el Ministerio de Obras Públicas, Servicios y Vivienda. 
+
+
+VISTOS EN SALA PLENA: La demanda de fs. 92 a 95, la respuesta de fs. 135 a 139, la réplica de fs. 143 a 148, la dúplica de fs. 155 a 159 y los antecedentes del proceso. 
+
+
+CONSIDERANDO I: Que la Cooperativa de Servicios de Telecomunicaciones de Tarija (COSETT), legalmente representada por Marcela Ortiz Torricos, interpone la presente demanda, señalando que:
+
+
+Dentro el Proceso Administrativo, se produjo el silencio administrativo, ya que la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transporte (ATT) dejó transcurrir el plazo para sustanciar y resolver el recurso de revocatoria, sin dictarse resolución expresa alguna en el plazo previsto por Ley, aspecto que permitió considerar por desestimada su solicitud, por silencio administrativo negativo, para posteriormente interponer recurso jerárquico conforme el art. 17 y 66 de la Ley Nº 2341 contra la Resolución Administrativa Regulatoria Nº 018/2010 de 13 de enero, mismo que fue admitido por RJ/AR -018/2010 de 30 de marzo, por parte del Ministerio de Obras Públicas, Servicios y Vivienda.
+
+
+Arguyendo los aspectos técnicos de fondo, señala que no se realizó una correcta valoración de los diferentes medios de prueba aportados en el proceso, ni una verdadera interpretación de la normas jurídicas y reglamentos aplicables en el proceso administrativo seguido por Sittel (Superintendencia de Telecomunicaciones, actualmente ATT), formulándose cargos por la supuesta comisión de diferentes infracciones y por el cual se le intimó a cumplir condiciones técnicas por la presunta provisión ilegal del servicio denominado PHS y por no cumplir con las características técnicas referidas a la utilización indebida de frecuencias electromagnéticas para servicios no autorizados; sin embargo, manifiesta que la Cooperativa de Servicios de Telecomunicaciones de Tarija Ltda. COSETT, cumplió con todos los instructivos técnicos como se detalla en la Resolución Administrativa 2007/1906 de 13 de julio de 2007, en su artículo primero, que indica textualmente licencia para el uso de frecuencias electromagnéticas, destinadas a acceso inalámbrico para la prestación del servicio local de telecomunicaciones (inalámbrica), realizado oportunamente por la SITTEL.
+
+
+Agrega que la Resolución Administrativa Regulatoria Nº 018/2010, es ilegal y arbitraria, por haberse establecido el incumplimiento a la intimación efectuada en la Resolución Administrativa Regulatoria Nº 2009/0031 de 12 de enero, que a su vez, esta determinó el incumplimiento a las condiciones técnicas establecidas en la Resolución Administrativa 2007/1906, respecto a la prestación de servicios fijos de telecomunicaciones mediante acceso inalámbrico, sancionándolo con 100 días multa, por el monto de $us. 42.301,27 equivalente a Bs. 299.070, declarando probados los cargos formulados en la mencionada R.A. 2009/0031, imponiéndosele otra multa con 75 días, que ascendió a la suma de $us. 31.725,95 equivalente a Bs. 224.302,50.
+
+
+Aduce que en la inspección ocular de 2 de octubre de 2009 se verificó que la Cooperativa de Servicios de Telecomunicaciones Tarija Ltda. COSETT cumplió a cabalidad con la intimación realizada, constatándose que su Cooperativa se encontraba en proceso de adecuación del sistema PHS, recibiendo el soporte técnico de su proveedor Procom – UT Starcom (representantes oficiales en Bolivia de la fábrica del servicio PHS), con la finalidad de quitar las características de “handover” del sistema PHS, ya que por la complejidad técnica de adecuación se requería de mayor tiempo; empero, dejó constancia que la adecuación se estaba realizando; aspecto que también desvirtuó con la inspección ocular de parte, realizada el 20 de noviembre del mismo año, donde se determinó que las llamadas efectuadas perdieron continuidad, comprobando que la cooperativa cortó HANDOVER en el servicio ofrecido, dando cumplimiento a la intimación realizada y no existiendo motivo justificado, para imponer sanción alguna a COSETT.
+
+
+Manifiesta que pese a dicho cumplimiento, la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transportes (ATT), sin considerar el principio de equidad, transparencia, fundamentación, amplitud, flexibilidad e informalismo que rige la producción de prueba en materia administrativa, determinó sancionar a su Cooperativa por un supuesto incumplimiento a la intimación y declarar probado los cargos formulados, pronunciando la R.A.R. 018/2010, con el pobre argumento que la adecuación realizada por COSETT del servicio PHS, como es el corte del handover, no constituye un cumplimiento total a la intimación de enmarcarse en los parámetros técnicos establecidos en la Resolución 2007/1906.
+
+
+Añade que si bien la Ley de Telecomunicaciones y su Reglamento regulan la concesión de servicios de telefonía móvil, y fija en bandas específicamente determinadas y si no existió en su momento una regulación ni un marco legal que sea aplicable para la operación de redes de acceso inalámbrico para prestar el servicio local de telecomunicaciones, que es el objeto de la licencia concedida; sin embargo, no debió aplicarse un reglamento que es posterior a la otorgación de dicha licencia, a la intimación y ulterior sanción, porque la Ley rige para el futuro no teniendo carácter retroactivo, ya que al emitirse la resolución intimatoria y sancionatoria, la misma era inconstitucional e ilegal, porque el art. 164 de la CPE señala que la Ley es de cumplimiento obligatorio desde el día de su publicación y que la Ley sólo dispone para lo venidero, conforme el art. 123 de la misma norma suprema.
+
+
+Indica a su vez, que al no tener la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transporte un marco que regule las redes públicas de acceso inalámbrico, aplicó dicho reglamento de fecha posterior introduciendo una nueva definición antes inexistente en el cuerpo normativo que rige en el sector de telecomunicaciones, como es el “Radioenlace de Acceso Inalámbrico” y otros aspectos que debieron ser regulados mediante reglamento, lo cuales jamás debieron ser aplicados con carácter retroactivo.
+
+
+Concluye explicando que las autoridades administrativas no han tomado en cuenta el contrato de concesión de COSETT Ltda. suscrito con la ex Superintendencia de Telecomunicaciones, y la licencia otorgada para operar una red de acceso inalámbrico, ya que la Cooperativa sólo presta el servicio local de telecomunicaciones; no obstante, tal cual autorizó Sittel en la R.A.R. 2007/1906 se instaló radiobases en el área de servicio, lo cual dio a la plataforma inalámbrica de COSETT características topológicas similares al servicio móvil; empero, en la oportunidad de solicitud de asignación de la banda 1910 MHz a 1920 MHz, la Cooperativa presentó junto al documento del proyecto, una descripción técnica de los equipos y sistemas a instalarse, detallando las particularidades y prestaciones del sistema inalámbrico, sin haber recibido ni antes ni después del otorgamiento de la licencia, ninguna objeción al uso de este sistema, más al contrario, la autorización de la licencia para dar continuidad al proyecto.
+
+
+Finalmente, señala que no se puede aseverar que no exista diferencia en la comunicación entre el servicio PHS y el servicio móvil, porque para establecer dicha diferenciación, debió realizarse por medios de recepción en condiciones similares y con los instrumentos específicos, y no por medios subjetivos que pretende establecer la ATT. 
+
+
+En mérito a lo expuesto, y al amparo del art. 778 del Código de Procedimiento Civil (CPC), solicita se declare probada la demanda y se deje sin efecto la multa y la intimación impuesta por la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transporte (ATT). 
+
+ 
+
+CONSIDERANDO II: Que corrida en traslado la demanda, se apersonan Adriana María del Callejo Quinteros y Víctor Pablo Martín Rodríguez en representación legal del Ministro de Obras Públicas, Servicios y Vivienda, quienes contestaron negativamente, señalando que:
+
+
+Mediante Resolución Administrativa Regulatoria Nº 2007/1906 de 13 de julio de 2007 la ex Superintendencia de Telecomunicaciones otorgó a COSETT Ltda. licencia para el uso de frecuencias electromagnéticas destinadas a la prestación de servicios fijos de telecomunicación mediante acceso inalámbrico de conformidad a los contratos de concesión suscritos y a las resoluciones administrativas pronunciadas expresamente por dicha ex Superintendencia, en el área de servicio de la ciudad de Tarija en las frecuencias de 1910 MHz a 1920 MHz, en un ancho de banda de 10 MHz.
+
+Posteriormente dicha Superintendencia emitió la Resolución Administrativa Regulatoria Nº 2009/0031 de 12 de enero de 2009, a través del cual intimó a COSETT Ltda. a cumplir de forma inmediata con las condiciones técnicas establecidas en la R.A.R. Nº 2007/1906 en cuanto a la prestación de los servicios fijos de telecomunicaciones mediante acceso inalámbrico, formulando cargos en su contra por la presunta comisión de la infracción descrita en el art. 9. II del Reglamento de Sanciones y Procedimientos Especiales por Infracciones al Marco Jurídico Reglamentario del Sector de Telecomunicaciones, aprobado por DS Nº 25950 por la supuesta realización de actividades y/o prestación y/u ofrecimiento de servicios de telecomunicaciones y/o utilización indebida del espectro electromagnético, distintas a las permitidas en su concesión, licencia, registro u otra autorización.
+
+
+En atención a la R.A.R. Nº 2009/0031 y habiendo presentado descargos y solicitado la nulidad de obrados por la supuesta violación al debido proceso, el que fue concedido por la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transporte (ATT), y consecuentemente pronunció la Resolución Administrativa Regulatoria Nº 018/2010 de 13 de enero, por el que se estableció el incumplimiento por parte de COSETT Ltda., de la intimación efectuada en el artículo primero de la referida R.A.R. Nº 2009/0031 al haber contravenido las condiciones técnicas establecidas en la R.A.R. Nº 2007/1906; acto administrativo que ameritó la interposición del recurso de revocatoria por parte de la empresa accionante, el mismo que fue resuelto mediante el pronunciamiento de la Resolución Administrativa Regulatoria TL Nº 0163/2010 de 18 de marzo, pronunciada también por la misma Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transportes, rechazándose el recurso incoado, señalando entre otros argumentos, que la R.A.R. Nº 018/2010 valoró todos los descargos expuestos por COSETT Ltda., resolución de revocatoria que fue notificado a la referida cooperativa el 23 de marzo de 2010; para que así a través de memorial de 19 del mismo mes y año precitados, el representante de COSETT Ltda., interponga recurso jerárquico por falta de pronunciamiento en relación a su recurso de revocatoria, reiterando los argumentos expuestos en el mismo y señalando adicionalmente que el regulador dejó transcurrir el plazo para sustanciar y resolver el recurso de revocatoria, sin haber dictado resolución alguna, verificando silencio administrativo y por tanto negación de su recurso.
+
+
+Radicado el referido recurso jerárquico mediante la providencia RJ/AR-018/2010 de 30 de marzo, el Ministerio de Obras Públicas, Servicios y Vivienda emitió la Resolución Ministerial Nº 210 de 23 de julio de 2010, desestimando el recurso interpuesto al haberse evidenciado la inexistencia del silencio administrativo negativo argüido por la mencionada cooperativa, argumentos de la resolución jerárquica que responden a los expuestos por el representante de COSETT Ltda., en su demanda contencioso administrativa.
+
+
+Con esta relación de hechos y tomando en cuenta los argumentos de la demanda, la autoridad demandada enfatiza en los arts. 65 y 66. II de la Ley Nº 2341, señalando que el recurso de revocatoria fue presentado por COSETT Ltda., el 2 de febrero de 2010, y la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transporte, de acuerdo al art. 89. I del Reglamento a la Ley de Procedimiento Administrativo para el SIRESE aprobado mediante DS Nº 27172, tenía 30 días hábiles administrativos para resolver dicho recurso, plazo que vencía el 18 de marzo de 2010, indicando que la Resolución Administrativa Regulatoria TL Nº 0163/2010 fue oportunamente pronunciada por el ente regulador, evidenciando que la cooperativa demandante incurrió en error al señalar que la ATT no resolvió en el plazo establecido, el recurso de revocatoria.
+
+
+Adicionalmente indica que conforme al art. 33. III de la Ley Nº 2341 la ATT contaba con 5 días hábiles administrativos para notificar la Resolución Administrativa Regulatoria TL Nº 0163/2010 de 18 de marzo, lo que sucedió, ya que la notificación de dicha resolución fue el 23 de marzo de 2010, vale decir, dentro de los cinco días previstos. Es así que habiéndose corroborado la inexistencia del silencio administrativo negativo y tomando en cuenta la fecha de notificación de la R.A.R. 0163/2010 (23 de marzo de 2010), el operador contaba a partir de ese momento con el plazo de 10 días para interponer el recurso jerárquico; sin embargo, dicho recurso fue presentado el 19 de marzo de 2010, fecha en la que no podía alegarse silencio negativo, ya que la ATT aún contaba con 4 días para notificar la citada resolución.
+
+
+Concluye al manifestar que la R.A.R. 0163/2010 fue emitida y notificada dentro de plazo, de manera que el silencio administrativo negativo nunca existió, porque COSETT se precipitó al presentar su recurso jerárquico el 19 de marzo de 2010, sin esperar a ser debidamente notificado con la respuesta a esa impugnación en fase del revocatorio, por lo que dicho recurso fue planteado sin que se produjera el silencio administrativo negativo que de lugar a la vía jerárquica, razón por la cual la autoridad demandada desestimó dicho recurso por no haberse dado cumplimiento a los requisitos formales exigidos. Autoridad que no se pronunció sobre los argumentos de fondo ante el evidente incumplimiento de los procedimientos formales, añadiendo que el cumplimiento de los plazos procesales para interponer los recursos administrativos no constituyen mera exigencia formal, por lo que solicita se declarare improbada la demanda.
+
+
+CONSIDERANDO III: Corrida en traslado la respuesta, fue formulada la réplica expresando lo siguiente:
+
+
+1.- Violación del art. 65 de la Ley Nº 2341, así como de los principios de competencia legalidad y jerarquía normativa, en sentido que al haberse pronunciado una decisión administrativa injusta, la cooperativa demandante presentó el 2 de febrero de 2010 recurso de revocatoria impugnando la R.A.R. Nº 018/2010, correspondiendo a la autoridad administrativa resolver ese recurso en un plazo de 20 días, es decir, hasta el 22 de febrero de 2010, situación que no se produjo, habiéndose vencido el plazo sin dictarse la resolución correspondiente, generándose el silencio administrativo negativo, al entender que el recurso fue denegado, abriendo la posibilidad de plantear el recurso jerárquico dentro de lo señalado en el art. 65 in fine de la Ley Nº 2341.
+
+
+Señala que el 19 de marzo de 2010 planteó recurso jerárquico, en el que hizo constar la evidente existencia de silencio administrativo negativo o un recurso de revocatoria que no tuvo resolución en su oportunidad legal, solicitando se de por aceptado el mismo y se proceda en consecuencia a revocar la mencionada R.A.R. 018/2010, acción que fue desestimada mediante Resolución Ministerial Nº 210 de 23 de julio de 2010, por haberse evidenciado la inexistencia del silencio administrativo negativo, aplicando los arts. 89. I y 91. II inc. c) del DS Nº 27172.
+
+
+Reglamento que en su art. 89. I señala que el Superintendente Sectorial resolverá el recurso de revocatoria en un plazo de 30 días, prorrogable a otros 30 días, en caso de apertura de un término de prueba, norma reglamentaria, que según el entender de COSETT Ltda., se arrogó de manera arbitraria facultades legislativas que no tiene, obviando indebidamente el plazo de resolución del recurso de revocatoria, establecido en el art. 65 de la referida Ley, que es de 20 días, normativa que también establece una salvedad de acuerdo a lo determinado en la reglamentación especial, reglamentación que es válida, pero en la medida que responda al espíritu y sentido de la norma legal. 
+
+
+Manifiesta que al haberse planteado el recurso de revocatoria correspondía que la ATT respete los principios de legalidad, competencia y jerarquía normativa dando preferente aplicación al art. 65 de la Ley Nº 2341, que establece que la resolución de recurso de revocatoria debe ser resuelto en el plazo de 20 días, cumpliendo el art. 410. II de la CPE vigente, que establece la escala jerárquica, disposición de aplicación directa, que reconoce que la Ley se encuentra por encima de cualquier otra disposición de menor jerarquía, como es el decreto reglamentario, siendo inaceptable que un reglamento modifique absolutamente el marco legal.
+
+
+Indica que la ATT tenía que haber ejercido su jurisdicción y competencia administrativa dentro de los 20 días, y en ningún momento dentro del plazo de 30 días, adicionando ilegalmente el art. 89.I del Decreto Reglamentario o DS Nº 27172, apareciendo resuelto el recurso de revocatoria recién el 18 de marzo de 2010, emitiéndose supuestamente la Resolución Administrativa Regulatoria TL Nº 0163/2010 por la que se rechazó el recurso de revocatoria, el cual fue extemporáneo.
+
+
+Agrega que una vez planteado el recurso jerárquico, con el supuesto de ser inexistente el silencio administrativo negativo, y extemporánea la interposición del recurso mencionado; en ese supuesto correspondía al Ministerio de Obras Públicas, Servicios y Vivienda declarar ejecutoriada la R.A.R. 163/2010 que resolvió el recurso de revocatoria, pero no lo hizo, al contrario, consciente de que el referido recurso jerárquico fue planteado en su oportunidad y no extemporáneo admitió el mismo mediante providencia RJ/AR-018/2010 de 30 de marzo de 2010, entendiendo que era necesario realizar un análisis de fondo de todos los extremos cuestionados en los recursos de revocatoria y jerárquico; sin embargo, la autoridad demandada lejos de realizar el análisis de fondo que correspondía, se limitó a realizar un análisis de forma, para finalmente dar por desestimado dicho recurso, violando los principios denunciados. 
+
+
+2.- Denuncia la violación del debido proceso consagrado el art. 115. II de la CPE vigente, refiriendo que pese a la claridad de su recurso jerárquico, se emitió la ahora resolución impugnada, en la que lejos de realizarse una adecuada motivación y fundamentación legal, acorde a los argumentos de fondo, se realizó tan solamente un análisis de forma, dejando a su representada con una decisión administrativa carente de motivación, por que desconoce cuales serían las razones para no haberse estimado sus pretensiones, sin conocer la ratio decidendi.
+
+
+3.- Alega la inexistencia de respuesta en el fondo, o allanamiento a la demanda contencioso administrativa, por parte de la autoridad demanda, ya que el demandado en su contestación, no opuso resistencia de fondo, ni tampoco desestimó las pretensiones de la parte actora, lo que en derecho se conoce como allanamiento, que es una modalidad de contestación.
+
+
+Corrida en traslado la réplica, fue formulada la dúplica con los mismos argumentos de la respuesta, disponiéndose “Autos” para sentencia. 
+
+CONSIDERANDO IV: Que por la naturaleza del proceso contencioso administrativo que reviste las características de juicio de puro derecho, cuyo objeto es conocer o negar la tutela solicitada por la cooperativa demandante y teniéndose presente que el trámite en la fase administrativa se agotó en todas sus instancias con la resolución del recurso jerárquico, corresponde al Tribunal Supremo de Justicia, analizar si fueron aplicadas correctamente las disposiciones legales con relación a los hechos expuestos por la parte demandante y realizar el control judicial de legalidad sobre los actos ejercidos por el Ministerio de Obras Públicas, Servicios y Vivienda. 
+
+CONSIDERANDO V: Que de la compulsa de los datos procesales y la resolución administrativa impugnada, se concluye que:
+
+El objeto de la presente controversia radica en determinar si la autoridad demanda interpretó y aplicó correctamente el art. 89. I del Reglamento de la Ley de Procedimiento Administrativo para el Sistema de Regulación Sectorial – SIRESE, aprobado mediante DS Nº 27172 de 15 de septiembre de 2003, manejada por la Autoridad de Fiscalización o Control Social de Telecomunicaciones y Transporte (ATT), limitándose a realizar, según alega la cooperativa demandante, un equivocado análisis de forma y no de fondo, puesto que debió aplicarse el art. 65 de la Ley Nº 2341 de Procedimiento Administrativo, para el pronunciamiento oportuno de la resolución del recurso de revocatoria, demostrando que se ha producido el silencio administrativo negativo, por haberse emitido dicha resolución, fuera de plazo. 
+
+Determinado el objeto central del problema a ser debatido y delimitado por la empresa demandante, debemos tomar en cuenta los antecedentes administrativos que configuraron las resoluciones administrativas que dieron lugar a la resolución ministerial, ahora impugnada. Es así que mediante Resolución Administrativa Regulatoria Nº 2007/1906 de 13 de julio de 2007 (fs. 451 a 454 de los anexos) la ex Superintendencia de Telecomunicaciones otorgó a COSETT Ltda. licencia para el uso de frecuencias electromagnéticas, destinadas a la prestación de servicios fijos de telecomunicación mediante acceso inalámbrico, de conformidad a los contratos de concesión suscritos y a las resoluciones administrativas pronunciadas expresamente por dicha ex Superintendencia, en el área de servicio de la ciudad de Tarija en las frecuencias de 1910 MHz a 1920 MHz, en un ancho de banda de 10 MHz.
+
+
+Posteriormente, dicha Superintendencia emitió la Resolución Administrativa Regulatoria Nº 2009/0031 de 12 de enero de 2009 (fs. 14 a 19 del expediente principal), a través del cual intimó a COSETT Ltda., a cumplir de forma inmediata con las condiciones técnicas establecidas en la R.A.R. Nº 2007/1906 en cuanto a la prestación de los servicios fijos de telecomunicaciones mediante acceso inalámbrico, formulando cargos en su contra por la presunta comisión de la infracción descrita en el art. 9. II del Reglamento de Sanciones y Procedimientos Especiales por Infracciones al Marco Jurídico Reglamentario del Sector de Telecomunicaciones aprobado por DS Nº 25950 por la supuesta realización de actividades y/o prestación y/u ofrecimiento de servicios de telecomunicaciones y/o utilización indebida del espectro electromagnético, distintas a las permitidas en su concesión, licencia, registro u otra autorización.
+
+Es así que tomando en cuenta la R.A.R. Nº 2009/0031 y habiendo presentado descargos y solicitado la nulidad de obrados por la supuesta violación al debido proceso, que fue concedido por la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transporte (ATT), esta posteriormente pronunció la Resolución Administrativa Regulatoria Nº 018/2010 de 13 de enero (fs. 48 a 62 de los anexos), por el que se estableció el incumplimiento por parte de COSETT Ltda., de la intimación efectuada en el artículo primero de la referida R.A.R. Nº 2009/0031 al haber contravenido las condiciones técnicas establecidas en la R.A.R. Nº 2007/1906; acto administrativo que amerito la interposición del recurso de revocatoria por parte de la empresa accionante mediante memorial de 2 de febrero de 2010 (fs. 33 a 36 de los anexos), el mismo que fue resuelto mediante el pronunciamiento de la Resolución Administrativa Regulatoria TL Nº 0163/2010 de 18 de marzo (fs. 9 a 14 de los anexos), emitida también por la misma Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transportes, rechazándose el recurso, resolución de revocatoria que fue notificado a la referida cooperativa el 23 de marzo de 2010 (fs. 15 de los anexos); para que en ese ínterin, a través de memorial de 19 del mismo mes y año precitados (fs. 1 a 5 de los anexos), el representante de COSETT Ltda., interponga recurso jerárquico por falta de pronunciamiento en relación a su recurso de revocatoria, reiterando los argumentos expuestos en el mismo y señalando adicionalmente que el regulador dejó transcurrir el plazo establecido en la Ley 2341 para sustanciar y resolver el recurso de revocatoria, sin haber dictado resolución alguna, verificando silencio administrativo y por tanto negación de su recurso.
+
+
+Radicado el referido recurso jerárquico mediante la providencia RJ/AR-018/2010 de 30 de marzo (fs. 650 de los anexos), el Ministerio de Obras Públicas, Servicios y Vivienda emitió la Resolución Ministerial Nº 210 de 23 de julio de 2010 (fs. 2 a 6 del expediente principal), desestimando el recurso interpuesto al haberse evidenciado la inexistencia del silencio administrativo negativo, argumento con el que no esta de acuerdo la empresa demandante y por el que interpuso la presente demanda contencioso administrativa, objeto de análisis por parte de este Tribunal Supremo de Justicia.
+
+Así relacionados los actuados procesales, los cuales nos ayudarán a resolver la pretensión planteada por la Cooperativa de Servicios de Telecomunicaciones de Tarija COSETT Ltda., se debe tomar en cuenta que el silencio administrativo opera en el caso de inactividad o por falta de resolución en los procedimientos administrativos, por parte de la administración pública.
+
+
+Bajo ese contenido, el art. 65 de la Ley Nº 2341 determina que: “El órgano autor de la resolución recurrida tendrá para sustanciar y resolver el recurso de revocatoria un plazo de veinte (20) días, salvo lo expresamente determinado de acuerdo a reglamentación especial establecida para cada sistema de organización administrativa aplicable a los órganos comprendidos en el Artículo 2º de la presente Ley. Si vencido el plazo no se dictare resolución, el recurso se tendrá por denegado pudiendo el interesado interponer Recurso Jerárquico” (las negrillas nos pertenecen).
+
+
+Asimismo, el art. 2. I inc. a) de la precitada Ley establece: “La Administración Pública ajustará todas sus actuaciones a las disposiciones de la presente Ley. A los efectos de esta Ley, la Administración Pública se encuentra conformada por: a) El Poder Ejecutivo, que comprende la administración nacional, las administraciones departamentales, las entidades descentralizadas o desconcentradas y los Sistemas de Regulación SIRESE, SIREFI y SIRENARE…” (las negritas son nuestras).
+
+De igual forma, el art. 89. I del Reglamento a la Ley de Procedimiento Administrativo para el Sistema de Regulación Sectorial–SIRESE, aprobado mediante DS Nº 27172 de 15 de septiembre de 2003 enfatiza que: “El Superintendente Sectorial resolverá el recurso de revocatoria en un plazo de treinta (30) días, prorrogables por otros treinta (30) días en caso de apertura de un término de prueba. Si el término de prueba es abierto de oficio, el auto de apertura deberá fundamentarse en las razones que lo justifican…” (las negrillas son nuestras).
+
+
+Por otro lado, en cuanto respecta a la interposición del recurso jerárquico, el art. 66. II de la Ley de Procedimiento Administrativa mencionado precedentemente, señala: “…El Recurso Jerárquico se interpondrá ante la misma autoridad administrativa competente para resolver el recurso de revocatoria, dentro del plazo de diez (10) días siguientes a su notificación, o al día en que se venció el plazo para resolver el recurso de revocatoria…” (las negritas nos pertenecen).
+
+
+En la especie e ingresando al análisis de la problemática planteada, de los antecedentes se puede desprender que una vez notificada la cooperativa demandante con la R.A.R. 018/2010 de 13 de enero, esta interpuso el referido recurso de revocatoria el 2 de febrero de 2010, fecha a partir del cual se debió computar el plazo de los 20 días para la sustanciación y resolución del referido recurso, tal como lo manifiesta dicha cooperativa, conforme al art. 65 de la Ley 2341, vale decir, hasta el 22 del mismo mes y año; empero, si bien esta norma determina el mencionado plazo, no podemos pasar por alto que este artículo establece una salvedad prevista en el art. 2. I inc. a) de la Ley Nº 2341, reconocida también por dicha cooperativa en su réplica, determinando para cada sistema de organización administrativa, entre ellos, el Sistema de Regulación Sectorial (SIRESE), como parte del entonces Poder Ejecutivo (hoy Órgano Ejecutivo), un reglamento especial para la resolución de los recursos de revocatoria y jerárquico, precisamente la Ley de Procedimiento Administrativo para el Sistema de Regulación Sectorial – SIRESE, aprobado por el DS Nº 27172 de 15 de septiembre de 2003, e incluso tenida como válida por la misma empresa accionante, cuyo objeto principal es reglamentar la Ley Nº 2341 de 25 de abril de 2002 de Procedimiento Administrativo, respecto a este sistema.
+
+
+En ese sentido, interpuesto el referido recurso, la Autoridad de Fiscalización y Control Social de Telecomunicaciones y Transporte, dicto la R.A.R. TL Nº 0163/2010 de 18 de marzo, pronunciada en previsión del art. 89. I y II inc. c) del DS Nº 27172, vale decir, dentro de los 30 días hábiles administrativos, computables exactamente desde la descrita fecha de presentación del recurso de revocatoria (2 de febrero de 2010), por lo que este Tribunal no evidencia que haya existido silencio administrativo negativo por falta de resolución dentro del procedimiento seguido a la empresa impetrante, por parte de la ATT, resolución que incluso no fue desconocida por la empresa, ya que en su réplica habla de una supuesta emisión de la misma.
+
+
+Advirtiéndose que efectivamente COSETT Ltda., se precipitó al presentar su recurso jerárquico el 19 de marzo de 2010 con el argumento de falta de pronunciamiento, antes de tomar conocimiento de la R.A.R. TL Nº 0163/2010, acto administrativo que fue notificado el 23 del mismo mes y año preseñalados, desarrollándose por parte de esta empresa una errada apreciación respecto a que no se dictó resolución alguna y que se le negó el tratamiento de su recurso de revocatoria interpuesto, situación que permitió a la autoridad ahora demanda a través de la Resolución Ministerial Nº 210 de 23 de julio de 2010, desestimar el recurso interpuesto, al haberse evidenciado la inexistencia del silencio administrativo negativo, más si la impugnación fue contra la misma R.A.R. Nº 018/2010, que fue objeto de debate en el recurso de revocatoria, bajo sus mismos argumentos, y no así contra la R.A.R. TL Nº 0163/2010, resolución de revocatoria que si resolvió las pretensiones de fondo, alegadas por la empresa demandante en el presente proceso contencioso administrativo.
+
+
+Además, si la Cooperativa demandante se percató que el plazo para el pronunciamiento de la resolución del recurso de revocatoria vencía el 22 de febrero de 2010, por qué no interpuso inmediatamente el recurso jerárquico, es decir, al día de vencido el plazo para la resolución del referido recurso, tal como lo prevé el art. 66. II de la Ley Nº 2341, sino que esperó hasta el 19 de marzo de 2010 para recién acción, por lo que dicha normativa no es favorable a la empresa impetrante.
+
+
+Consecuentemente, de la lectura y estudio de la resolución impugnada, se puede claramente observar que el mismo no se pronunció sobre ningún aspecto de fondo, precisamente porque el entonces recurrente consideró la existencia de un silencio administrativo negativo, circunstancia que según lo expuesto a lo largo de este fundamento no se corroboró, en ese entendido, no corresponde a este Tribunal Supremo de Justicia emitir criterio alguno sobre los aspectos de fondo alegados por la Cooperativa demandante, y menos sobre la violación de los principios de competencia, legalidad y jerarquía normativa, los cuales tampoco fueron objeto de impugnación al momento de interponer su recurso jerárquico, pretendiendo que esta instancia jurisdiccional se pronuncie sobre aspectos que no fueron objeto de tratamiento en la resolución jerárquica, por cuanto las resoluciones deben referirse a las pretensiones formuladas por los recurrentes en instancia administrativa y no considerar otros aspectos, siendo correcta la interpretación y aplicación de la norma por parte del Ministerio de Obras Públicas, Servicios y Vivienda.
+
+
+Sin perjuicio de lo anterior, habiendo también la parte demandante denunciado falta de fundamentación de la resolución impugnada, este Tribunal advierte que no existe tal situación, porque de su contenido se evidencia que la misma se encuentra estructurada de la siguiente forma: Vistos, Considerandos y Parte Resolutiva, por el que se advierte una relación ordenada de los hechos, que está acorde a las pretensiones denunciadas por la entonces empresa recurrente, la identificación de la normativa que sustenta su decisión final, así como la argumentación fáctica y legal que contiene la mencionada estructura de la Resolución Ministerial Nº 210 de 23 de julio de 2010, impugnada a través de la presente acción contenciosa administrativa, así como la observación de una parte resolutiva suficiente, clara y concisa, cual es el tratamiento y análisis de las pretensiones recurridas y de acuerdo a los criterios expuestos en el Considerando de análisis. Así lo ha entendido la SC Nº 0275/2012 de 4 de junio, la que señala expresamente: "…La jurisprudencia del Tribunal Constitucional, contenida en la SC 0752/2002-R de 25 de junio, recogiendo lo señalado en la SC 1369/2001-R de 19 de diciembre, ha establecido que el derecho al debido proceso '…exige que toda Resolución sea debidamente fundamentada. Es decir, que cada autoridad que dicte una Resolución debe imprescindiblemente exponer los hechos, realizar la fundamentación legal y citar las normas que sustenta la parte dispositiva de la misma. Que, consecuentemente cuando un Juez omite la motivación de una Resolución, no sólo suprime una parte estructural de la misma, sino también en los hechos toma una decisión de hecho no de derecho que vulnera de manera flagrante el citado derecho que permite a las partes conocer cuáles son las razones para que se declare en tal o cual sentido; o lo que es lo mismo cuál es la ratio decidendi que llevó al Juez a tomar la decisión”; por lo que la denuncia de la parte demandante en lo referente a la falta de fundamentación y motivación carece de fundamento.
+
+Del análisis precedente, el Tribunal Supremo de Justicia concluye que la autoridad demandada, no incurrió en conculcación de normas legales, efectuando una correcta valoración e interpretación en su fundamento respecto a la normativa aplicable, por lo que corresponde declarar improbada la demanda. 
+
+
+POR TANTO: La Sala Plena del Tribunal Supremo de Justicia del Estado Plurinacional de Bolivia, en ejercicio de la atribución conferida por los arts. 778 y 781 del Código de Procedimiento Civil, los arts. 4 y 6 de la Ley Nº 620 de 29 de diciembre de 2014, falla en única instancia declarando IMPROBADA la demanda, consecuentemente deja firme y subsistente la Resolución Ministerial Nº 210 de 23 de julio de 2010.
+
+
+No suscribe el Magistrado Fidel Marcos Tordoya Rivas por emitir voto disidente. 
+
+
+Procédase a la devolución de los antecedentes administrativos remitidos a éste Tribunal por la autoridad demandada.
+
+
+Regístrese, notifíquese y archívese. 
+
+
+
+Fdo. Pastor Segundo Mamani Villca
+
+PRESIDENTE
+
+Fdo. Jorge Isaac von Borries Méndez
+
+DECANO
+
+Fdo. Rómulo Calle Mamani
+
+MAGISTRADO
+
+Fdo. Antonio Guido Campero Segovia
+
+MAGISTRADO
+
+Fdo. Gonzalo Miguel Hurtado Zamorano
+
+MAGISTRADO
+
+Fdo. Rita Susana Nava Durán
+
+MAGISTRADA
+
+Fdo. Norka Natalia Mercado Guzmán
+
+MAGISTRADA
+
+Fdo. Maritza Suntura Juaniquina
+
+MAGISTRADA
+
+
+Fdo. Sandra Magaly Mendivil Bejarano
+
+Secretaria de Sala
+
+Sala Plena
