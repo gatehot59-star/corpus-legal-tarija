@@ -1,14 +1,20 @@
 """Falsador del invariante de la ingesta.
 
-El caso que importa es el último: **sabotea el registro de procedencia y exige que la
-verificación salga en ROJO.** Un guard que no puede dar rojo no mide nada, y este proyecto ya
-tuvo dos: un `grep -c` que imprimía 0 y salía 1, y un centinela de idempotencia que decía "ya
-está" sobre una raya horizontal.
+Dos casos son los que importan y los dos tienen que poder dar **ROJO**:
 
-**Y una restricción que este archivo midió al fallar:** el esquema corre con
-`PRAGMA foreign_keys=ON` y `documentos.fuente_id` referencia a `fuentes`, así que ingerir sin
-registrar la fuente muere con `IntegrityError`. Queda como caso explicito para que sea una
-restricción medida y no una suposición.
+- `test_SABOTAJE_procedencia_que_no_escribe_da_ROJO`: el registro de procedencia miente y dice
+  que escribio sin escribir.
+- `test_SABOTAJE_censo_el_adaptador_que_saltea_un_documento_da_ROJO`: **reproduce en miniatura el
+  bug de los 247.** El adaptador ofrece menos de lo que la fuente declara, y el guard viejo
+  cerraba en VERDE porque comparaba lo ofrecido contra la base, o sea el error consigo mismo.
+
+Un guard que no puede dar rojo no mide nada, y este proyecto ya tuvo tres: un `grep -c` que
+imprimia 0 y salia 1, un centinela de idempotencia que decia "ya esta" sobre una raya
+horizontal, y este.
+
+**Y una restriccion que este archivo midio al fallar:** el esquema corre con
+`PRAGMA foreign_keys=ON` y `documentos.fuente_id` referencia a `fuentes`, asi que ingerir sin
+registrar la fuente muere con `IntegrityError`.
 """
 import sqlite3
 import tempfile
@@ -99,6 +105,8 @@ class IngestaTest(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.corpus.agregar(doc(fuente_id="fuente_inexistente"))
 
+    # ---------------- los dos sabotajes ----------------
+
     def test_SABOTAJE_procedencia_que_no_escribe_da_ROJO(self):
         """El guard tiene que poder dar rojo, o no es un guard."""
         original = procedencia.registrar
@@ -111,6 +119,39 @@ class IngestaTest(unittest.TestCase):
         self.assertTrue(v["veredicto"].startswith("ROJO"), v["veredicto"])
         self.assertEqual(v["alias_en_base"], 0)
         self.assertEqual(v["documentos_sin_procedencia"], 1)
+
+    def test_SABOTAJE_censo_el_adaptador_que_saltea_un_documento_da_ROJO(self):
+        """El bug de los 247, en miniatura.
+
+        La fuente declara 3 documentos y el adaptador solo ofrece 2, porque el tercero vive en un
+        directorio que el adaptador no lee. **Sin el censo esto es VERDE**, y esa fue la lectura
+        que dejo 247 documentos afuera con `perdidos: 0` durante un dia entero.
+        """
+        self.corpus.agregar(doc(archivo="a.txt"))
+        self.corpus.agregar(doc(texto=TEXTO + "ARTICULO 2.", archivo="b.txt"))
+
+        sin_censo = self.corpus.verificar()
+        self.assertEqual(sin_censo["veredicto"], "VERDE")   # el guard viejo se quedaba aca
+        self.assertIsNone(sin_censo["censo_de_la_fuente"])
+
+        con_censo = self.corpus.verificar(censo=3)
+        self.assertTrue(con_censo["veredicto"].startswith("ROJO"), con_censo["veredicto"])
+        self.assertIn("faltan 1", con_censo["veredicto"])
+        self.assertEqual(con_censo["censo_de_la_fuente"], 3)
+        self.assertEqual(con_censo["ofrecidos"], 2)
+
+    def test_el_censo_exacto_da_VERDE(self):
+        """El otro lado del guard: si el censo coincide, no molesta."""
+        self.corpus.agregar(doc(archivo="a.txt"))
+        self.corpus.agregar(doc(texto=TEXTO + "ARTICULO 2.", archivo="b.txt"))
+        v = self.corpus.verificar(censo=2)
+        self.assertEqual(v["veredicto"], "VERDE")
+        self.assertEqual(v["censo_de_la_fuente"], 2)
+
+    def test_un_censo_mayor_al_real_tambien_da_ROJO(self):
+        """Un censo mal calculado no puede pasar como si nada: es un estado que hay que ver."""
+        self.corpus.agregar(doc())
+        self.assertTrue(self.corpus.verificar(censo=99)["veredicto"].startswith("ROJO"))
 
 
 if __name__ == "__main__":
