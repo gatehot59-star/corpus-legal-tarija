@@ -1,2 +1,4 @@
 shards_llegaron=20
 shards_lanzados=20
+shards_llegaron=20
+shards_lanzados=20

@@ -1,7 +1,8 @@
 {
  "documentos": 784,
  "estados": {
-  "OK": 784
+  "OK": 778,
+  "REVISION_HUMANA": 6
  },
  "por_fuente": {
   "tarija_leyes": 402,
@@ -9,9 +10,9 @@
  },
  "paginas_ocr": 2644,
  "caracteres": 4109119,
- "archivos_texto": 1568,
- "segundos_cpu": 9887.7,
- "seg_por_pagina": 3.74,
+ "archivos_texto": 0,
+ "segundos_cpu": 10260.3,
+ "seg_por_pagina": 3.88,
  "citas_a_revisar": 6,
- "cola_revision_humana": 6
+ "cola_revision_humana": 12
 }
