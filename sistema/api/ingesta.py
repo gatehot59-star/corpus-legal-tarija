@@ -5,9 +5,16 @@ ADAPTADOR de ~30 lineas, no tocar el indice ni el buscador. La version anterior 
 fuentes de Tarija cableadas dentro del indexador; con eso, el primer Codigo nacional obligaba a
 migrar 3.646 documentos.
 
-Un adaptador recibe un directorio y devuelve `Documento`s. Nada mas. El resto (uid estable,
-chunks con solape, citas, cola de revision) es comun y vive aca, asi que ninguna fuente nueva
-puede olvidarse de la parte que importa.
+Un adaptador recibe un directorio y devuelve `Documento`s. Nada mas. El resto (uid unico y
+estable, chunks con solape, citas, cola de revision, y la VERIFICACION de que no se perdio
+nada) es comun y vive aca, asi que ninguna fuente nueva puede olvidarse de la parte que importa.
+
+**Por que el uid termina en un hash, con el caso medido:** la primera version lo armaba con
+tipo+numero+anio, y para la Gaceta de Tarija `anio` viene vacio. Tres RPA con numero 022 de
+gestiones distintas generaban el mismo uid y el ultimo pisaba a los otros dos: entraron 3.646
+documentos y quedaron 3.313. **Peor que fallar: borraba datos y reportaba exito.** Ahora el uid
+lleva los 8 primeros caracteres del sha256, que no cambia entre corridas y es unico por
+construccion, y la ingesta verifica el conteo al cerrar.
 """
 import argparse
 import hashlib
@@ -50,8 +57,15 @@ class Documento:
     citas: str = ""
     revision: list = field(default_factory=list)
 
+    def hash(self) -> str:
+        return self.sha256 or hashlib.sha256(self.texto.encode("utf-8")).hexdigest()
+
     def uid(self) -> str:
-        """Identificador estable y legible. Un agente que cita necesita que no cambie."""
+        """Identificador estable Y UNICO. Legible para el humano, citable para el agente.
+
+        El sufijo de hash no es adorno: sin el, dos documentos distintos con el mismo numero y
+        sin ano colisionan y uno desaparece. Medido: 333 documentos perdidos asi.
+        """
         def limpiar(v, respaldo=""):
             s = unicodedata.normalize("NFD", str(v or ""))
             s = "".join(c for c in s if unicodedata.category(c) != "Mn").lower()
@@ -62,8 +76,11 @@ class Documento:
         partes = [prefijo]
         if self.departamento:
             partes.append(limpiar(self.departamento)[:3])
-        partes += [limpiar(self.tipo_norma, "doc")[:12], limpiar(self.numero, "sn"),
-                   limpiar(self.anio or self.fecha[:4], "sa")]
+        partes += [limpiar(self.tipo_norma, "doc")[:12], limpiar(self.numero, "sn")]
+        anio = limpiar(self.anio or self.fecha[:4])
+        if anio:
+            partes.append(anio)
+        partes.append(self.hash()[:8])
         return "-".join(p for p in partes if p)
 
 
@@ -105,6 +122,7 @@ class Corpus:
         if nuevo or esquema:
             sql = Path(esquema or (Path(__file__).parent / "esquema.sql")).read_text(encoding="utf-8")
             self.con.executescript(sql)
+        self.ofrecidos = 0
         self.escritos = 0
         self.chunks = 0
         self.reemplazados = 0
@@ -121,17 +139,17 @@ class Corpus:
         self.con.commit()
 
     def agregar(self, d: Documento):
+        self.ofrecidos += 1
         uid = d.uid()
         fila = self.con.execute("SELECT doc_id FROM documentos WHERE uid = ?", (uid,)).fetchone()
         if fila:
-            # Reingesta: se borran sus chunks y se reescribe. Idempotente a proposito, para que
-            # una actualizacion mensual no duplique el corpus.
+            # Mismo uid = mismo documento (el hash lo garantiza): es una reingesta, no una
+            # colision. Se reescribe para que la actualizacion mensual no duplique.
             self.con.execute("DELETE FROM chunks WHERE doc_id = ?", (fila["doc_id"],))
             self.con.execute("DELETE FROM documentos WHERE doc_id = ?", (fila["doc_id"],))
             self.con.execute("DELETE FROM revision WHERE uid = ?", (uid,))
             self.reemplazados += 1
 
-        sha = d.sha256 or hashlib.sha256(d.texto.encode("utf-8")).hexdigest()
         cur = self.con.execute(
             "INSERT INTO documentos (uid, fuente_id, jurisdiccion, departamento, organo, "
             "tipo_norma, numero, anio, fecha, titulo, materia, sala, magistrado, partes, "
@@ -140,7 +158,7 @@ class Corpus:
             (uid, d.fuente_id, d.jurisdiccion, d.departamento, d.organo, d.tipo_norma,
              d.numero, d.anio, d.fecha, (d.titulo or "")[:400], d.materia, d.sala,
              d.magistrado, (d.partes or "")[:400], d.vigente, d.derogada_por, d.fuente_url,
-             sha, d.via_texto, d.confianza, len(d.texto), d.archivo))
+             d.hash(), d.via_texto, d.confianza, len(d.texto), d.archivo))
         doc_id = cur.lastrowid
 
         encabezado = " | ".join(str(x) for x in (d.numero, d.tipo_norma, d.titulo, d.materia,
@@ -169,11 +187,23 @@ class Corpus:
         if self.escritos % 500 == 0:
             self.con.commit()
 
+    def verificar(self) -> dict:
+        """Lo ofrecido por los adaptadores tiene que estar en la base. Si no, es perdida de datos.
+
+        Existe porque la version anterior entrego 3.313 de 3.646 y lo unico que lo delato fue un
+        contador. Un pipeline que no puede detectar su propia perdida no esta medido.
+        """
+        en_base = self.con.execute("SELECT COUNT(*) FROM documentos").fetchone()[0]
+        esperados = self.ofrecidos - self.reemplazados
+        return {"ofrecidos": self.ofrecidos, "reemplazados": self.reemplazados,
+                "esperados_nuevos": esperados, "en_base": en_base,
+                "perdidos": max(esperados - en_base, 0),
+                "veredicto": "VERDE" if en_base >= esperados else "ROJO: se perdieron documentos"}
+
     def cerrar(self):
         self.con.commit()
         self.con.execute("INSERT INTO chunks(chunks) VALUES('optimize')")
         self.con.commit()
-        self.con.close()
 
 
 # --------------------------------------------------------------------------------------
@@ -292,19 +322,27 @@ def main() -> int:
                 break
         print("  " + fid + ": " + str(n) + " documentos", flush=True)
 
+    ver = corpus.verificar()
     corpus.cerrar()
-    con = sqlite3.connect(a.db)
+
+    con = corpus.con
     tot = con.execute("SELECT COUNT(*) FROM documentos").fetchone()[0]
     ch = con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
     rev = con.execute("SELECT COUNT(*) FROM revision WHERE resuelto = 0").fetchone()[0]
     porj = con.execute("SELECT jurisdiccion, COUNT(*) FROM documentos GROUP BY 1").fetchall()
     con.close()
+
     print()
-    print("documentos:", tot, "| chunks:", ch, "| reemplazados:", corpus.reemplazados)
+    print("documentos:", tot, "| chunks:", ch)
     print("por jurisdiccion:", dict(porj))
     print("cola de revision humana:", rev)
     print("segundos:", round(time.time() - t0, 1),
           "| indice:", round(Path(a.db).stat().st_size / 1e6, 1), "MB")
+    print()
+    print("VERIFICACION:", json.dumps(ver, ensure_ascii=False))
+    if ver["veredicto"] != "VERDE":
+        print("ROJO: la ingesta perdio documentos. NO usar esta base.")
+        return 3
     return 0
 
 
