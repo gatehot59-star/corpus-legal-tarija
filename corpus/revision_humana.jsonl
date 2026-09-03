@@ -1,0 +1,20 @@
+{"tipo": "gate_no_pasa", "documento": "tarija_rpa-029", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_rpa-033", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-268", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-344", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-418", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-160", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-275", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-238", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-144", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-291", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-316", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-052", "motivo": "el gate de calidad no pasa", "gate": 33.3}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-441", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "cita_ambigua", "documento": "tarija_leyes-007", "linea": 37, "crudo": "Art. 17.1", "canonico_probable": "Art. 17.I", "contexto": "Que, la Ley 017, en su Art. 17.1 establece que, los Ejecutivos Seccionales de Desarrollo de la"}
+{"tipo": "cita_ambigua", "documento": "tarija_leyes-007", "linea": 43, "crudo": "Art. 17.11", "canonico_probable": "Art. 17.II", "contexto": "Tarijeño. Que la Ley 017, en su Art. 17.11 establece que los recursos asignados a la Provincia"}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-007", "motivo": "el gate de calidad no pasa", "gate": 16.7}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-221", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-356", "motivo": "el gate de calidad no pasa", "gate": 0.0}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-101", "motivo": "el gate de calidad no pasa", "gate": 33.3}
+{"tipo": "gate_no_pasa", "documento": "tarija_leyes-272", "motivo": "el gate de calidad no pasa", "gate": 0.0}

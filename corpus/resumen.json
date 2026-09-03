@@ -1,0 +1,19 @@
+{
+ "documentos": 78,
+ "estados": {
+  "OK": 57,
+  "REVISION_HUMANA": 18,
+  "DEMASIADAS_PAGINAS": 3
+ },
+ "por_fuente": {
+  "tarija_leyes": 39,
+  "tarija_rpa": 39
+ },
+ "paginas_ocr": 116,
+ "caracteres": 193147,
+ "archivos_texto": 150,
+ "segundos_cpu": 589.4,
+ "seg_por_pagina": 5.08,
+ "citas_a_revisar": 2,
+ "cola_revision_humana": 20
+}
