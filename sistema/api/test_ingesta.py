@@ -4,7 +4,13 @@ El caso que importa es el último: **sabotea el registro de procedencia y exige 
 verificación salga en ROJO.** Un guard que no puede dar rojo no mide nada, y este proyecto ya
 tuvo dos: un `grep -c` que imprimía 0 y salía 1, y un centinela de idempotencia que decía "ya
 está" sobre una raya horizontal.
+
+**Y una restricción que este archivo midió al fallar:** el esquema corre con
+`PRAGMA foreign_keys=ON` y `documentos.fuente_id` referencia a `fuentes`, así que ingerir sin
+registrar la fuente muere con `IntegrityError`. Queda como caso explicito para que sea una
+restricción medida y no una suposición.
 """
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +19,7 @@ import alias as procedencia
 from ingesta import Corpus, Documento
 
 TEXTO = "ARTICULO 1. La presente ley departamental regula el uso del suelo.\n" * 40
+FUENTE = ("tarija_gaceta", "Gaceta Oficial de Tarija", "departamental", "Tarija")
 
 
 def doc(**kw) -> Documento:
@@ -29,6 +36,7 @@ class IngestaTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.db = str(Path(self.tmp.name) / "prueba.db")
         self.corpus = Corpus(self.db)
+        self.corpus.registrar_fuente(*FUENTE)
 
     def tearDown(self):
         self.corpus.con.close()
@@ -86,6 +94,10 @@ class IngestaTest(unittest.TestCase):
         filas = self.corpus.con.execute(
             "SELECT tipo FROM revision WHERE tipo = 'vigencia_no_medida'").fetchall()
         self.assertEqual(len(filas), 1)
+
+    def test_una_fuente_no_registrada_no_entra_en_silencio(self):
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.corpus.agregar(doc(fuente_id="fuente_inexistente"))
 
     def test_SABOTAJE_procedencia_que_no_escribe_da_ROJO(self):
         """El guard tiene que poder dar rojo, o no es un guard."""
