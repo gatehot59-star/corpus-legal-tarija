@@ -1,0 +1,19 @@
+{
+ "id": 95150,
+ "nro_resolucion": "AS/0310/2026-A",
+ "nro_expediente": "TJ 14/2025",
+ "fecha_emision": "15/05/2026",
+ "demandante": "Ministerio Público",
+ "demandado": "Eduardo Alberto Bled",
+ "departamento": "Tarija",
+ "sala": "Sala Penal",
+ "tipo_resolucion": "Auto Supremo",
+ "subtipo_resolucion": null,
+ "magistrado": "Norma Velasco Mosquera",
+ "materia": "Penal",
+ "procesos": "Violencia familiar o doméstica",
+ "formas_resoluciones": "Inadmisible",
+ "contenido": null,
+ "tiene_html": false,
+ "url_pdf_escaneado": "https://apigestortsj.organojudicial.gob.bo/api/v1/documentos/dbef1e9e-7780-4505-920b-2cf3a3f7321c/pdf"
+}
