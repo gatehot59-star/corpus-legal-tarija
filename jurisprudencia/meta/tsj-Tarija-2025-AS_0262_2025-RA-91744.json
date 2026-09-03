@@ -1,0 +1,19 @@
+{
+ "id": 91744,
+ "nro_resolucion": "AS/0262/2025-RA",
+ "nro_expediente": "TJ 123/2024",
+ "fecha_emision": "10/03/2025",
+ "demandante": "Ricardo Colodro Araoz",
+ "demandado": "Felix Edgar Cardozo Sainz",
+ "departamento": "Tarija",
+ "sala": "Sala Penal",
+ "tipo_resolucion": "Auto Supremo",
+ "subtipo_resolucion": null,
+ "magistrado": "Ricardo Torres Echalar",
+ "materia": "Penal",
+ "procesos": "Giro de cheque en descubierto",
+ "formas_resoluciones": "Inadmisible",
+ "contenido": null,
+ "tiene_html": false,
+ "url_pdf_escaneado": "https://apigestortsj.organojudicial.gob.bo/api/v1/documentos/26312686-9df6-416a-99e3-a582559a499a/pdf"
+}

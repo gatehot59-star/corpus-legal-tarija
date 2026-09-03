@@ -1,0 +1,2 @@
+gestiones_con_resultado=12
+gestiones_lanzadas=12

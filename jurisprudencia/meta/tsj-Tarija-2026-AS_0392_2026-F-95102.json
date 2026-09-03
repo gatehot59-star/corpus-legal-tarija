@@ -1,0 +1,19 @@
+{
+ "id": 95102,
+ "nro_resolucion": "AS/0392/2026-F",
+ "nro_expediente": "TJ 240/2024",
+ "fecha_emision": "13/05/2026",
+ "demandante": "MINISTERIO PÚBLICO",
+ "demandado": "Ruben Valdez Fernandez",
+ "departamento": "Tarija",
+ "sala": "Sala Penal",
+ "tipo_resolucion": "Auto Supremo",
+ "subtipo_resolucion": null,
+ "magistrado": "Carlos Eduardo Ortega Sivila",
+ "materia": "Penal",
+ "procesos": "Asesinato",
+ "formas_resoluciones": "Infundados",
+ "contenido": null,
+ "tiene_html": false,
+ "url_pdf_escaneado": "https://apigestortsj.organojudicial.gob.bo/api/v1/documentos/9a1db371-4cb1-4b3a-8e44-217ee6e65ea0/pdf"
+}

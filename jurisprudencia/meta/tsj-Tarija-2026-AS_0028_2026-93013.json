@@ -1,0 +1,19 @@
+{
+ "id": 93013,
+ "nro_resolucion": "AS/0028/2026",
+ "nro_expediente": "41/2025 HSENT",
+ "fecha_emision": "05/02/2026",
+ "demandante": "Virginia Valeria Marquez Ibarra",
+ "demandado": "Freddy Cespedes Aguilera",
+ "departamento": "Tarija",
+ "sala": "Sala Plena",
+ "tipo_resolucion": "Auto Supremo",
+ "subtipo_resolucion": null,
+ "magistrado": "Rosmery Ruiz Martinez",
+ "materia": "Familia",
+ "procesos": "Homologación de Sentencia de Divorcio Dictada en el Exranjero",
+ "formas_resoluciones": "Se Homologa",
+ "contenido": null,
+ "tiene_html": false,
+ "url_pdf_escaneado": "https://apigestortsj.organojudicial.gob.bo/api/v1/documentos/5ee6ae8e-3baf-4328-897f-d3489bdc475d/pdf"
+}
