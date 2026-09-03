@@ -1,13 +1,14 @@
 # OCR del corpus escaneado de Tarija
 
-**0 documentos procesados** · 0 paginas · 0 caracteres · 1568 archivos de texto
+**784 documentos procesados** · 2644 paginas · 4109119 caracteres · 1568 archivos de texto
 
 | estado | documentos |
 |---|---|
+| OK | 784 |
 
-**Costo medido:** 0.0 h de CPU.
+**Costo medido:** 2.75 h de CPU, 3.74 s/pagina.
 
-**Cola de revision humana:** 0 items (0 citas ambiguas). Vive en `revision_humana.jsonl`.
+**Cola de revision humana:** 6 items (6 citas ambiguas). Vive en `revision_humana.jsonl`.
 
 ## Que NO hace este corpus
 
