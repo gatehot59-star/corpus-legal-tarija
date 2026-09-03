@@ -39,6 +39,7 @@ from pathlib import Path
 # como script desde cualquier directorio como importada desde los tests.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import alias as procedencia  # noqa: E402
+import normalizar  # noqa: E402
 
 TAM_CHUNK = 1800
 SOLAPE = 200
@@ -306,20 +307,35 @@ def adaptador_gaceta_tarija(base: Path):
             continue
         r = porarch.get(p.name, {})
         es_ley = (r.get("fuente_id") or "") == "tarija_leyes"
+        # El anio sale del TITULO, nunca del nombre de archivo: ahi el hash finge anos
+        # (a5771928 -> "1928", 2c1a2054 -> "2054"). Ver normalizar.py y su falsador.
+        meta = normalizar.metadatos_de(r.get("titulo"))
+        comp = meta["compilado"]
+        revisiones = [{"tipo": "cita_ambigua",
+                       "detalle": str(c.get("crudo", "")) + " -> " + str(c.get("canonico_probable", "")),
+                       "contexto": c.get("contexto", "")}
+                      for c in (r.get("revision_citas") or [])]
+        if comp:
+            # Este archivo NO es una norma: contiene un rango de resoluciones. Se declara para
+            # que ningun agente lo cite como si fuera una sola.
+            revisiones.append({
+                "tipo": "unidad_no_citable",
+                "detalle": ("compilado de resoluciones " + str(comp["desde"]) + " al " +
+                            str(comp["hasta"]) + ": contiene " + str(comp["contiene"]) +
+                            " resoluciones que no tienen registro propio"),
+                "contexto": meta.get("gestion", "")})
+        tipo = ("Ley Departamental" if es_ley else
+                ("Compilado de Resoluciones del Pleno" if comp else "Resolucion del Pleno"))
         yield Documento(
             fuente_id="tarija_gaceta", jurisdiccion="departamental", departamento="Tarija",
             organo="Asamblea Legislativa Departamental de Tarija",
-            tipo_norma="Ley Departamental" if es_ley else "Resolucion del Pleno",
-            numero=str(r.get("numero") or ""), anio="",
+            tipo_norma=tipo,
+            numero=str(r.get("numero") or ""), anio=meta["anio"],
             titulo=r.get("titulo") or "", texto=p.read_text(encoding="utf-8", errors="replace"),
             fuente_url=r.get("fuente_url") or "https://www.tarija.gob.bo/gaceta-oficial",
             sha256=r.get("sha256_real") or "", via_texto=r.get("via") or "ocr",
             confianza="revision_humana" if r.get("estado") == "REVISION_HUMANA" else "media",
-            archivo=p.name, citas=citas_de(p),
-            revision=[{"tipo": "cita_ambigua",
-                       "detalle": str(c.get("crudo", "")) + " -> " + str(c.get("canonico_probable", "")),
-                       "contexto": c.get("contexto", "")}
-                      for c in (r.get("revision_citas") or [])])
+            archivo=p.name, citas=citas_de(p), revision=revisiones)
 
 
 def adaptador_jurisprudencia_tsj(base: Path):
