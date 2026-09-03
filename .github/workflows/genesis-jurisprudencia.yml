@@ -1,0 +1,168 @@
+name: genesis-jurisprudencia
+
+# Jurisprudencia del Tribunal Supremo (GENESIS) filtrada por departamento.
+#
+# Activado por decision explicita del usuario el 2026-09-03. Antes estuvo pausado porque la
+# credencial de la API no fue entregada sino encontrada en el bundle publico del TSJ; los datos
+# son publicos y el PDF escaneado baja SIN credencial, pero la decision era del titular.
+#
+# Medido antes de escalar (3 resoluciones reales en brain-env): 3/3 OK, 96.153 caracteres, y
+# 2 de 3 con texto nativo en el PDF (sin OCR). Un tercio necesito OCR: 79,6 s por 38 paginas.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gestion:
+        description: 'Gestion (2015-2026)'
+        default: '2026'
+      departamento:
+        description: 'Departamento a filtrar'
+        default: 'Tarija'
+      shards:
+        description: 'Cantidad de shards'
+        default: '10'
+  push:
+    branches:
+      - 'genesis/**'
+
+concurrency:
+  group: genesis-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    outputs:
+      gestion: ${{ steps.p.outputs.gestion }}
+      departamento: ${{ steps.p.outputs.departamento }}
+      shards: ${{ steps.p.outputs.shards }}
+      matriz: ${{ steps.p.outputs.matriz }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - id: p
+        run: |
+          G="${{ github.event.inputs.gestion }}"; G="${G:-2026}"
+          D="${{ github.event.inputs.departamento }}"; D="${D:-Tarija}"
+          S="${{ github.event.inputs.shards }}"; S="${S:-10}"
+          echo "gestion=$G" >> $GITHUB_OUTPUT
+          echo "departamento=$D" >> $GITHUB_OUTPUT
+          echo "shards=$S" >> $GITHUB_OUTPUT
+          echo "matriz=$(python -c "import json,sys; print(json.dumps(list(range(int(sys.argv[1])))))" $S)" >> $GITHUB_OUTPUT
+
+  bajar:
+    needs: preparar
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        shard: ${{ fromJson(needs.preparar.outputs.matriz) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Tesseract y Poppler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils tesseract-ocr tesseract-ocr-spa
+          tesseract --version | head -2
+
+      - name: Bajar shard ${{ matrix.shard }}
+        working-directory: pipeline
+        run: |
+          python genesis_bajar.py \
+            --departamento "${{ needs.preparar.outputs.departamento }}" \
+            --gestion ${{ needs.preparar.outputs.gestion }} \
+            --shard ${{ matrix.shard }} \
+            --shards ${{ needs.preparar.outputs.shards }} \
+            --salida ../salida-genesis
+
+      - name: Verificar que ningun nombre rompa la subida
+        if: always()
+        run: |
+          MALOS=$(find salida-genesis -name '*[?*:"<>|]*' | head -20)
+          if [ -n "$MALOS" ]; then echo "ROJO: nombres invalidos:"; echo "$MALOS"; exit 1; fi
+          echo "VERDE: $(find salida-genesis -type f | wc -l) archivos"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genesis-shard-${{ matrix.shard }}
+          path: salida-genesis
+          retention-days: 14
+
+      - name: Resumen del shard
+        if: always()
+        run: |
+          echo "## shard ${{ matrix.shard }}" >> $GITHUB_STEP_SUMMARY
+          cat salida-genesis/resumen-*.json >> $GITHUB_STEP_SUMMARY || echo "sin resumen" >> $GITHUB_STEP_SUMMARY
+
+  consolidar:
+    needs: [preparar, bajar]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: genesis-shard-*
+          path: crudo
+          merge-multiple: true
+
+      - name: Consolidar
+        run: |
+          mkdir -p jurisprudencia/texto jurisprudencia/meta
+          cp -r crudo/texto/. jurisprudencia/texto/ 2>/dev/null || true
+          cp -r crudo/meta/. jurisprudencia/meta/ 2>/dev/null || true
+          cat crudo/resoluciones-*.jsonl > jurisprudencia/resoluciones.jsonl 2>/dev/null || true
+          python - <<'PY'
+          import collections, json
+          from pathlib import Path
+          p = Path("jurisprudencia/resoluciones.jsonl")
+          regs = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()] if p.exists() else []
+          est = collections.Counter(r["estado"] for r in regs)
+          vias = collections.Counter(r.get("via") or "-" for r in regs)
+          salas = collections.Counter(r.get("sala") or "?" for r in regs)
+          seg = sum(r.get("segundos") or 0 for r in regs)
+          md = ["# Jurisprudencia del TSJ", "",
+                f"**{len(regs)} resoluciones** · {sum(r.get('chars') or 0 for r in regs)} caracteres · "
+                f"{sum(r.get('paginas') or 0 for r in regs)} paginas · {round(seg/3600,2)} h de CPU", "",
+                "| estado | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in est.most_common()]
+          md += ["", "| via de obtencion del texto | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in vias.most_common()]
+          md += ["", "| sala | n |", "|---|---|"]
+          md += [f"| {k} | {v} |" for k, v in salas.most_common()]
+          md += ["", "El HTML oficial del TSJ gana sobre el escaneo cuando existe: es el texto tal cual ",
+                 "lo emitio el tribunal, sin un OCR en el medio.", ""]
+          Path("jurisprudencia/RESUMEN.md").write_text("\n".join(md), encoding="utf-8")
+          print("\n".join(md))
+          PY
+
+      - name: Commitear
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f jurisprudencia
+          git commit -m "corpus(genesis): jurisprudencia del TSJ para ${{ needs.preparar.outputs.departamento }}, gestion ${{ needs.preparar.outputs.gestion }}, run ${GITHUB_RUN_ID}" || echo "sin cambios"
+          for i in 1 2 3 4 5; do
+            git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && break
+            sleep $((i * 6))
+          done
+
+      - name: Resumen
+        if: always()
+        run: cat jurisprudencia/RESUMEN.md >> $GITHUB_STEP_SUMMARY || echo "sin resumen" >> $GITHUB_STEP_SUMMARY
