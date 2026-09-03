@@ -1,4 +1,5 @@
-# Artefactos y caches: el corpus de texto SI se commitea, los PDF NO.
+# El corpus de TEXTO si se commitea. Los PDF y las imagenes NO: se regeneran
+# desde la fuente oficial y su sha256 vive en indices/manifest.jsonl.
 __pycache__/
 *.pyc
 salida/
