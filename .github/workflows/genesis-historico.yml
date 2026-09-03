@@ -3,14 +3,16 @@ name: genesis-historico
 # Historico COMPLETO de jurisprudencia del TSJ para un departamento: 12 gestiones
 # (2015-2026) x 3 tipos de resolucion x 15 salas.
 #
-# Matriza por GESTION, una por job: 12 jobs en paralelo, cada uno con sus 3 tipos y sus 15
-# salas. Se eligio asi y no por shard global porque el reparto por gestion es estable y
-# legible: si 2019 falla, se re-corre 2019 y nada mas.
+# Matriza **gestion x shard**: 12 x 4 = 48 jobs. La version anterior usaba un job por gestion
+# y eso colgo la corrida: 2025 tiene 198 documentos y varios son escaneos sin capa de texto, o
+# sea OCR pagina por pagina en SERIE. Un job estuvo casi dos horas en el documento 48.
+# Con 4 shards por gestion el caso peor baja a 50 documentos, y el script ademas tiene timeout
+# de 900 s por documento.
 #
-# Medido antes de lanzar:
-#   - Hay TRES tipos de resolucion. La corrida anterior uso solo Auto Supremo sin preguntar.
-#   - 2015 sola tiene 345 resoluciones de Tarija con los tres tipos, contra 194 de 2026 con uno.
-#   - De 194 procesadas: 116 con texto nativo, 73 con HTML oficial, solo 5 con OCR.
+# Medido antes de esta version:
+#   - Hay TRES tipos de resolucion. La primera corrida uso solo Auto Supremo sin preguntar.
+#   - 2.664 resoluciones de 11 gestiones: 2.539 por HTML oficial, 120 texto nativo, 5 por OCR.
+#   - 64.682.493 caracteres con 312,8 s de OCR en total.
 
 on:
   workflow_dispatch:
@@ -18,6 +20,9 @@ on:
       departamento:
         description: 'Departamento a filtrar'
         default: 'Tarija'
+      shards:
+        description: 'Shards por gestion'
+        default: '4'
   push:
     branches:
       - 'historico/**'
@@ -29,12 +34,13 @@ concurrency:
 jobs:
   bajar:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 240
     strategy:
       fail-fast: false
-      max-parallel: 12
+      max-parallel: 20
       matrix:
         gestion: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
 
@@ -47,14 +53,18 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq poppler-utils tesseract-ocr tesseract-ocr-spa
 
-      - name: Bajar gestion ${{ matrix.gestion }}, los 3 tipos
+      - name: Bajar gestion ${{ matrix.gestion }} shard ${{ matrix.shard }}
         working-directory: pipeline
         run: |
           DEP="${{ github.event.inputs.departamento }}"
+          SH="${{ github.event.inputs.shards }}"
           python genesis_bajar.py \
             --departamento "${DEP:-Tarija}" \
             --gestion ${{ matrix.gestion }} \
             --tipos 1,2,3 \
+            --shard ${{ matrix.shard }} \
+            --shards "${SH:-4}" \
+            --timeout-doc 900 \
             --salida ../salida-historico
 
       - name: Verificar que ningun nombre rompa la subida
@@ -67,14 +77,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: historico-${{ matrix.gestion }}
+          name: historico-${{ matrix.gestion }}-${{ matrix.shard }}
           path: salida-historico
           retention-days: 14
 
-      - name: Resumen de la gestion
+      - name: Resumen
         if: always()
         run: |
-          echo "## gestion ${{ matrix.gestion }}" >> $GITHUB_STEP_SUMMARY
+          echo "## ${{ matrix.gestion }} / shard ${{ matrix.shard }}" >> $GITHUB_STEP_SUMMARY
           cat salida-historico/resumen-*.json >> $GITHUB_STEP_SUMMARY || echo "sin resumen" >> $GITHUB_STEP_SUMMARY
 
   consolidar:
@@ -121,8 +131,7 @@ jobs:
           salas = collections.Counter(r.get("sala") or "?" for r in unicos)
           seg = sum(r.get("segundos") or 0 for r in unicos)
           chars = sum(r.get("chars") or 0 for r in unicos)
-          Path("jurisprudencia/resoluciones.jsonl").write_text(
-              "\n".join(json.dumps(r, ensure_ascii=False) for r in unicos) + "\n", encoding="utf-8")
+          p.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in unicos) + "\n", encoding="utf-8")
           md = ["# Jurisprudencia del TSJ - historico completo", "",
                 f"**{len(unicos)} resoluciones unicas** · {chars} caracteres · "
                 f"{sum(r.get('paginas') or 0 for r in unicos)} paginas · {round(seg/3600,2)} h de CPU",
@@ -144,11 +153,12 @@ jobs:
           PY
 
       - name: Declarar cobertura
+        if: always()
         run: |
           LLEGARON=$(ls crudo/resumen-*.json 2>/dev/null | wc -l)
-          echo "gestiones con resultado: $LLEGARON de 12" | tee -a $GITHUB_STEP_SUMMARY
-          echo "gestiones_con_resultado=$LLEGARON" > jurisprudencia/COBERTURA.txt
-          echo "gestiones_lanzadas=12" >> jurisprudencia/COBERTURA.txt
+          echo "shards con resultado: $LLEGARON de 48" | tee -a $GITHUB_STEP_SUMMARY
+          echo "shards_con_resultado=$LLEGARON" > jurisprudencia/COBERTURA.txt
+          echo "shards_lanzados=48" >> jurisprudencia/COBERTURA.txt
 
       - name: Commitear
         run: |
