@@ -1,0 +1,7 @@
+# Artefactos y caches: el corpus de texto SI se commitea, los PDF NO.
+__pycache__/
+*.pyc
+salida/
+crudo/
+*.pdf
+*.png
