@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es-BO">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estado del corpus · CORPUS legal boliviano</title>
+<meta name="description" content="Qué contiene este corpus legal, qué está verificado y qué no. Medido, no prometido.">
+<style>
+:root{--papel:#FBFAF7;--cal:#F2EFE9;--tinta:#1C1B18;--vino:#9E2A40;--sello:#2F6B5E;
+      --graf:#6B6A63;--linea:rgba(28,27,24,.13);--linea-fuerte:rgba(28,27,24,.28);
+      --serif:Georgia,"Times New Roman",serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+html[data-modo="noche"]{--papel:#121512;--cal:#1A1E19;--tinta:#E4E7DE;--vino:#D4788C;
+      --sello:#7FB3A6;--graf:#8C9488;--linea:rgba(228,231,222,.16);--linea-fuerte:rgba(228,231,222,.34)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--serif);line-height:1.6}
+header{border-bottom:1px solid var(--linea-fuerte);padding:1.1rem 1.5rem;display:flex;
+       align-items:baseline;gap:1.2rem;flex-wrap:wrap}
+header h1{margin:0;font-size:1.15rem;letter-spacing:.02em}
+header a{color:var(--graf);font-family:var(--mono);font-size:.72rem;text-decoration:none;
+         border-bottom:1px solid var(--linea)}
+header a:hover{color:var(--sello);border-color:var(--sello)}
+.luz{margin-left:auto;border:1px solid var(--linea);background:transparent;color:var(--graf);
+     font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;
+     cursor:pointer;padding:.2rem .55rem}
+.luz:hover{border-color:var(--sello);color:var(--sello)}
+main{max-width:60rem;margin:0 auto;padding:2rem 1.5rem 4rem}
+.intro{border-left:3px solid var(--sello);padding:.2rem 0 .2rem 1.1rem;margin:0 0 2.4rem;
+       font-size:1.02rem}
+.intro b{color:var(--sello)}
+h2{font-size:.76rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.16em;
+   color:var(--graf);font-weight:400;margin:2.6rem 0 .9rem;padding-bottom:.4rem;
+   border-bottom:1px solid var(--linea)}
+.cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:1px;
+        background:var(--linea)}
+.cifra{background:var(--papel);padding:1rem 1.1rem}
+.cifra b{display:block;font-size:1.6rem;font-family:var(--mono);letter-spacing:-.02em;
+         line-height:1.15}
+.cifra i{display:block;font-style:normal;font-size:.72rem;color:var(--graf);margin-top:.3rem;
+         font-family:var(--mono)}
+.barra{height:.5rem;background:var(--cal);border:1px solid var(--linea);margin:.9rem 0 .5rem;
+       position:relative;overflow:hidden}
+.barra span{display:block;height:100%;background:var(--sello)}
+.dato{font-family:var(--mono);font-size:.8rem;color:var(--graf)}
+.dato b{color:var(--tinta)}
+table{width:100%;border-collapse:collapse;margin:.4rem 0 0;font-size:.9rem}
+th{text-align:left;font-family:var(--mono);font-size:.68rem;text-transform:uppercase;
+   letter-spacing:.1em;color:var(--graf);font-weight:400;padding:.5rem .6rem;
+   border-bottom:1px solid var(--linea-fuerte)}
+td{padding:.55rem .6rem;border-bottom:1px solid var(--linea)}
+td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
+.limites{background:var(--cal);border:1px solid var(--linea);padding:1.1rem 1.3rem;margin:.4rem 0 0}
+.limites p{margin:0 0 .5rem;font-weight:600;font-size:.94rem}
+.limites ul{margin:0;padding-left:1.2rem;font-size:.9rem;color:var(--graf)}
+.limites li{margin:.3rem 0}
+.honesto{border:1px solid var(--vino);border-left-width:3px;padding:1.1rem 1.3rem;margin:2.6rem 0 0}
+.honesto p{margin:0 0 .55rem}
+.honesto p:last-child{margin:0}
+.honesto b{color:var(--vino)}
+footer{border-top:1px solid var(--linea);margin-top:3rem;padding-top:1.1rem;
+       font-family:var(--mono);font-size:.7rem;color:var(--graf);display:flex;gap:1.4rem;flex-wrap:wrap}
+code{font-family:var(--mono);font-size:.86em;background:var(--cal);padding:.1rem .35rem;
+     border:1px solid var(--linea)}
+.cargando{color:var(--graf);font-family:var(--mono);font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Estado del corpus</h1>
+  <a href="/">← volver al buscador</a>
+  <a href="/estado">ver este mismo dato en JSON</a>
+  <button class="luz" id="luz" type="button">día · noche</button>
+</header>
+<main>
+  <p class="intro">Esta página no es un folleto: cada número sale de una consulta a la base
+  en este instante, por el mismo endpoint <code>/estado</code> que cualquiera puede llamar.
+  <b>Lo que no está verificado se declara como no verificado.</b> Un corpus legal que
+  esconde sus huecos es peligroso para quien lo cita.</p>
+
+  <h2>Lo que contiene</h2>
+  <div class="cifras" id="cifras"><p class="cargando">midiendo…</p></div>
+
+  <h2>Vigencia verificada</h2>
+  <div id="vig"><p class="cargando">midiendo…</p></div>
+
+  <h2>Fuentes</h2>
+  <div id="fuentes"><p class="cargando">midiendo…</p></div>
+
+  <h2>Límites de este sistema</h2>
+  <div id="limites"><p class="cargando">midiendo…</p></div>
+
+  <div class="honesto">
+    <p><b>Por qué publicamos los huecos.</b></p>
+    <p>Un buscador legal que responde siempre con seguridad es peor que uno que dice
+    «no lo sé»: el error no se ve hasta que está en el memorial. Cada ficha de este
+    corpus declara su vía de extracción, su sha256, su URL de origen y su estado de
+    vigencia en tres estados: verificada, derogada, o <b>no medida</b>.</p>
+    <p>El tercero es el más importante. «No medida» no significa vigente: significa que
+    todavía no lo comprobamos contra la fuente oficial, y que antes de citar hay que
+    confirmarlo en el enlace que la propia ficha entrega.</p>
+  </div>
+
+  <footer>
+    <span id="sello">—</span>
+    <span>cada documento con sha256 y URL de origen</span>
+    <span>búsqueda literal sobre texto oficial</span>
+  </footer>
+</main>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const nf = n => (n == null ? "\u2014" : Number(n).toLocaleString("es-BO"));
+const esc = t => String(t == null ? "" : t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const LUZ = "corpus-modo";
+function modo(m, guardar){
+  document.documentElement.dataset.modo = m;
+  $("#luz").textContent = m === "noche" ? "noche \u00b7 d\u00eda" : "d\u00eda \u00b7 noche";
+  if (guardar) { try { localStorage.setItem(LUZ, m); } catch(e){} }
+}
+let elegido = null; try { elegido = localStorage.getItem(LUZ); } catch(e){}
+modo(elegido || ((window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "noche" : "dia"), false);
+$("#luz").onclick = () => modo(document.documentElement.dataset.modo === "noche" ? "dia" : "noche", true);
+
+(async () => {
+  let d;
+  try{ d = await (await fetch("/estado")).json(); }
+  catch(e){
+    $("#cifras").innerHTML = '<p class="cargando">El servicio no contest\u00f3. Reintent\u00e1 en unos segundos.</p>';
+    return;
+  }
+  const ocrpc = d.documentos ? Math.round(100 * d.texto_por_ocr / d.documentos) : 0;
+  $("#cifras").innerHTML = [
+    ["documentos oficiales", nf(d.documentos)],
+    ["pasajes indexados", nf(d.pasajes)],
+    ["caracteres de texto", nf(d.caracteres)],
+    ["texto del documento oficial", nf(d.texto_oficial) + " <i style=\"display:inline\">(" + (100 - ocrpc) + "%)</i>"],
+    ["reconstruido por OCR", nf(d.texto_por_ocr) + " <i style=\"display:inline\">(" + ocrpc + "%)</i>"]
+  ].map(([r, v]) => '<div class="cifra"><b>' + v + "</b><i>" + r + "</i></div>").join("");
+
+  const v = d.vigencia || {};
+  const pc = v.cobertura_solo_leyes_por_ciento || 0;
+  $("#vig").innerHTML =
+    '<div class="barra"><span style="width:' + Math.max(pc, 0.6) + '%"></span></div>' +
+    '<p class="dato"><b>' + nf(v.con_estado_medido) + "</b> de <b>" + nf(v.solo_leyes_y_nacionales) +
+    "</b> normas con vigencia verificada \u00b7 <b>" + pc + "%</b></p>" +
+    '<table><tr><th>categor\u00eda</th><th style="text-align:right">documentos</th><th>vigencia</th></tr>' +
+    '<tr><td>Leyes departamentales y normativa nacional</td><td class="n">' + nf(v.solo_leyes_y_nacionales) +
+    "</td><td>" + nf(v.con_estado_medido) + " verificadas, el resto <b>no medida</b></td></tr>" +
+    '<tr><td>Jurisprudencia (Autos Supremos, Sentencias)</td><td class="n">' +
+    nf(v.jurisprudencia_sin_vigencia_aplicable) + "</td><td>no aplica</td></tr></table>" +
+    '<p class="dato" style="margin-top:.9rem">' + esc(v.nota || "") + "</p>";
+
+  $("#fuentes").innerHTML = "<table><tr><th>fuente oficial</th><th style=\"text-align:right\">documentos</th></tr>" +
+    (d.fuentes || []).map(f => "<tr><td>" + esc(f.fuente || "sin fuente registrada") +
+      '</td><td class="n">' + nf(f.documentos) + "</td></tr>").join("") + "</table>";
+
+  $("#limites").innerHTML = '<div class="limites"><p>Lo que este sistema NO hace:</p><ul>' +
+    (d.limites_declarados || []).map(l => "<li>" + esc(l) + "</li>").join("") +
+    "<li>No verifica la vigencia de la mayor\u00eda de las normas: el estado real est\u00e1 arriba.</li>" +
+    "</ul></div>";
+
+  $("#sello").textContent = "medido el " + new Date().toLocaleDateString("es-BO",
+    {day: "2-digit", month: "2-digit", year: "numeric"}) + " contra la base en servicio";
+})();
+</script>
+</body>
+</html>
