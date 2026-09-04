@@ -15,27 +15,34 @@ Separa TRES clases de clausula, porque tratarlas igual es el error caro:
                   mataria media biblioteca.
   sin_destino  clausula que no nombra objetivo ni es generica -> NO MEDIDO
 
-POR QUE ESTA VERSION EXISTE (y es el hallazgo del turno):
+HISTORIAL DE MIS PROPIOS ERRORES, que es la parte util del archivo:
 
-La v1 devolvio 40 aristas y su CONTROL POSITIVO dio 10/10. Igual 18 de esas 40
-eran basura, porque un control positivo solo prueba que lo bueno esta, nunca que
-lo malo no. Las tres trampas:
+v1: devolvio 40 aristas y su CONTROL POSITIVO dio 10/10. Igual 18 de las 40
+    eran basura. Un control positivo prueba que lo bueno esta, NUNCA que lo malo
+    no esta. Tres trampas:
+      a) EL DIA DE SANCION SE DISFRAZA DE NUMERO DE LEY. Toda ley cierra con
+         "...contrarias a la presente Ley Departamental. Es sancionada a los 28
+         dias del mes de noviembre". El patron veia "Ley Departamental" y
+         agarraba el 28: la LD 253 abrogaba una "LD 28" inexistente. 13 aristas.
+      b) EL MEMBRETE. La LD 129 salia abrogando la "LD 425" porque el pie de
+         pagina dice "Calle 15 de Abril N 425 esq. Gral. Trigo". Una direccion.
+      c) LA BASURA DEL OCR ROBA DIGITOS. "Ley Departamental I49 204" capturaba
+         49 en vez de 204; "bl(2 139" capturaba 2 en vez de 139.
 
-  1. EL DIA DE SANCION SE DISFRAZA DE NUMERO DE LEY. Toda ley cierra con
-     "...contrarias a la presente Ley Departamental. Es sancionada a los 28
-     dias del mes de noviembre de 2017". El patron veia "Ley Departamental" y
-     agarraba el 28 siguiente: la LD 253 quedaba abrogando una inexistente
-     "LD 28". Trece aristas asi.
-  2. EL MEMBRETE. La LD 129 salia abrogando la "LD 425" porque el pie de pagina
-     dice "Calle 15 de Abril N 425 esq. Gral. Trigo". Una direccion postal.
-  3. LA BASURA DEL OCR ROBA DIGITOS. "Ley Departamental I49 204" -> capturaba
-     49 en vez de 204. "bl(2 139" -> capturaba 2 en vez de 139.
+v2: agregue banco negativo con esas frases textuales y exigi un marcador de
+    norma (N, W, No...). Aparecieron DOS fallas nuevas, y una era MIA:
+      d) El OCR tambien destruye la N: "Ley Departamental ~o 206" no tiene
+         marcador reconocible. Exigir marcador perdia abrogaciones expresas.
+      e) MI EXPECTATIVA ESTABA MAL. Puse que "Se derogan los articulos 19 y 20
+         de la Ley Departamental W 129" debia devolver [19, 20, 129]. Falso:
+         19 y 20 son ARTICULOS, no leyes. El parser devolvia [129] y tenia
+         razon; el que estaba equivocado era el test. Corregido el test.
 
-Arreglos: la ventana se corta en la formula de sancion, el numero tiene que venir
-detras de un marcador de norma, se rechaza lo que sea seguido de "dias" o de un
-mes, y se rechaza la autoreferencia. Y hay BANCO NEGATIVO con las frases reales
-que produjeron cada falso positivo: si alguna vuelve a dar arista, no se escribe
-nada.
+v3 (esta): el marcador es OPCIONAL, porque los guardas ya no dependen de el:
+    la ventana se corta en el protocolo de cierre (asi el dia de sancion y el
+    membrete nunca llegan al matcher) y se rechaza todo numero seguido de
+    "dias" o de un mes. La enumeracion SI exige marcador, para no comerse
+    numeros de articulo.
 
 Uso:
     python3 extrae_grafo_vigencia.py <base.db> <salida.json>
@@ -52,25 +59,26 @@ CLAU = re.compile(
     r"|derog[ao]se|qued[ao]n?\s+derogad\w*|d[ee]jase\s+sin\s+efecto)", re.I)
 
 # La disposicion termina donde arranca el protocolo de cierre. Todo lo que sigue
-# (fecha de sancion, remision, membrete, telefonos) NO es disposicion.
+# (fecha de sancion, remision, membrete, telefonos) NO es disposicion. Este
+# corte es el guarda estructural: sin el, ningun patron alcanza.
 CORTE = re.compile(
     r"(Es\s+[Ss]ancionad|Remitase|Por\s+tanto|POR\s+TANTO|Reg[ie]strese"
     r"|Calle\s|Telf|Fax|esq\.)", re.I)
 
 MESES = (r"enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre"
          r"|setiembre|octubre|noviembre|diciembre")
-# Marcador de norma tolerante al OCR: N, Nº, N°, N*, N', W, No, y basura de 1-3
-# caracteres. Lo que NO se permite es que el marcador contenga digitos: ahi es
-# donde la v1 perdia el numero real.
+# Marcador de norma, tolerante: N, No, W, y la basura que deja el OCR (~o, bl(2,
+# I49, N9). Se usa SOLO para la enumeracion, donde hace falta distinguir
+# "y N 029" de un numero de articulo suelto.
 MARCA = r"(?:N|W|No|Nro|Num)[^\dA-Za-z\n]{0,4}"
+# Objetivo principal: el numero va detras de "Ley Departamental", con o sin
+# marcador legible. Hasta 10 caracteres no numericos de basura en el medio.
 OBJ_DEP = re.compile(
-    r"Ley(?:es)?\s+Departamental(?:es)?[^\d\n]{0,4}" + MARCA + r"\s*(\d{1,3})(?!\d)",
-    re.I)
-# Variante sin "Departamental" pegado: "Se abroga la Ley N 504 'Ley Departamental...'"
-OBJ_LEY = re.compile(r"\bLey\s+" + MARCA + r"\s*(\d{1,3})(?!\d)", re.I)
-# Continuacion de enumeracion: "y N 029", ", N 293 y N 300"
+    r"Ley(?:es)?\s+Departamental(?:es)?[^\d\n]{0,10}(\d{1,3})(?!\d)", re.I)
+# "Se abroga la Ley N 504 'Ley Departamental Estructura...'"
+OBJ_LEY = re.compile(r"\bLey\s+[^\d\n]{0,6}(\d{1,3})(?!\d)", re.I)
 OBJ_MAS = re.compile(MARCA + r"\s*(\d{1,3})(?!\d)", re.I)
-# Lo que descalifica a un numero: es un dia, o arranca una fecha
+# Lo que delata a un numero como no-ley: es un dia, o arranca una fecha.
 NO_ES_LEY = re.compile(r"^\s*(?:dias?\b|de\s+(?:" + MESES + r")\b)", re.I)
 
 GENERICA = re.compile(
@@ -113,6 +121,20 @@ CONTROL_NEGATIVO = [
     ("normas de igual o inferior jerarquia, sin destino",
      "Se derogan y abrogan todas las normas de igual o inferior jerarquia "
      "vigentes que contradigan lo establecido en la presente Ley."),
+    ("generica pura, sin ninguna cifra",
+     "Se abrogan y derogan todas las leyes contrarias a la presente Ley."),
+]
+
+# BANCO POSITIVO: abrogaciones expresas reales, con el marcador tal como el OCR
+# lo dejo. El caso de los articulos esta a proposito: debe devolver SOLO la ley.
+CONTROL_ARISTA = [
+    ("Se abroga la Ley Departamental N 129 de Organizacion", [129]),
+    ("Se derogan los articulos 19 y 20 de la Ley Departamental W 129", [129]),
+    ("Se abrogan las Leyes Departamentales N 109 y N 029", [29, 109]),
+    ("Se abroga la Ley N 504 Estructura de Cargos", [504]),
+    ("Se abroga la Ley Departamental ~o 206 de transferencia", [206]),
+    ("Se abroga la Ley Departamental N' 094 Departamentalizacion de Carreteras",
+     [94]),
 ]
 
 
@@ -128,9 +150,9 @@ def recorta(ventana):
     return ventana[:m.start()] if m else ventana
 
 
-def _valido(ventana, fin):
+def _valido(texto, fin):
     """False si lo que sigue al numero lo delata como dia o fecha."""
-    return not NO_ES_LEY.match(ventana[fin:fin + 22])
+    return not NO_ES_LEY.match(texto[fin:fin + 22])
 
 
 def objetivos_de(ventana):
@@ -197,29 +219,23 @@ def banco():
         objs = objetivos_de(limpia(frase))
         ok = not objs
         limpio = limpio and ok
-        print("   %-46s -> %-14s %s"
+        print("   %-48s -> %-14s %s"
               % (nombre, objs if objs else "sin objetivo", "ok" if ok else "FALLA"))
     print("   BANCO NEGATIVO: %s"
           % ("%d/%d" % (len(CONTROL_NEGATIVO), len(CONTROL_NEGATIVO)) if limpio
              else "HAY FALLAS"))
     print()
-    print("=== BANCO POSITIVO: sellos con marcador roto por el OCR ===")
-    casos = [
-        ("Se abroga la Ley Departamental N 129 de Organizacion", [129]),
-        ("Se derogan los articulos 19 y 20 de la Ley Departamental W 129", [19, 20, 129]),
-        ("Se abrogan las Leyes Departamentales N 109 y N 029", [29, 109]),
-        ("Se abroga la Ley N 504 Estructura de Cargos", [504]),
-        ("Se abroga la Ley Departamental ~o 206 de transferencia", [206]),
-    ]
+    print("=== BANCO POSITIVO: abrogaciones expresas con marcador roto ===")
     todo = True
-    for frase, esperado in casos:
+    for frase, esperado in CONTROL_ARISTA:
         objs = objetivos_de(limpia(frase))
-        ok = all(e in objs for e in esperado)
+        ok = objs == sorted(esperado)
         todo = todo and ok
-        print("   %-58s -> %-18s %s"
-              % (frase[:58], objs, "ok" if ok else "FALLA, esperaba %s" % esperado))
-    print("   BANCO POSITIVO: %s" % ("%d/%d" % (len(casos), len(casos)) if todo
-                                     else "HAY FALLAS"))
+        print("   %-62s -> %-14s %s"
+              % (frase[:62], objs, "ok" if ok else "FALLA, esperaba %s" % esperado))
+    print("   BANCO POSITIVO: %s"
+          % ("%d/%d" % (len(CONTROL_ARISTA), len(CONTROL_ARISTA)) if todo
+             else "HAY FALLAS"))
     return limpio and todo
 
 
@@ -234,6 +250,21 @@ def control(aristas):
               % (ab, vic, "HALLADO" if hay else "NO HALLADO"))
     print("   CONTROL: %d/%d" % (hallados, len(CONTROL_POSITIVO)))
     return hallados == len(CONTROL_POSITIVO)
+
+
+def carga(db):
+    con = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
+    leyes = {r[0]: {"numero": r[1], "anio": r[2], "titulo": r[3]}
+             for r in con.execute(
+                 "SELECT uid,numero,anio,titulo FROM documentos WHERE tipo_norma=?",
+                 ("Ley Departamental",))}
+    # UN barrido de chunks. chunks es FTS5 sin indice por uid: 512 consultas
+    # sueltas son 512 barridos completos y el script no termina nunca.
+    texto = collections.defaultdict(list)
+    for uid, cuerpo in con.execute("SELECT uid,cuerpo FROM chunks"):
+        if uid in leyes:
+            texto[uid].append(cuerpo)
+    return leyes, texto
 
 
 def main():
@@ -278,21 +309,6 @@ def main():
         return 1
     print("VEREDICTO: VERDE -> banco y control en verde")
     return 0
-
-
-def carga(db):
-    con = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
-    leyes = {r[0]: {"numero": r[1], "anio": r[2], "titulo": r[3]}
-             for r in con.execute(
-                 "SELECT uid,numero,anio,titulo FROM documentos WHERE tipo_norma=?",
-                 ("Ley Departamental",))}
-    # UN barrido de chunks. chunks es FTS5 sin indice por uid: 512 consultas
-    # sueltas son 512 barridos completos y el script no termina nunca.
-    texto = collections.defaultdict(list)
-    for uid, cuerpo in con.execute("SELECT uid,cuerpo FROM chunks"):
-        if uid in leyes:
-            texto[uid].append(cuerpo)
-    return leyes, texto
 
 
 if __name__ == "__main__":
