@@ -12,6 +12,9 @@ Por documento:
 
 via_texto: 'texto_nativo_pdf' o 'ocr_pdf_escaneado'. Nunca se marca oficial un OCR.
 Cada documento deja una linea en el JSONL: es el recibo, y permite recomputar todo.
+
+El temporal lleva el PID: dos corridas concurrentes se borraban los PNG entre si y el OCR
+devolvia cero. Un cero del instrumento no es un cero del documento.
 """
 import hashlib, json, os, re, shutil, sqlite3, subprocess, sys, time, unicodedata
 
@@ -20,7 +23,7 @@ BASE = "/workspace/ab-probe-20260903"
 ORIG = "/workspace/bolivia-v7.db"
 DEST = "/workspace/bolivia-v8.db"
 PDFS = os.path.join(BASE, "dd_pdf")
-TMP = os.path.join(BASE, "ocr_run")
+TMP = os.path.join(BASE, "ocr_run_%d" % os.getpid())
 LOG = os.path.join(BASE, "ingesta_dd.jsonl")
 CENSO = os.path.join(BASE, "censo_dd.json")
 MAXC, SOLAPE = 1800, 200
@@ -59,29 +62,41 @@ def baja(url, destino):
         return None, "no_pdf"
     return b, "descargado"
 
+def ocr_de(ruta, psm):
+    for f in os.listdir(TMP):
+        try:
+            os.remove(os.path.join(TMP, f))
+        except OSError:
+            pass
+    corre(["pdftoppm", "-r", "200", "-png", ruta, os.path.join(TMP, "p")], t=1800)
+    pngs = sorted(x for x in os.listdir(TMP) if x.endswith(".png"))
+    partes = []
+    for g in pngs:
+        rc, out = corre(["tesseract", os.path.join(TMP, g), "stdout", "-l", "spa", "--psm", str(psm)], t=900)
+        partes.append((out or b"").decode("utf8", "replace"))
+    return "\n".join(partes), len(pngs)
+
 def texto_de(ruta, pdf_bytes):
-    """pdftotext primero. El umbral es por pagina: un PDF de 8 paginas con 300 caracteres
+    """pdftotext primero. El umbral es POR PAGINA: un PDF de 8 paginas con 300 caracteres
     es un escaneo con un sello, no un texto."""
     rc, out = corre(["pdfinfo", ruta])
     m = re.search(rb"Pages:\s+(\d+)", out or b"")
     pags = int(m.group(1)) if m else 1
     rc, out = corre(["pdftotext", "-layout", ruta, "-"])
     nat = (out or b"").decode("utf8", "replace")
-    if len(re.sub(r"\s+", " ", nat).strip()) >= 350 * max(pags, 1):
+    largo = lambda s: len(re.sub(r"\s+", " ", s).strip())
+    if largo(nat) >= 350 * max(pags, 1):
         return nat, "texto_nativo_pdf", pags
-    for f in os.listdir(TMP):
-        os.remove(os.path.join(TMP, f))
-    base = os.path.join(TMP, "p")
-    corre(["pdftoppm", "-r", "200", "-png", ruta, base], t=1800)
-    partes = []
-    for g in sorted(os.listdir(TMP)):
-        rc, out = corre(["tesseract", os.path.join(TMP, g), "stdout", "-l", "spa", "--psm", "4"], t=900)
-        partes.append((out or b"").decode("utf8", "replace"))
-    ocr = "\n".join(partes)
-    # si el OCR sale peor que el texto nativo, gana el nativo: no se degrada un documento
-    if len(re.sub(r"\s+", " ", ocr).strip()) < len(re.sub(r"\s+", " ", nat).strip()):
+    ocr, npng = ocr_de(ruta, 4)
+    # GUARD: un OCR vacio puede ser del documento o del instrumento. Se reintenta con otro
+    # modo de segmentacion antes de declarar pobre el documento.
+    if largo(ocr) < 200:
+        ocr2, npng2 = ocr_de(ruta, 3)
+        if largo(ocr2) > largo(ocr):
+            ocr, npng = ocr2, npng2
+    if largo(ocr) < largo(nat):
         return nat, "texto_nativo_pdf", pags
-    return ocr, "ocr_pdf_escaneado", pags
+    return ocr, "ocr_pdf_escaneado", (npng or pags)
 
 def trozos(txt):
     """1800 con 200 de solape, cortando en frontera de parrafo o de frase."""
@@ -118,10 +133,9 @@ def main(limite=None):
     con.row_factory = sqlite3.Row
     ya = {r[0] for r in con.execute("SELECT uid FROM documentos WHERE tipo_norma='Decreto Departamental'")}
     maxdoc = con.execute("SELECT coalesce(max(doc_id),0) FROM documentos").fetchone()[0]
-    print("decretos ya ingestados:", len(ya), "| doc_id maximo:", maxdoc, flush=True)
+    print("decretos ya ingestados:", len(ya), "| doc_id maximo:", maxdoc, "| tmp:", TMP, flush=True)
     reg = [v for v in json.load(open(CENSO)) if "decreto-departamental" in v["slug"]]
-    trabajo = []
-    vistos = set()
+    trabajo, vistos = [], set()
     for v in reg:
         n, a = ident(v["slug"])
         if not n:
@@ -158,8 +172,8 @@ def main(limite=None):
         if len(limpio) < 200:
             fallos += 1
             log.write(json.dumps({"id": v["id"], "slug": v["slug"], "estado": "texto_insuficiente",
-                                  "chars": len(limpio), "via": via}) + "\n"); log.flush()
-            print("  [%4d/%d] DD %-5s %-5s TEXTO POBRE (%d car, %s)" % (k, len(trabajo), v["numero"], v["anio"], len(limpio), via), flush=True)
+                                  "chars": len(limpio), "via": via, "pags": pags}) + "\n"); log.flush()
+            print("  [%4d/%d] DD %-5s %-5s TEXTO POBRE (%d car, %s, %d pags)" % (k, len(trabajo), v["numero"], v["anio"], len(limpio), via, pags), flush=True)
             continue
         ch = trozos(txt)
         maxdoc += 1
@@ -198,10 +212,13 @@ def main(limite=None):
     q = lambda s: con.execute(s).fetchone()[0]
     print("base v8: documentos", q("SELECT count(*) FROM documentos"), "| chunks", q("SELECT count(*) FROM chunks"), flush=True)
     print("decretos departamentales:", q("SELECT count(*) FROM documentos WHERE tipo_norma='Decreto Departamental'"), flush=True)
-    print("  por via:", flush=True)
     for r in con.execute("SELECT via_texto,count(*) n FROM documentos WHERE tipo_norma='Decreto Departamental' GROUP BY 1"):
         print("    %-20s %4d" % (r[0], r[1]), flush=True)
     con.close()
+    try:
+        shutil.rmtree(TMP)
+    except OSError:
+        pass
 
 if __name__ == "__main__":
     lim = None
