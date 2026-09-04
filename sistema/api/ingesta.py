@@ -45,6 +45,7 @@ from pathlib import Path
 # como script desde cualquier directorio como importada desde los tests.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import alias as procedencia  # noqa: E402
+import fuente_nacional  # noqa: E402
 import fuente_tarija  # noqa: E402
 import normalizar  # noqa: E402
 
@@ -375,6 +376,40 @@ def adaptador_gaceta_tarija(base: Path):
     INFORMES["tarija_gaceta"] = fuente.informe()
 
 
+def adaptador_nacional(base: Path):
+    """Normas del Estado Plurinacional, verificadas una por una contra su titulo real.
+
+    El censo es `nacional/normas.jsonl`, que produce `pipeline/nacional_lexivox.py`. Ahi cada
+    norma ya paso el control de identidad: no se acepta por su numero, se acepta porque el titulo
+    que devolvio LexiVox coincide con el esperado.
+    """
+    fuente = fuente_nacional.FuenteNacional(base / "nacional")
+    if not fuente.censo:
+        print("  AVISO: no hay nacional/normas.jsonl -> la fuente nacional queda vacia",
+              flush=True)
+    for fila in fuente.normas:
+        hallado = fuente.resolver(fila)
+        if not hallado:
+            continue
+        yield Documento(
+            fuente_id="lexivox_nacional", jurisdiccion="nacional", departamento="",
+            organo="Estado Plurinacional de Bolivia",
+            tipo_norma=str(fila.get("tipo_norma") or "Norma"),
+            numero=str(fila.get("numero") or ""), anio=str(fila.get("anio") or ""),
+            titulo=str(fila.get("titulo") or ""), materia=str(fila.get("materia") or ""),
+            texto=hallado["texto"],
+            fuente_url=str(fila.get("fuente_url") or ""),
+            sha256=str(fila.get("sha256") or ""),
+            via_texto="html_oficial",
+            # `alta` porque es el texto publicado, sin OCR en el medio. La confianza es del
+            # TEXTO, no de la vigencia: son dos cosas distintas y el campo `vigente` sigue en
+            # None para las 15.
+            confianza="alta",
+            archivo=hallado["ruta"].name,
+            revision=fuente_nacional.revisiones_de(fila))
+    INFORMES["lexivox_nacional"] = fuente.informe()
+
+
 def adaptador_jurisprudencia_tsj(base: Path):
     """Autos Supremos, Sentencias y Resoluciones del Tribunal Supremo de Justicia."""
     regs = base / "jurisprudencia" / "resoluciones.jsonl"
@@ -421,6 +456,11 @@ ADAPTADORES = {
                        "Gaceta Oficial del Gobierno Autonomo Departamental de Tarija",
                        "departamental", "Tarija", "Asamblea Legislativa Departamental",
                        "https://www.tarija.gob.bo/gaceta-oficial")),
+    "lexivox_nacional": (adaptador_nacional,
+                        ("lexivox_nacional",
+                         "LexiVox - normativa del Estado Plurinacional de Bolivia",
+                         "nacional", "", "Estado Plurinacional de Bolivia",
+                         "https://www.lexivox.org")),
     "tsj_genesis": (adaptador_jurisprudencia_tsj,
                     ("tsj_genesis", "Buscador GENESIS del Tribunal Supremo de Justicia",
                      "jurisprudencia", "", "Tribunal Supremo de Justicia",
