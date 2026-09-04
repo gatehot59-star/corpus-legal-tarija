@@ -7,42 +7,46 @@ de la Ley 129 no dice que la Ley 500 la abrogo. Preguntarle a cada ley si esta
 vigente devuelve silencio en el 100% de los casos, y ese silencio no es prueba
 de vigencia. La unica evidencia posible esta en el texto del que mata.
 
-Separa TRES clases de clausula, porque tratarlas igual es el error caro:
+CLASES DE CLAUSULA (tratarlas igual es el error caro):
 
   con_destino  "Se abroga la Ley Departamental N 129"  -> arista real
   generica     "Quedan derogadas todas las disposiciones contrarias"
-               -> NO mata a nadie en particular. Contarla como derogacion
-                  mataria media biblioteca.
-  sin_destino  clausula que no nombra objetivo ni es generica -> NO MEDIDO
+               -> NO mata a nadie en particular
+  excepcion    "...contrarias, CON EXCEPCION de la Disposicion Transitoria
+               Primera de la Ley Departamental N 304" -> la ley nombrada es la
+               EXCLUIDA, no la matada. Leerla como victima es invertir el sentido
+  sin_destino  clausula sin objetivo ni formula generica -> NO MEDIDO
 
 HISTORIAL DE MIS PROPIOS ERRORES, que es la parte util del archivo:
 
-v1: devolvio 40 aristas y su CONTROL POSITIVO dio 10/10. Igual 18 de las 40
-    eran basura. Un control positivo prueba que lo bueno esta, NUNCA que lo malo
-    no esta. Tres trampas:
-      a) EL DIA DE SANCION SE DISFRAZA DE NUMERO DE LEY. Toda ley cierra con
-         "...contrarias a la presente Ley Departamental. Es sancionada a los 28
-         dias del mes de noviembre". El patron veia "Ley Departamental" y
-         agarraba el 28: la LD 253 abrogaba una "LD 28" inexistente. 13 aristas.
-      b) EL MEMBRETE. La LD 129 salia abrogando la "LD 425" porque el pie de
-         pagina dice "Calle 15 de Abril N 425 esq. Gral. Trigo". Una direccion.
-      c) LA BASURA DEL OCR ROBA DIGITOS. "Ley Departamental I49 204" capturaba
-         49 en vez de 204; "bl(2 139" capturaba 2 en vez de 139.
-
-v2: agregue banco negativo con esas frases textuales y exigi un marcador de
-    norma (N, W, No...). Aparecieron DOS fallas nuevas, y una era MIA:
-      d) El OCR tambien destruye la N: "Ley Departamental ~o 206" no tiene
-         marcador reconocible. Exigir marcador perdia abrogaciones expresas.
-      e) MI EXPECTATIVA ESTABA MAL. Puse que "Se derogan los articulos 19 y 20
-         de la Ley Departamental W 129" debia devolver [19, 20, 129]. Falso:
-         19 y 20 son ARTICULOS, no leyes. El parser devolvia [129] y tenia
-         razon; el que estaba equivocado era el test. Corregido el test.
-
-v3 (esta): el marcador es OPCIONAL, porque los guardas ya no dependen de el:
-    la ventana se corta en el protocolo de cierre (asi el dia de sancion y el
-    membrete nunca llegan al matcher) y se rechaza todo numero seguido de
-    "dias" o de un mes. La enumeracion SI exige marcador, para no comerse
-    numeros de articulo.
+v1  40 aristas, CONTROL POSITIVO 10/10, y 18 de las 40 eran basura. Un control
+    positivo prueba que lo bueno esta, NUNCA que lo malo no esta.
+      a) EL DIA DE SANCION SE DISFRAZA DE NUMERO DE LEY: "...contrarias a la
+         presente Ley Departamental. Es sancionada a los 28 dias del mes de
+         noviembre" -> la LD 253 abrogaba una "LD 28" inexistente. 13 aristas.
+      b) EL MEMBRETE: la LD 129 abrogaba la "LD 425" porque el pie de pagina dice
+         "Calle 15 de Abril N 425 esq. Gral. Trigo". Una direccion postal.
+v2  banco negativo con esas frases + marcador obligatorio. Dos fallas nuevas, y
+    una era MIA:
+      c) El OCR tambien destruye la N: "Ley Departamental ~o 206". Exigir
+         marcador perdia abrogaciones expresas.
+      d) MI EXPECTATIVA ESTABA MAL: puse que "Se derogan los articulos 19 y 20 de
+         la Ley Departamental W 129" debia dar [19, 20, 129]. Falso: 19 y 20 son
+         ARTICULOS. El parser daba [129] y tenia razon. Corregi el test.
+v3  30 aristas, banco 13/13. Al leerlas una por una, cuatro seguian mal:
+      e) NUMERO CORTADO POR EL BORDE DE LA VENTANA: "N* 504" truncado a "N* 5"
+         entregaba una "LD 5". El `(?!\\d)` no protege cuando la cadena termina.
+      f) EL MARCADOR CON DIGITOS ROBA EL NUMERO: "Ley Departamental I49 204"
+         daba 49; "bl(2 139" daba 2. La basura del OCR va ANTES del numero real,
+         asi que dentro de la ventana del ancla hay que tomar el ULTIMO.
+      g) LA CLAUSULA DE EXCEPCION LEIDA AL REVES: la LD 398 abroga lo contrario
+         "con excepcion de la Disposicion Transitoria Primera de la LD 304".
+         La 304 es la EXCLUIDA. La v3 la anotaba como abrogada, y ese par ya
+         estaba escrito en la base como derogacion.
+      h) "Se deroga el Art. 2 de la Ley 438" salia TOTAL porque el detector de
+         parcialidad no conocia la abreviatura "Art.".
+v4  (esta) ancla + ultimo numero valido + guarda de truncado + guarda de
+    excepcion + "Art." en el detector de parcialidad.
 
 Uso:
     python3 extrae_grafo_vigencia.py <base.db> <salida.json>
@@ -59,34 +63,34 @@ CLAU = re.compile(
     r"|derog[ao]se|qued[ao]n?\s+derogad\w*|d[ee]jase\s+sin\s+efecto)", re.I)
 
 # La disposicion termina donde arranca el protocolo de cierre. Todo lo que sigue
-# (fecha de sancion, remision, membrete, telefonos) NO es disposicion. Este
-# corte es el guarda estructural: sin el, ningun patron alcanza.
+# (fecha de sancion, remision, membrete, telefonos) NO es disposicion. Guarda
+# estructural: sin el, ningun patron alcanza.
 CORTE = re.compile(
-    r"(Es\s+[Ss]ancionad|Remitase|Por\s+tanto|POR\s+TANTO|Reg[ie]strese"
-    r"|Calle\s|Telf|Fax|esq\.)", re.I)
+    r"(Es\s+[Ss]ancionad|Es\s+sFinc|Remitase|Por\s+tanto|POR\s+TANTO"
+    r"|Reg[ie]strese|Calle\s|Telf|Fax|esq\.)", re.I)
 
 MESES = (r"enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre"
          r"|setiembre|octubre|noviembre|diciembre")
-# Marcador de norma, tolerante: N, No, W, y la basura que deja el OCR (~o, bl(2,
-# I49, N9). Se usa SOLO para la enumeracion, donde hace falta distinguir
-# "y N 029" de un numero de articulo suelto.
+# Ancla: donde arranca la referencia a una norma.
+ANCLA = re.compile(r"Ley(?:es)?\s+Departamental(?:es)?|\bLey\b", re.I)
+VENTANA_ANCLA = 22
+NUM = re.compile(r"(\d{1,3})(?!\d)")
+# Continuacion de enumeracion: "y N 029", ", N 293 y N 300". Aca SI hace falta el
+# marcador, para no comerse numeros de articulo.
 MARCA = r"(?:N|W|No|Nro|Num)[^\dA-Za-z\n]{0,4}"
-# Objetivo principal: el numero va detras de "Ley Departamental", con o sin
-# marcador legible. Hasta 10 caracteres no numericos de basura en el medio.
-OBJ_DEP = re.compile(
-    r"Ley(?:es)?\s+Departamental(?:es)?[^\d\n]{0,10}(\d{1,3})(?!\d)", re.I)
-# "Se abroga la Ley N 504 'Ley Departamental Estructura...'"
-OBJ_LEY = re.compile(r"\bLey\s+[^\d\n]{0,6}(\d{1,3})(?!\d)", re.I)
 OBJ_MAS = re.compile(MARCA + r"\s*(\d{1,3})(?!\d)", re.I)
 # Lo que delata a un numero como no-ley: es un dia, o arranca una fecha.
 NO_ES_LEY = re.compile(r"^\s*(?:dias?\b|de\s+(?:" + MESES + r")\b)", re.I)
+# Si esto aparece justo antes del ancla, la ley nombrada es la EXCLUIDA.
+EXCEPCION = re.compile(r"(con\s+excepcion|salvo|excepto|a\s+excepcion)", re.I)
 
 GENERICA = re.compile(
     r"(todas?\s+las?\s+disposicion\w*|cualquier\s+disposici"
     r"|disposicion\w*\s+contrari|normas?\s+contrari|leyes\s+contrari"
     r"|de\s+igual\s+o\s+(?:menor|inferior)\s+jerarquia)", re.I)
 PARCIAL = re.compile(
-    r"parcial|el\s+articulo|los\s+articulos|el\s+inc|paragrafo|inciso", re.I)
+    r"parcial|el\s+articulo|los\s+articulos|el\s+art\.|los\s+art\."
+    r"|\bart\.\s*\d|el\s+inc|paragrafo|inciso", re.I)
 VENTANA = 700
 
 # Pares conocidos por lectura directa del PDF.
@@ -94,11 +98,12 @@ CONTROL_POSITIVO = [
     ("500", "129"), ("500", "432"), ("129", "7"), ("520", "500"),
     ("517", "94"), ("519", "29"), ("519", "109"),
     ("523", "504"), ("454", "139"), ("443", "206"), ("432", "129"),
-    ("405", "129"), ("276", "151"),
+    ("405", "129"), ("276", "151"), ("444", "438"), ("523", "505"),
+    ("454", "202"), ("517", "279"),
 ]
 
-# BANCO NEGATIVO: frases textuales del corpus que la v1 leyo como abrogacion.
-# Cada una debe devolver CERO objetivos.
+# BANCO NEGATIVO: frases textuales del corpus que alguna version leyo como
+# abrogacion. Cada una debe devolver CERO objetivos.
 CONTROL_NEGATIVO = [
     ("dia de sancion tras clausula generica",
      "Quedan abrogadas y derogadas todas las disposiciones contrarias a la "
@@ -123,18 +128,29 @@ CONTROL_NEGATIVO = [
      "vigentes que contradigan lo establecido en la presente Ley."),
     ("generica pura, sin ninguna cifra",
      "Se abrogan y derogan todas las leyes contrarias a la presente Ley."),
+    ("numero cortado por el borde de la ventana",
+     "Se abroga la Ley Departamental N* 5"),
+    ("clausula de EXCEPCION: la ley nombrada es la excluida",
+     "Se abrogan y derogan todas las normas de igual o menor jerarquia, que sean "
+     "contrarias a la presente Ley Departamental, con excepcion de la "
+     "Disposicion Transitoria Primera de la Ley Departamental N* 304"),
 ]
 
-# BANCO POSITIVO: abrogaciones expresas reales, con el marcador tal como el OCR
-# lo dejo. El caso de los articulos esta a proposito: debe devolver SOLO la ley.
+# BANCO POSITIVO: abrogaciones expresas reales, con el marcador tal como lo dejo
+# el OCR. El caso de los articulos esta a proposito: debe devolver SOLO la ley.
 CONTROL_ARISTA = [
     ("Se abroga la Ley Departamental N 129 de Organizacion", [129]),
     ("Se derogan los articulos 19 y 20 de la Ley Departamental W 129", [129]),
-    ("Se abrogan las Leyes Departamentales N 109 y N 029", [29, 109]),
+    ("Se abrogan las Leyes Departamentales N 109, de 14 de mayo de 2014 y N 029",
+     [29, 109]),
     ("Se abroga la Ley N 504 Estructura de Cargos", [504]),
     ("Se abroga la Ley Departamental ~o 206 de transferencia", [206]),
     ("Se abroga la Ley Departamental N' 094 Departamentalizacion de Carreteras",
      [94]),
+    ("Se abroga la Ley Departamental I49 204 de Modificacion al articulo 27", [204]),
+    ("Se deroga el articulo 2 de la Ley Departamental bl(2 139 de Administracion",
+     [139]),
+    ("Se deroga el Art. 2 de la Ley N* 438 de Aprobacion", [438]),
 ]
 
 
@@ -150,31 +166,60 @@ def recorta(ventana):
     return ventana[:m.start()] if m else ventana
 
 
-def _valido(texto, fin):
-    """False si lo que sigue al numero lo delata como dia o fecha."""
-    return not NO_ES_LEY.match(texto[fin:fin + 22])
+def _delatado(texto, fin):
+    """True si lo que sigue al numero lo delata como dia o fecha."""
+    return bool(NO_ES_LEY.match(texto[fin:fin + 22]))
+
+
+def _truncado(texto, fin):
+    """True si el numero toca el borde: puede estar cortado a la mitad."""
+    return fin >= len(texto)
+
+
+def _numero_del_ancla(disp, desde):
+    """Ultimo numero valido en la ventana del ancla.
+
+    Se toma el ULTIMO y no el primero porque la basura del OCR va ANTES del
+    numero real: en "Ley Departamental I49 204" el 49 es el marcador roto.
+    """
+    ventana = disp[desde:desde + VENTANA_ANCLA]
+    elegido = None
+    for m in NUM.finditer(ventana):
+        fin_abs = desde + m.end()
+        if _delatado(disp, fin_abs) or _truncado(disp, fin_abs):
+            continue
+        elegido = (int(m.group(1)), fin_abs)
+    return elegido
 
 
 def objetivos_de(ventana):
     """Numeros de ley nombrados como objetivo dentro de la parte dispositiva."""
     disp = recorta(ventana)
     nums = []
-    for patron in (OBJ_DEP, OBJ_LEY):
-        for om in patron.finditer(disp):
-            if not _valido(disp, om.end()):
+    for anc in ANCLA.finditer(disp):
+        # Guarda de excepcion: si justo antes del ancla dice "con excepcion de",
+        # la ley que sigue es la EXCLUIDA, no la abrogada.
+        antes = disp[max(0, anc.start() - 70):anc.start()]
+        if EXCEPCION.search(antes):
+            continue
+        elegido = _numero_del_ancla(disp, anc.end())
+        if not elegido:
+            continue
+        valor, fin = elegido
+        nums.append(valor)
+        cola = disp[fin:fin + 200]
+        corte = re.split(
+            r"(?:Se\s+abrog|Se\s+derog|Articulo|ARTICULO|Disposicion|DISPOSICION)",
+            cola)[0]
+        for extra in OBJ_MAS.finditer(corte):
+            if _delatado(corte, extra.end()) or _truncado(corte, extra.end()):
                 continue
-            nums.append(int(om.group(1)))
-            cola = disp[om.end():om.end() + 200]
-            corte = re.split(
-                r"(?:Se\s+abrog|Se\s+derog|Articulo|ARTICULO|Disposicion)", cola)[0]
-            for extra in OBJ_MAS.finditer(corte):
-                if _valido(corte, extra.end()):
-                    nums.append(int(extra.group(1)))
+            nums.append(int(extra.group(1)))
     return sorted(set(n for n in nums if 1 <= n <= 999))
 
 
 def extrae(leyes, texto):
-    aristas, genericas, sin_destino = [], [], []
+    aristas, genericas, excepciones, sin_destino = [], [], [], []
     cuenta = collections.Counter()
     for uid, meta in leyes.items():
         completo = limpia(" ".join(texto.get(uid, [])))
@@ -202,24 +247,27 @@ def extrae(leyes, texto):
                         "cita": cita,
                         "uid_abrogador": uid,
                     })
+            elif EXCEPCION.search(ventana[:300]):
+                excepciones.append({"ley": str(meta["numero"]), "anio": meta["anio"],
+                                    "cita": cita})
             elif GENERICA.search(ventana[:300]):
                 genericas.append({"ley": str(meta["numero"]), "anio": meta["anio"],
                                   "cita": cita})
             else:
                 sin_destino.append({"ley": str(meta["numero"]), "anio": meta["anio"],
                                     "cita": cita})
-    return aristas, genericas, sin_destino, cuenta
+    return aristas, genericas, excepciones, sin_destino, cuenta
 
 
 def banco():
     """Banco del instrumento. Sin esto verde, no se mide el corpus."""
-    print("=== BANCO NEGATIVO: frases reales que la v1 leyo como abrogacion ===")
+    print("=== BANCO NEGATIVO: frases reales que alguna version leyo mal ===")
     limpio = True
     for nombre, frase in CONTROL_NEGATIVO:
         objs = objetivos_de(limpia(frase))
         ok = not objs
         limpio = limpio and ok
-        print("   %-48s -> %-14s %s"
+        print("   %-54s -> %-14s %s"
               % (nombre, objs if objs else "sin objetivo", "ok" if ok else "FALLA"))
     print("   BANCO NEGATIVO: %s"
           % ("%d/%d" % (len(CONTROL_NEGATIVO), len(CONTROL_NEGATIVO)) if limpio
@@ -231,8 +279,8 @@ def banco():
         objs = objetivos_de(limpia(frase))
         ok = objs == sorted(esperado)
         todo = todo and ok
-        print("   %-62s -> %-14s %s"
-              % (frase[:62], objs, "ok" if ok else "FALLA, esperaba %s" % esperado))
+        print("   %-72s -> %-12s %s"
+              % (frase[:72], objs, "ok" if ok else "FALLA, esperaba %s" % esperado))
     print("   BANCO POSITIVO: %s"
           % ("%d/%d" % (len(CONTROL_ARISTA), len(CONTROL_ARISTA)) if todo
              else "HAY FALLAS"))
@@ -282,10 +330,11 @@ def main():
 
     leyes, texto = carga(db)
     print("leyes departamentales: %d | con texto: %d" % (len(leyes), len(texto)))
-    aristas, genericas, sin_destino, cuenta = extrae(leyes, texto)
+    aristas, genericas, excepciones, sin_destino, cuenta = extrae(leyes, texto)
     print()
     print("aristas abrogador->abrogada: %d" % len(aristas))
     print("clausulas GENERICAS (no matan a nadie en particular): %d" % len(genericas))
+    print("clausulas de EXCEPCION (nombran a la excluida): %d" % len(excepciones))
     print("clausulas SIN DESTINO legible (NO MEDIDO): %d" % len(sin_destino))
     if cuenta:
         print("otros: %s" % dict(cuenta))
@@ -301,7 +350,7 @@ def main():
     verde = control(aristas)
     print()
     json.dump({"aristas": aristas, "genericas": genericas,
-               "sin_destino": sin_destino},
+               "excepciones": excepciones, "sin_destino": sin_destino},
               open(salida, "w"), ensure_ascii=False, indent=1)
     print("escrito %s" % salida)
     if not verde:
