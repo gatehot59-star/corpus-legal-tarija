@@ -6,9 +6,16 @@ directorio temporal dejo bolivia-v8.db con el btree roto y 43 leyes
 departamentales MENOS, y el COUNT(*) igual devolvia un numero: 5991. Un conteo
 que contesta no prueba que la base este sana.
 
+Segundo dano, este mio: la primera version preguntaba los documentos sin chunk
+con un NOT EXISTS correlacionado. `chunks` es una tabla FTS5 sin indice por
+uid, asi que eso son 6.079 barridos completos y el guard se colgaba. Un guard
+que no termina es un guard que nadie corre. Se mide con una diferencia de
+conjuntos: 1,5 s.
+
 Uso:
     python3 guard_base.py <base.db> [--baseline baseline.json]
     python3 guard_base.py <base.db> --baseline b.json --escribir-baseline
+    python3 guard_base.py <base.db> --rapido   # saltea integrity_check
 
 Salida: 0 si TODO verde, 1 si algo rojo o NO MEDIDO.
 """
@@ -17,6 +24,7 @@ import json
 import os
 import sqlite3
 import sys
+import time
 
 BASELINE_POR_DEFECTO = {
     "documentos_min": 6079,
@@ -27,7 +35,7 @@ BASELINE_POR_DEFECTO = {
 }
 
 
-def medir(db):
+def medir(db, rapido=False):
     """Devuelve (medidas, error_de_apertura). Nunca inventa un cero."""
     medidas = {}
     try:
@@ -41,7 +49,10 @@ def medir(db):
         except Exception as exc:
             return "NO_MEDIDO:%s" % type(exc).__name__
 
-    medidas["integrity_check"] = q("PRAGMA integrity_check(20)")
+    if rapido:
+        medidas["integrity_check"] = "NO_MEDIDO:saltado_por_--rapido"
+    else:
+        medidas["integrity_check"] = q("PRAGMA integrity_check(20)")
     medidas["documentos"] = q("SELECT COUNT(*) FROM documentos")
     medidas["leyes_departamentales"] = q(
         "SELECT COUNT(*) FROM documentos WHERE tipo_norma=?",
@@ -53,12 +64,20 @@ def medir(db):
     medidas["vigencia_escrita"] = q(
         "SELECT COUNT(*) FROM documentos WHERE vigente IS NOT NULL")
     medidas["chars_totales"] = q("SELECT SUM(chars) FROM documentos")
-    medidas["docs_sin_chunk"] = q(
-        "SELECT COUNT(*) FROM documentos d WHERE NOT EXISTS"
-        " (SELECT 1 FROM chunks k WHERE k.uid = d.uid)")
     medidas["uids_duplicados"] = q(
         "SELECT COUNT(*) FROM (SELECT uid FROM documentos"
         " GROUP BY uid HAVING COUNT(*) > 1)")
+
+    # chunks es FTS5: sin indice por uid. Un barrido de cada lado y se comparan
+    # en memoria, en vez de 6.079 barridos correlacionados.
+    try:
+        docs = set(r[0] for r in con.execute("SELECT uid FROM documentos"))
+        conchunk = set(r[0] for r in con.execute("SELECT DISTINCT uid FROM chunks"))
+        medidas["docs_sin_chunk"] = len(docs - conchunk)
+        medidas["chunks_huerfanos"] = len(conchunk - docs)
+    except Exception as exc:
+        medidas["docs_sin_chunk"] = "NO_MEDIDO:%s" % type(exc).__name__
+        medidas["chunks_huerfanos"] = "NO_MEDIDO:%s" % type(exc).__name__
     return medidas, None
 
 
@@ -85,7 +104,7 @@ def juzgar(medidas, base):
     valor = medidas.get("leyes_departamentales")
     exacto = base["leyes_departamentales_exacto"]
     fila("leyes_departamentales", valor, valor == exacto, "== %s" % exacto)
-    for clave in ("docs_sin_chunk", "uids_duplicados"):
+    for clave in ("docs_sin_chunk", "chunks_huerfanos", "uids_duplicados"):
         valor = medidas.get(clave)
         fila(clave, valor, valor == 0, "== 0")
     return filas
@@ -95,6 +114,8 @@ def main():
     par = argparse.ArgumentParser()
     par.add_argument("base")
     par.add_argument("--baseline", default=None)
+    par.add_argument("--rapido", action="store_true",
+                     help="saltea integrity_check; deja NO MEDIDO, no verde")
     par.add_argument("--escribir-baseline", action="store_true",
                      dest="escribir_baseline")
     arg = par.parse_args()
@@ -107,7 +128,8 @@ def main():
         print("ROJO: la base no existe: %s" % arg.base)
         return 1
 
-    medidas, error = medir(arg.base)
+    inicio = time.time()
+    medidas, error = medir(arg.base, rapido=arg.rapido)
     print("base: %s (%s bytes)" % (arg.base, os.path.getsize(arg.base)))
     if error:
         print("ROJO: %s" % error)
@@ -133,6 +155,7 @@ def main():
               % (ancho, nombre, str(valor)[:14], esperado, estado))
     print("  (informativo) decretos_departamentales: %s"
           % medidas.get("decretos_departamentales"))
+    print("  medido en %.1f s" % (time.time() - inicio))
     malas = [f for f in filas if f[3] != "ok"]
     if malas:
         print("VEREDICTO: ROJO -> "
