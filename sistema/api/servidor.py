@@ -87,7 +87,7 @@ def cortar(txt,ini,fin):
                 e=txt.find(" ",fin,min(len(txt),fin+60));fin=e if e!=-1 else fin
     return ini,fin
 def texto(uid,nro,desde=None):
-    d=DBC.execute("SELECT d.tipo_norma,d.numero,d.anio,d.fecha,d.titulo,d.materia,d.sala,d.magistrado,d.organo,d.departamento,d.vigente,d.fuente_url,d.sha256,d.via_texto,d.chars,f.nombre fuente FROM documentos d LEFT JOIN fuentes f ON f.fuente_id=d.fuente_id WHERE d.uid=?",(uid,)).fetchone()
+    d=DBC.execute("SELECT d.tipo_norma,d.numero,d.anio,d.fecha,d.titulo,d.materia,d.sala,d.magistrado,d.organo,d.departamento,d.jurisdiccion,d.vigente,d.derogada_por,d.fuente_url,d.sha256,d.via_texto,d.chars,f.nombre fuente FROM documentos d LEFT JOIN fuentes f ON f.fuente_id=d.fuente_id WHERE d.uid=?",(uid,)).fetchone()
     if d is None:return None,"documento inexistente"
     doc=dict(d);doc["vigencia"]=vigencia(doc.pop("vigente"));doc["sha256_corto"]=(doc.get("sha256") or "")[:12];doc["oficial"]=not (doc.get("via_texto") or "").startswith("ocr");txt=documento(uid)
     if not txt:return None,"documento sin texto"
