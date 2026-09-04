@@ -1,0 +1,47 @@
+{
+  "medido": "2026-09-04T19:45Z",
+  "instrumento": "urllib con User-Agent de navegador, sesion con cookies y Referer, y 3 rutas alternativas del componente",
+  "control_positivo": {
+    "ids": ["3607", "3552"],
+    "resultado": "HTTP 200, Content-Type application/pdf, Content-Length 3104788 y 3295625, magic %PDF-",
+    "conclusion": "el descargador funciona: el fallo es de la fuente, no del cliente"
+  },
+  "total_no_servidos": 9,
+  "clases": [
+    {
+      "clase": "archivo_de_tamano_nulo",
+      "cantidad": 3,
+      "respuesta_del_servidor": "HTTP 200, text/html, 30 bytes, cuerpo literal: 'El tamano del Archivo es nulo'",
+      "lectura": "el item existe en el catalogo y el servidor admite que el archivo pesa cero",
+      "ids": ["2039", "2038", "2024"]
+    },
+    {
+      "clase": "devuelve_el_listado_en_vez_del_pdf",
+      "cantidad": 6,
+      "respuesta_del_servidor": "HTTP 200, text/html, 205723 bytes, es la pagina de listado de Decretos Departamentales",
+      "lectura": "la descarga falla en silencio y el componente cae al listado; con HTTP 200, quien no mire el magic del archivo cuenta esto como exito",
+      "ids": ["3427", "3428", "3408", "1846", "1845", "1807"],
+      "detalle": "2 de los 6 (3427 y 3428) figuran en ese mismo listado con el enlace IDENTICO al que use, y ese enlace igual no entrega el PDF. Los otros 4 ya no figuran en la pagina"
+    }
+  ],
+  "vias_agotadas": [
+    {"via": "sesion con cookies del portal + Referer", "resultado": "200 text/html 205723, igual que sin sesion"},
+    {"via": "?view=document&id=<id>", "resultado": "HTTPError"},
+    {"via": "?task=document.download&id=<id>", "resultado": "200 text/html 27609, no es PDF"},
+    {"via": "Wayback Machine", "resultado": "sin capturas. Control positivo: un id que SI descarga tampoco tiene capturas, o sea el archivo nunca fue crawleado con esta forma de URL"},
+    {"via": "ruta estatica del archivo", "resultado": "no existe: el componente entrega el binario en la misma URL, sin redirigir a un path de archivo"}
+  ],
+  "decision": "quedan declarados NO SERVIDOS POR LA FUENTE con el mensaje textual del servidor. No se inventa texto ni se marca como faltante nuestro. Se re-piden en la proxima corrida: un item de tamano nulo puede repararse del lado del portal",
+  "denominador": "935 registros de decreto censados; 926 descargables medidos hasta ahora",
+  "ids_con_slug": {
+    "3427": "decreto-departamental-n-014-2026-auto-de-buen-gobierno-segunda-vuelta-en-las-elecciones-subnacionales-2026-eleccion-de-gobernador-o-gobernadora-del-departamento-de-tarija",
+    "3428": "decreto-departamental-n-013-2026-aprobar-la-modificacion-presupuestaria-intrainstitucional-para-la-entidad-0906-gobierno-autonomo-departamental-de-tarija",
+    "3408": "decreto-departamental-n-059-2025-aprobar-el-objeto-del-presente-decreto-es-aprobar-la-modificacion-presupuestaria-intrainstitucional-para-la-entidad-0906-gobierno-autonomo-departamental-de-tarja",
+    "2039": "decreto-departamental-n-066-2021-aprobar-los-traspasos-presupuestarios-intrainstitucional-del-presupuesto-de-inversion-publica-para-el-proyecto-mejoramiento-red-vial-departamental-provincia-o-connor",
+    "2038": "decreto-departamental-n-065-2021-aprobar-los-traspasos-presupuestarios-intrainstitucional-del-presupuesto-de-inversion-publica-proyecto-construccion-estadio-dptal-guadalupano-o-connor",
+    "2024": "decreto-departamental-n-061-2021-modifica-la-reglamentacion-a-la-ley-departamental-n-72-ley-departamental-de-la-canasta-alimentaria-para-las-personas-de-la-tercera-edad",
+    "1846": "decreto-departamental-n-042-2021-otorgar-el-presente-reconocimiento-al-merito-al-lic-fernando-antonio-barrientos-iniguez-como-homenaje-postumo",
+    "1845": "decreto-departamental-n-041-2021-el-presente-decreto-departamental-tiene-por-objeto-reglamentar-la-ley-departamental-n-160-ley-de-transformacion-de-hornos-de-lenas-a-hornos-de-gas-natural",
+    "1807": "decreto-departamental-n-026-2021-autorizar-y-aprobar-la-modificacion-presupuestaria-intrainstitucional-al-presupuesto-de-la-gobernacion-del-departamento-de-tarija-gestion-2021"
+  }
+}
