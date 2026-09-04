@@ -137,11 +137,20 @@ $("#luz").onclick = () => modo(document.documentElement.dataset.modo === "noche"
   ].map(([r, v]) => '<div class="cifra"><b>' + v + "</b><i>" + r + "</i></div>").join("");
 
   const v = d.vigencia || {};
+  // La barra dibuja el denominador AMPLIO (incluye las Resoluciones del Pleno, que son
+  // normas del organo deliberante). El estrecho se menciona al lado. Antes era al reves:
+  // la barra mostraba el numero mas favorable, y eso es maquillaje.
+  const pcAmplio = v.cobertura_por_ciento || 0;
   const pc = v.cobertura_solo_leyes_por_ciento || 0;
   $("#vig").innerHTML =
-    '<div class="barra"><span style="width:' + Math.max(pc, 0.6) + '%"></span></div>' +
-    '<p class="dato"><b>' + nf(v.con_estado_medido) + "</b> de <b>" + nf(v.solo_leyes_y_nacionales) +
-    "</b> normas con vigencia verificada \u00b7 <b>" + pc + "%</b></p>" +
+    '<div class="cifras" style="margin-bottom:1.1rem"><div class="cifra"><b>' +
+    nf(v.con_estado_medido) + '</b><i>normas con vigencia verificada, de ' +
+    nf(v.normas_con_vigencia_aplicable) + '</i></div></div>' +
+    '<div class="barra"><span style="width:' + Math.max(pcAmplio, 0.5) + '%"></span></div>' +
+    '<p class="dato"><b>' + pcAmplio + "%</b> sobre las <b>" + nf(v.normas_con_vigencia_aplicable) +
+    "</b> normas del corpus (leyes departamentales, Resoluciones del Pleno y normativa nacional)" +
+    " \u00b7 <b>" + pc + "%</b> contando solo las <b>" + nf(v.solo_leyes_y_nacionales) +
+    "</b> leyes y normas nacionales. Publicamos el primero porque es el m\u00e1s exigente.</p>" +
     '<table><tr><th>categor\u00eda</th><th style="text-align:right">documentos</th><th>vigencia</th></tr>' +
     '<tr><td>Leyes departamentales y normativa nacional</td><td class="n">' + nf(v.solo_leyes_y_nacionales) +
     "</td><td>" + nf(v.con_estado_medido) + " verificadas, el resto <b>no medida</b></td></tr>" +
@@ -156,6 +165,8 @@ $("#luz").onclick = () => modo(document.documentElement.dataset.modo === "noche"
   $("#limites").innerHTML = '<div class="limites"><p>Lo que este sistema NO hace:</p><ul>' +
     (d.limites_declarados || []).map(l => "<li>" + esc(l) + "</li>").join("") +
     "<li>No verifica la vigencia de la mayor\u00eda de las normas: el estado real est\u00e1 arriba.</li>" +
+    "<li>Los contadores del panel de filtros del buscador son <b>aproximados</b>: se calculan sobre " +
+    "una muestra de los pasajes mejor rankeados, no sobre el total. Ah\u00ed van marcados con <b>~</b>.</li>" +
     "</ul></div>";
 
   $("#sello").textContent = "medido el " + new Date().toLocaleDateString("es-BO",
