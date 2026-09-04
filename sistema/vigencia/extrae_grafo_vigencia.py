@@ -14,7 +14,7 @@ CLASES DE CLAUSULA (tratarlas igual es el error caro):
                -> NO mata a nadie en particular
   excepcion    "...contrarias, CON EXCEPCION de la Disposicion Transitoria
                Primera de la Ley Departamental N 304" -> la ley nombrada es la
-               EXCLUIDA, no la matada. Leerla como victima es invertir el sentido
+               EXCLUIDA, no la matada. Leerla como victima invierte el sentido
   sin_destino  clausula sin objetivo ni formula generica -> NO MEDIDO
 
 HISTORIAL DE MIS PROPIOS ERRORES, que es la parte util del archivo:
@@ -35,7 +35,7 @@ v2  banco negativo con esas frases + marcador obligatorio. Dos fallas nuevas, y
          ARTICULOS. El parser daba [129] y tenia razon. Corregi el test.
 v3  30 aristas, banco 13/13. Al leerlas una por una, cuatro seguian mal:
       e) NUMERO CORTADO POR EL BORDE DE LA VENTANA: "N* 504" truncado a "N* 5"
-         entregaba una "LD 5". El `(?!\\d)` no protege cuando la cadena termina.
+         entregaba una "LD 5". El (?!\\d) no protege cuando la cadena termina.
       f) EL MARCADOR CON DIGITOS ROBA EL NUMERO: "Ley Departamental I49 204"
          daba 49; "bl(2 139" daba 2. La basura del OCR va ANTES del numero real,
          asi que dentro de la ventana del ancla hay que tomar el ULTIMO.
@@ -45,8 +45,13 @@ v3  30 aristas, banco 13/13. Al leerlas una por una, cuatro seguian mal:
          estaba escrito en la base como derogacion.
       h) "Se deroga el Art. 2 de la Ley 438" salia TOTAL porque el detector de
          parcialidad no conocia la abreviatura "Art.".
-v4  (esta) ancla + ultimo numero valido + guarda de truncado + guarda de
-    excepcion + "Art." en el detector de parcialidad.
+v4  guarda de truncado demasiado duro: rechazaba CUALQUIER numero al final de la
+    cadena, aunque la frase estuviera completa. Perdia "...de la Ley
+    Departamental W 129" y la continuacion "y N 029". El truncado es un problema
+    del BORDE DE LA VENTANA, no del texto.
+v5  (esta) el truncado solo se aplica cuando la ventana llego al limite duro de
+    VENTANA caracteres, que es el unico caso en que un numero puede venir
+    cortado a la mitad.
 
 Uso:
     python3 extrae_grafo_vigencia.py <base.db> <salida.json>
@@ -71,7 +76,6 @@ CORTE = re.compile(
 
 MESES = (r"enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre"
          r"|setiembre|octubre|noviembre|diciembre")
-# Ancla: donde arranca la referencia a una norma.
 ANCLA = re.compile(r"Ley(?:es)?\s+Departamental(?:es)?|\bLey\b", re.I)
 VENTANA_ANCLA = 22
 NUM = re.compile(r"(\d{1,3})(?!\d)")
@@ -128,13 +132,16 @@ CONTROL_NEGATIVO = [
      "vigentes que contradigan lo establecido en la presente Ley."),
     ("generica pura, sin ninguna cifra",
      "Se abrogan y derogan todas las leyes contrarias a la presente Ley."),
-    ("numero cortado por el borde de la ventana",
-     "Se abroga la Ley Departamental N* 5"),
     ("clausula de EXCEPCION: la ley nombrada es la excluida",
      "Se abrogan y derogan todas las normas de igual o menor jerarquia, que sean "
      "contrarias a la presente Ley Departamental, con excepcion de la "
      "Disposicion Transitoria Primera de la Ley Departamental N* 304"),
 ]
+
+# Caso de truncado: hay que construir una ventana que llegue al borde duro, que
+# es el unico escenario donde un numero puede venir cortado a la mitad.
+CONTROL_TRUNCADO = ("numero cortado por el borde de la ventana",
+                    "x" * (VENTANA - 35) + "Se abroga la Ley Departamental N* 5")
 
 # BANCO POSITIVO: abrogaciones expresas reales, con el marcador tal como lo dejo
 # el OCR. El caso de los articulos esta a proposito: debe devolver SOLO la ley.
@@ -171,30 +178,33 @@ def _delatado(texto, fin):
     return bool(NO_ES_LEY.match(texto[fin:fin + 22]))
 
 
-def _truncado(texto, fin):
-    """True si el numero toca el borde: puede estar cortado a la mitad."""
-    return fin >= len(texto)
+def objetivos_de(ventana, truncada=False):
+    """Numeros de ley nombrados como objetivo en la parte dispositiva.
 
-
-def _numero_del_ancla(disp, desde):
-    """Ultimo numero valido en la ventana del ancla.
-
-    Se toma el ULTIMO y no el primero porque la basura del OCR va ANTES del
-    numero real: en "Ley Departamental I49 204" el 49 es el marcador roto.
+    truncada=True solo cuando la ventana llego al borde duro de VENTANA: ahi, y
+    solo ahi, un numero pegado al final puede estar cortado a la mitad.
     """
-    ventana = disp[desde:desde + VENTANA_ANCLA]
-    elegido = None
-    for m in NUM.finditer(ventana):
-        fin_abs = desde + m.end()
-        if _delatado(disp, fin_abs) or _truncado(disp, fin_abs):
-            continue
-        elegido = (int(m.group(1)), fin_abs)
-    return elegido
-
-
-def objetivos_de(ventana):
-    """Numeros de ley nombrados como objetivo dentro de la parte dispositiva."""
     disp = recorta(ventana)
+    borde = truncada and len(ventana) >= VENTANA
+
+    def cortado(texto, fin):
+        return borde and fin >= len(texto)
+
+    def elige(desde):
+        """Ultimo numero valido en la ventana del ancla.
+
+        Se toma el ULTIMO y no el primero porque la basura del OCR va ANTES del
+        numero real: en "Ley Departamental I49 204" el 49 es el marcador roto.
+        """
+        trozo = disp[desde:desde + VENTANA_ANCLA]
+        elegido = None
+        for m in NUM.finditer(trozo):
+            fin_abs = desde + m.end()
+            if _delatado(disp, fin_abs) or cortado(disp, fin_abs):
+                continue
+            elegido = (int(m.group(1)), fin_abs)
+        return elegido
+
     nums = []
     for anc in ANCLA.finditer(disp):
         # Guarda de excepcion: si justo antes del ancla dice "con excepcion de",
@@ -202,7 +212,7 @@ def objetivos_de(ventana):
         antes = disp[max(0, anc.start() - 70):anc.start()]
         if EXCEPCION.search(antes):
             continue
-        elegido = _numero_del_ancla(disp, anc.end())
+        elegido = elige(anc.end())
         if not elegido:
             continue
         valor, fin = elegido
@@ -212,7 +222,7 @@ def objetivos_de(ventana):
             r"(?:Se\s+abrog|Se\s+derog|Articulo|ARTICULO|Disposicion|DISPOSICION)",
             cola)[0]
         for extra in OBJ_MAS.finditer(corte):
-            if _delatado(corte, extra.end()) or _truncado(corte, extra.end()):
+            if _delatado(corte, extra.end()) or cortado(corte, extra.end()):
                 continue
             nums.append(int(extra.group(1)))
     return sorted(set(n for n in nums if 1 <= n <= 999))
@@ -236,7 +246,8 @@ def extrae(leyes, texto):
             vistos.add(firma)
             cita = ventana[:330]
             parcial = bool(PARCIAL.search(ventana[:300]))
-            objetivos = [o for o in objetivos_de(ventana) if str(o) != propio]
+            objetivos = [o for o in objetivos_de(ventana, truncada=True)
+                         if str(o) != propio]
             if objetivos:
                 for obj in objetivos:
                     aristas.append({
@@ -269,9 +280,15 @@ def banco():
         limpio = limpio and ok
         print("   %-54s -> %-14s %s"
               % (nombre, objs if objs else "sin objetivo", "ok" if ok else "FALLA"))
+    nombre, frase = CONTROL_TRUNCADO
+    objs = objetivos_de(frase, truncada=True)
+    ok = not objs
+    limpio = limpio and ok
+    print("   %-54s -> %-14s %s"
+          % (nombre, objs if objs else "sin objetivo", "ok" if ok else "FALLA"))
+    total = len(CONTROL_NEGATIVO) + 1
     print("   BANCO NEGATIVO: %s"
-          % ("%d/%d" % (len(CONTROL_NEGATIVO), len(CONTROL_NEGATIVO)) if limpio
-             else "HAY FALLAS"))
+          % ("%d/%d" % (total, total) if limpio else "HAY FALLAS"))
     print()
     print("=== BANCO POSITIVO: abrogaciones expresas con marcador roto ===")
     todo = True
