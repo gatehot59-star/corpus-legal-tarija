@@ -17,7 +17,16 @@ CLASES DE CLAUSULA (tratarlas igual es el error caro):
                EXCLUIDA, no la matada. Leerla como victima invierte el sentido
   sin_destino  clausula sin objetivo ni formula generica -> NO MEDIDO
 
-HISTORIAL DE MIS PROPIOS ERRORES, que es la parte util del archivo. Seis
+TRES BANCOS, porque cada uno atrapa un error distinto:
+
+  CONTROL_ARISTA    debe devolver EXACTAMENTE estos numeros
+  CONTROL_NEGATIVO  debe devolver CERO numeros
+  CONTROL_EXCLUYE   debe devolver algo, pero NUNCA este numero
+
+El tercero nacio de un error mio: etiquete como "negativo" una frase que si
+tenia una abrogacion real. Ver v7.
+
+HISTORIAL DE MIS PROPIOS ERRORES, que es la parte util del archivo. Siete
 versiones, y CADA UNA pasaba sus controles del momento:
 
 v1  40 aristas, CONTROL POSITIVO 10/10, y 18 de las 40 eran basura. Un control
@@ -27,13 +36,12 @@ v1  40 aristas, CONTROL POSITIVO 10/10, y 18 de las 40 eran basura. Un control
          noviembre" -> la LD 253 abrogaba una "LD 28" inexistente. 13 aristas.
       b) EL MEMBRETE: la LD 129 abrogaba la "LD 425" porque el pie de pagina dice
          "Calle 15 de Abril N 425 esq. Gral. Trigo". Una direccion postal.
-v2  banco negativo con esas frases + marcador obligatorio. Dos fallas nuevas, y
-    una era MIA:
+v2  banco negativo con esas frases + marcador obligatorio. Dos fallas nuevas:
       c) El OCR tambien destruye la N: "Ley Departamental ~o 206". Exigir
          marcador SIEMPRE perdia abrogaciones expresas.
-      d) MI EXPECTATIVA ESTABA MAL: puse que "Se derogan los articulos 19 y 20 de
-         la Ley Departamental W 129" debia dar [19, 20, 129]. Falso: 19 y 20 son
-         ARTICULOS. El parser daba [129] y tenia razon. Corregi el test.
+      d) MI EXPECTATIVA ESTABA MAL (1a vez): puse que "Se derogan los articulos
+         19 y 20 de la Ley Departamental W 129" debia dar [19, 20, 129]. Falso:
+         19 y 20 son ARTICULOS. El parser daba [129] y tenia razon.
 v3  30 aristas. Al leerlas una por una, cuatro seguian mal:
       e) NUMERO CORTADO POR EL BORDE DE LA VENTANA: "N* 504" truncado a "N* 5"
          entregaba una "LD 5". El (?!\\d) no protege cuando la cadena termina.
@@ -46,20 +54,22 @@ v3  30 aristas. Al leerlas una por una, cuatro seguian mal:
          estaba escrito en la base como derogacion.
       h) "Se deroga el Art. 2 de la Ley 438" salia TOTAL porque el detector de
          parcialidad no conocia la abreviatura "Art.".
-v4  guarda de truncado demasiado duro: rechazaba CUALQUIER numero al final de la
-    cadena, aunque la frase estuviera completa. El truncado es un problema del
+v4  MI GUARDA ESTABA MAL: el de truncado rechazaba CUALQUIER numero al final de
+    la cadena, aunque la frase estuviera completa. El truncado es un problema del
     BORDE DE LA VENTANA, no del texto.
-v5  29 aristas, banco 18/18, y TRES seguian mal, todas por el ancla suelta:
-      i) "a la presente Ley. 1111 r Jr II lIU1 ll" -> ruido de OCR leido como
-         "LD 1".
+v5  29 aristas, y TRES seguian mal, todas por el ancla suelta:
+      i) "a la presente Ley. 1111 r Jr II lIU1 ll" -> ruido leido como "LD 1".
       j) "Ley de Organiza-:1on del EJecutivo" -> el OCR convirtio "cion" en
-         ":1on" y salio otra "LD 1". El ancla estaba dentro del TITULO citado,
-         no de una referencia numerada.
+         ":1on" y salio otra "LD 1". El ancla caia dentro de un TITULO citado.
       k) "y la Ley 483 478 Departamental" -> texto destruido; elegir el ultimo
-         (478) es adivinar. Mejor NO MEDIDO.
-v6  (esta) DOS clases de ancla: "Ley Departamental" admite marcador ilegible
-    (ahi es donde el OCR lo come), pero el ancla suelta "Ley" EXIGE marcador.
-    Un titulo citado no tiene marcador, y el ruido tampoco.
+         es adivinar. Mejor NO MEDIDO.
+v6  dos clases de ancla: "Ley Departamental" admite marcador ilegible (ahi es
+    donde el OCR lo come), el ancla suelta "Ley" EXIGE marcador.
+v7  (esta) MI EXPECTATIVA ESTABA MAL (3a vez): puse la frase del caso (j) en el
+    banco NEGATIVO, exigiendo cero objetivos. Pero esa frase SI abroga: dice
+    "Se abroga la Ley Departamental W 500". Lo que no debia salir era el 1 del
+    ruido, no la 500. De ahi nace CONTROL_EXCLUYE: hay frases donde la respuesta
+    correcta no es "nada" ni "todo", sino "esto si y aquello no".
 
 Uso:
     python3 extrae_grafo_vigencia.py <base.db> <salida.json>
@@ -148,9 +158,6 @@ CONTROL_NEGATIVO = [
     ("ruido de OCR detras del ancla suelta",
      "Se derogan y abrogan todas las disposiciones contrarias a la presente Ley. "
      "1111 r Jr II lIU1 ll, 111141111111 ASAMBLEA LEGISLATIVA DEPARTAMENTAL"),
-    ("el ancla cae dentro de un TITULO citado, no de una referencia",
-     'Se abroga la Ley Departamental W 500 "Ley de Organiza-:1on del EJecutivo '
-     'Departamental" del 20 de marzo de 2025 y sus disposiciones conexas'),
     ("texto destruido: dos numeros sin marcador es adivinar",
      "y la Ley 483 478 Departamental Modificatoria a la ley"),
 ]
@@ -159,6 +166,15 @@ CONTROL_NEGATIVO = [
 # es el unico escenario donde un numero puede venir cortado a la mitad.
 CONTROL_TRUNCADO = ("numero cortado por el borde de la ventana",
                     "x" * (VENTANA - 35) + "Se abroga la Ley Departamental N* 5")
+
+# BANCO DE EXCLUSION: la frase SI tiene abrogacion, pero hay un numero que no
+# debe aparecer nunca. Nace del error de la v7.
+CONTROL_EXCLUYE = [
+    ("titulo citado con ruido :1on: sale la 500, NO el 1",
+     'Se abroga la Ley Departamental W 500 "Ley de Organiza-:1on del EJecutivo '
+     'Departamental" del 20 de marzo de 2025 y sus disposiciones conexas',
+     500, 1),
+]
 
 # BANCO POSITIVO: abrogaciones expresas reales, con el marcador tal como lo dejo
 # el OCR. El caso de los articulos esta a proposito: debe devolver SOLO la ley.
@@ -296,23 +312,36 @@ def extrae(leyes, texto):
 
 def banco():
     """Banco del instrumento. Sin esto verde, no se mide el corpus."""
-    print("=== BANCO NEGATIVO: frases reales que alguna version leyo mal ===")
+    print("=== BANCO NEGATIVO: debe devolver CERO objetivos ===")
     limpio = True
     for nombre, frase in CONTROL_NEGATIVO:
         objs = objetivos_de(limpia(frase))
         ok = not objs
         limpio = limpio and ok
-        print("   %-60s -> %-14s %s"
+        print("   %-56s -> %-14s %s"
               % (nombre, objs if objs else "sin objetivo", "ok" if ok else "FALLA"))
     nombre, frase = CONTROL_TRUNCADO
     objs = objetivos_de(frase, truncada=True)
     ok = not objs
     limpio = limpio and ok
-    print("   %-60s -> %-14s %s"
+    print("   %-56s -> %-14s %s"
           % (nombre, objs if objs else "sin objetivo", "ok" if ok else "FALLA"))
     total = len(CONTROL_NEGATIVO) + 1
     print("   BANCO NEGATIVO: %s"
           % ("%d/%d" % (total, total) if limpio else "HAY FALLAS"))
+    print()
+    print("=== BANCO DE EXCLUSION: tiene que salir uno y NO salir el otro ===")
+    excl = True
+    for nombre, frase, debe, no_debe in CONTROL_EXCLUYE:
+        objs = objetivos_de(limpia(frase))
+        ok = debe in objs and no_debe not in objs
+        excl = excl and ok
+        print("   %-56s -> %-14s %s"
+              % (nombre, objs, "ok" if ok else
+                 "FALLA, esperaba %s presente y %s ausente" % (debe, no_debe)))
+    print("   BANCO DE EXCLUSION: %s"
+          % ("%d/%d" % (len(CONTROL_EXCLUYE), len(CONTROL_EXCLUYE)) if excl
+             else "HAY FALLAS"))
     print()
     print("=== BANCO POSITIVO: abrogaciones expresas con marcador roto ===")
     todo = True
@@ -325,7 +354,7 @@ def banco():
     print("   BANCO POSITIVO: %s"
           % ("%d/%d" % (len(CONTROL_ARISTA), len(CONTROL_ARISTA)) if todo
              else "HAY FALLAS"))
-    return limpio and todo
+    return limpio and excl and todo
 
 
 def control(aristas):
