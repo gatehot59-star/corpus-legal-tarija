@@ -1,0 +1,129 @@
+name: censo-gaceta-tcp
+
+# Por que aca y no en brain-env: el taller es un Celeron sin AVX y el primer
+# tomo tardo entre 10 y 18 min solo en extraer texto. Diez tomos en serie son
+# 2-3 horas. Aca son 10 jobs EN PARALELO, gratis por ser repo publico.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gestion:
+        description: gestion a censar
+        required: false
+        default: "2022"
+
+jobs:
+  tomo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        semestre: [1, 2]
+        romano: [I, II, III, IV, V]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: instalar poppler y pypdf
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+          python3 -m pip install --quiet pypdf
+
+      - name: bajar el tomo
+        id: bajar
+        env:
+          GESTION: ${{ github.event.inputs.gestion || '2022' }}
+          SEM: ${{ matrix.semestre }}
+          ROM: ${{ matrix.romano }}
+        run: |
+          set -uo pipefail
+          NOMBRE="Tomo${ROM}s${SEM}${GESTION}"
+          BASE="https://tcpbolivia.bo/wp-content/uploads/2025/03"
+          # el portal sirve TomoIII SIN extension .pdf en los dos semestres
+          for CAND in "${NOMBRE}.pdf" "${NOMBRE}"; do
+            CT=$(curl -sL -o tomo.pdf -w '%{content_type}' --max-time 600 -A Mozilla/5.0 "${BASE}/${CAND}" || true)
+            if [ -s tomo.pdf ] && echo "$CT" | grep -qi pdf; then
+              echo "nombre=${NOMBRE}" >> "$GITHUB_OUTPUT"
+              echo "url=${BASE}/${CAND}" >> "$GITHUB_OUTPUT"
+              ls -la tomo.pdf
+              sha256sum tomo.pdf
+              exit 0
+            fi
+          done
+          echo "ROJO: ninguna variante de ${NOMBRE} devolvio un PDF"
+          exit 1
+
+      - name: extraer y censar
+        env:
+          NOMBRE: ${{ steps.bajar.outputs.nombre }}
+          URL: ${{ steps.bajar.outputs.url }}
+        run: |
+          set -uo pipefail
+          # pdftotext primero: es C y mucho mas rapido que pypdf.
+          # Si no produce texto util, cae a pypdf. Los dos pueden dar rojo.
+          pdftotext -q tomo.pdf tomo.txt || true
+          if [ ! -s tomo.txt ] || [ "$(wc -c < tomo.txt)" -lt 100000 ]; then
+            echo "pdftotext no sirvio, probando pypdf"
+            python3 -c "import pypdf;r=pypdf.PdfReader('tomo.pdf');f=open('tomo.txt','w');[f.write(p.extract_text() or '') for p in r.pages];f.close()"
+          fi
+          python3 - <<'PY'
+          import hashlib, json, os, re
+          nombre = os.environ["NOMBRE"]
+          txt = open("tomo.txt", encoding="utf-8", errors="replace").read()
+          scp = set(re.findall(r"SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+([0-9]{3,4}/[0-9]{4}[-A-Za-z0-9]*)", txt))
+          tarija = set()
+          # atribuir cada Tarija a su resolucion: se parte el texto por encabezado
+          partes = re.split(r"(?=SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+[0-9]{3,4}/)", txt)
+          for p in partes:
+              m = re.search(r"SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+([0-9]{3,4}/[0-9]{4}[-A-Za-z0-9]*)", p)
+              if m and re.search(r"Departamento:\s*Tarija", p):
+                  tarija.add(m.group(1))
+          out = {
+              "tomo": nombre,
+              "url": os.environ["URL"],
+              "sha256_pdf": hashlib.sha256(open("tomo.pdf", "rb").read()).hexdigest(),
+              "bytes_pdf": os.path.getsize("tomo.pdf"),
+              "caracteres": len(txt),
+              "scp_unicas": len(scp),
+              "tarija_resoluciones": sorted(tarija),
+              "tarija_total": len(tarija),
+              "campo_departamento": len(re.findall(r"Departamento:", txt)),
+              "autos": len(re.findall("AUTO CONSTITU", txt, re.I)),
+              "declaraciones": len(re.findall("DECLARACI", txt)),
+          }
+          # GUARD que puede dar ROJO: un PDF escaneado sin capa de texto da 0 y 0
+          out["veredicto"] = "ROJO_SIN_TEXTO_UTIL" if (out["scp_unicas"] == 0 or out["campo_departamento"] == 0) else "VERDE"
+          json.dump(out, open(nombre + ".json", "w"), ensure_ascii=False, indent=1)
+          print(json.dumps({k: v for k, v in out.items() if k != "tarija_resoluciones"}, indent=1))
+          if out["veredicto"] != "VERDE":
+              raise SystemExit("GUARD ROJO: " + nombre)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: censo-${{ steps.bajar.outputs.nombre }}
+          path: |
+            ${{ steps.bajar.outputs.nombre }}.json
+            tomo.txt
+          retention-days: 14
+
+  control-negativo:
+    # Sin esto, un 200 no distingue existe de no existe. Este job DEBE fallar
+    # en bajar un tomo inventado; si lo consigue, todos los verdes de arriba
+    # quedan sin valor.
+    runs-on: ubuntu-latest
+    steps:
+      - name: un tomo que no puede existir
+        run: |
+          set -uo pipefail
+          CT=$(curl -sL -o falso.pdf -w '%{content_type}' --max-time 120 -A Mozilla/5.0 \
+            "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoXXs92022.pdf" || true)
+          echo "content-type: ${CT}"
+          ls -la falso.pdf || true
+          if echo "$CT" | grep -qi pdf && [ "$(wc -c < falso.pdf)" -gt 100000 ]; then
+            echo "ALERTA: el servidor devolvio un PDF para un tomo inventado."
+            echo "Los 200 de esta corrida NO valen."
+            exit 1
+          fi
+          echo "CONTROL NEGATIVO OK: el inventado no devuelve PDF"
