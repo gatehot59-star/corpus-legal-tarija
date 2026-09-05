@@ -1,13 +1,15 @@
 name: censo-gaceta-tcp
 
-# Por que aca y no en brain-env: el taller es un Celeron sin AVX y el primer
-# tomo tardo mas de 25 min solo en extraer texto, sin terminar. Aca los 10
-# tomos y el control negativo cerraron en 1m39s. Medido, no estimado.
-# runs-on: ubuntu-latest (hosted). NO self-hosted: el runner self-hosted vive
-# dentro de brain-env y ya saturo el taller una vez.
+# Por que en Actions y no en brain-env: el Celeron llevaba mas de 25 min en UN
+# tomo sin terminar. Aca los 10 tomos de 2022 y el control negativo cerraron en
+# 1m39s. Medido, no estimado.
+# runs-on: ubuntu-latest (hosted). NO self-hosted: ese runner vive DENTRO de
+# brain-env y ya saturo el taller una vez.
 #
-# El disparador es un push a disparadores/ porque no tengo workflow_dispatch
-# por API desde este canal. Medido, no supuesto.
+# La matriz se DESCUBRE del portal, no se supone: el patron de URL cambia por
+# gestion (2018 plano 5 tomos, 2019 trimestral 20 tomos, 2020 y 2022 semestral
+# 10 tomos). Generalizar el patron de 2022 a 2019 habria pedido 10 URLs
+# inexistentes y concluido que la gestion no existe.
 
 on:
   workflow_dispatch:
@@ -24,14 +26,45 @@ permissions:
   contents: write
 
 jobs:
+  descubrir:
+    runs-on: ubuntu-latest
+    outputs:
+      gestion: ${{ steps.d.outputs.gestion }}
+      matriz: ${{ steps.d.outputs.matriz }}
+      cuantos: ${{ steps.d.outputs.cuantos }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: d
+        env:
+          ENTRADA: ${{ github.event.inputs.gestion }}
+        run: |
+          set -uo pipefail
+          # la gestion viene del input, o del propio disparador commiteado
+          GESTION="${ENTRADA}"
+          if [ -z "${GESTION}" ]; then
+            GESTION=$(grep -oE 'gestion:[[:space:]]*[0-9]{4}' disparadores/censo-gaceta.txt | grep -oE '[0-9]{4}' | head -1)
+          fi
+          if [ -z "${GESTION}" ]; then
+            echo "ROJO: no pude determinar la gestion"
+            exit 1
+          fi
+          echo "gestion=${GESTION}" >> "$GITHUB_OUTPUT"
+          echo "censando gestion ${GESTION}"
+          python3 instrumentos/descubrir_gaceta.py "${GESTION}" > matriz.json
+          CUANTOS=$(python3 -c "import json;print(len(json.load(open('matriz.json'))))")
+          echo "cuantos=${CUANTOS}" >> "$GITHUB_OUTPUT"
+          echo "matriz=$(cat matriz.json)" >> "$GITHUB_OUTPUT"
+          echo "tomos descubiertos: ${CUANTOS}"
+          cat matriz.json
+
   tomo:
+    needs: descubrir
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        semestre: [1, 2]
-        romano: [I, II, III, IV, V]
+        t: ${{ fromJson(needs.descubrir.outputs.matriz) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,33 +75,25 @@ jobs:
           python3 -m pip install --quiet pypdf
 
       - name: bajar el tomo
-        id: bajar
         env:
-          GESTION: ${{ github.event.inputs.gestion || '2022' }}
-          SEM: ${{ matrix.semestre }}
-          ROM: ${{ matrix.romano }}
+          URL: ${{ matrix.t.url }}
+          NOMBRE: ${{ matrix.t.nombre }}
         run: |
           set -uo pipefail
-          NOMBRE="Tomo${ROM}s${SEM}${GESTION}"
-          BASE="https://tcpbolivia.bo/wp-content/uploads/2025/03"
-          # el portal sirve TomoIII SIN extension .pdf en los dos semestres
-          for CAND in "${NOMBRE}.pdf" "${NOMBRE}"; do
-            CT=$(curl -sL -o tomo.pdf -w '%{content_type}' --max-time 600 -A Mozilla/5.0 "${BASE}/${CAND}" || true)
-            if [ -s tomo.pdf ] && echo "$CT" | grep -qi pdf; then
-              echo "nombre=${NOMBRE}" >> "$GITHUB_OUTPUT"
-              echo "url=${BASE}/${CAND}" >> "$GITHUB_OUTPUT"
-              ls -la tomo.pdf
-              sha256sum tomo.pdf
-              exit 0
-            fi
-          done
-          echo "ROJO: ninguna variante de ${NOMBRE} devolvio un PDF"
-          exit 1
+          CT=$(curl -sL -o tomo.pdf -w '%{content_type}' --max-time 900 -A Mozilla/5.0 "${URL}")
+          echo "content-type: ${CT}"
+          ls -la tomo.pdf
+          if ! echo "$CT" | grep -qi pdf; then
+            echo "ROJO: ${NOMBRE} no devolvio un PDF"
+            exit 1
+          fi
+          sha256sum tomo.pdf
 
       - name: extraer y censar
         env:
-          NOMBRE: ${{ steps.bajar.outputs.nombre }}
-          URL: ${{ steps.bajar.outputs.url }}
+          NOMBRE: ${{ matrix.t.nombre }}
+          URL: ${{ matrix.t.url }}
+          GESTION: ${{ needs.descubrir.outputs.gestion }}
         run: |
           set -uo pipefail
           # pdftotext primero: es C y mucho mas rapido que pypdf.
@@ -81,16 +106,18 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, os, re
           nombre = os.environ["NOMBRE"]
+          gestion = os.environ["GESTION"]
           txt = open("tomo.txt", encoding="utf-8", errors="replace").read()
-          scp = set(re.findall(r"SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+([0-9]{3,4}/[0-9]{4}[-A-Za-z0-9]*)", txt))
+          enc = r"SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+([0-9]{3,4}/[0-9]{4}[-A-Za-z0-9]*)"
+          scp = set(re.findall(enc, txt))
           tarija = set()
-          # atribuir cada Tarija a su resolucion: se parte el texto por encabezado
-          partes = re.split(r"(?=SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+[0-9]{3,4}/)", txt)
-          for p in partes:
-              m = re.search(r"SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+([0-9]{3,4}/[0-9]{4}[-A-Za-z0-9]*)", p)
+          # atribuir cada Tarija a SU resolucion: se parte el texto por encabezado
+          for p in re.split(r"(?=SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+[0-9]{3,4}/)", txt):
+              m = re.search(enc, p)
               if m and re.search(r"Departamento:\s*Tarija", p):
                   tarija.add(m.group(1))
           out = {
+              "gestion": gestion,
               "tomo": nombre,
               "url": os.environ["URL"],
               "sha256_pdf": hashlib.sha256(open("tomo.pdf", "rb").read()).hexdigest(),
@@ -106,8 +133,7 @@ jobs:
           # GUARD que puede dar ROJO: un PDF escaneado sin capa de texto da 0 y 0
           out["veredicto"] = "ROJO_SIN_TEXTO_UTIL" if (out["scp_unicas"] == 0 or out["campo_departamento"] == 0) else "VERDE"
           json.dump(out, open(nombre + ".json", "w"), ensure_ascii=False, indent=1)
-          resumen = {k: v for k, v in out.items() if k != "tarija_resoluciones"}
-          print(json.dumps(resumen, indent=1))
+          print(json.dumps({k: v for k, v in out.items() if k != "tarija_resoluciones"}, indent=1))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write("### " + nombre + chr(10) + "```json" + chr(10) + json.dumps(out, indent=1) + chr(10) + "```" + chr(10))
           if out["veredicto"] != "VERDE":
@@ -116,21 +142,23 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: censo-${{ steps.bajar.outputs.nombre }}
-          path: ${{ steps.bajar.outputs.nombre }}.json
+          name: censo-${{ matrix.t.nombre }}
+          path: ${{ matrix.t.nombre }}.json
           retention-days: 14
 
   control-negativo:
-    # Sin esto, un 200 no distingue existe de no existe. Este job DEBE fallar
-    # en bajar un tomo inventado; si lo consigue, todos los verdes de arriba
-    # quedan sin valor.
+    # Sin esto, un 200 no distingue existe de no existe. Este job DEBE fallar en
+    # bajar un tomo inventado; si lo consigue, todos los verdes quedan sin valor.
+    needs: descubrir
     runs-on: ubuntu-latest
     steps:
       - name: un tomo que no puede existir
+        env:
+          GESTION: ${{ needs.descubrir.outputs.gestion }}
         run: |
           set -uo pipefail
           CT=$(curl -sL -o falso.pdf -w '%{content_type}' --max-time 120 -A Mozilla/5.0 \
-            "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoXXs92022.pdf" || true)
+            "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoXXinventado${GESTION}.pdf" || true)
           echo "content-type: ${CT}"
           ls -la falso.pdf || true
           if echo "$CT" | grep -qi pdf && [ "$(wc -c < falso.pdf)" -gt 100000 ]; then
@@ -141,9 +169,8 @@ jobs:
           echo "CONTROL NEGATIVO OK: el inventado no devuelve PDF"
 
   juntar:
-    # Un artifact que expira en 14 dias NO es memoria del proyecto.
-    # git si. Este job baja los 10 JSON y los commitea.
-    needs: [tomo, control-negativo]
+    # Un artifact que expira en 14 dias NO es memoria del proyecto. git si.
+    needs: [descubrir, tomo, control-negativo]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -154,22 +181,28 @@ jobs:
           pattern: censo-Tomo*
           merge-multiple: true
       - name: consolidar y commitear
+        env:
+          GESTION: ${{ needs.descubrir.outputs.gestion }}
+          ESPERADOS: ${{ needs.descubrir.outputs.cuantos }}
         run: |
           set -uo pipefail
-          mkdir -p mediciones/gaceta-2022
-          cp bajados/*.json mediciones/gaceta-2022/ 2>/dev/null || true
-          ls -la mediciones/gaceta-2022/
+          DIR="mediciones/gaceta-${GESTION}"
+          mkdir -p "${DIR}"
+          cp bajados/*.json "${DIR}/" 2>/dev/null || true
+          ls -la "${DIR}/"
           python3 - <<'PY'
-          import glob, json
-          filas = []
-          for p in sorted(glob.glob("mediciones/gaceta-2022/Tomo*.json")):
-              filas.append(json.load(open(p)))
+          import glob, json, os
+          gestion = os.environ["GESTION"]
+          esperados = int(os.environ.get("ESPERADOS") or 0)
+          d = "mediciones/gaceta-" + gestion
+          filas = [json.load(open(p)) for p in sorted(glob.glob(d + "/Tomo*.json"))]
           verdes = [f for f in filas if f.get("veredicto") == "VERDE"]
           todas = set()
           for f in verdes:
               todas.update(f.get("tarija_resoluciones", []))
           res = {
-              "gestion": "2022",
+              "gestion": gestion,
+              "tomos_descubiertos": esperados,
               "tomos_medidos": len(filas),
               "tomos_verdes": len(verdes),
               "scp_unicas_sumadas": sum(f["scp_unicas"] for f in verdes),
@@ -182,11 +215,23 @@ jobs:
                   for f in filas
               ],
           }
-          json.dump(res, open("mediciones/gaceta-2022/RESUMEN.json", "w"), ensure_ascii=False, indent=1)
+          # GUARD DE COMPLETITUD: si faltan tomos, el censo NO esta cerrado y se dice.
+          # Sin esto, 18 de 20 tomos se leerian como "la gestion completa".
+          res["completo"] = (esperados > 0 and len(verdes) == esperados)
+          if not res["completo"]:
+              res["ADVERTENCIA"] = "censo PARCIAL: %d verdes de %d descubiertos" % (len(verdes), esperados)
+          # el solapamiento entre tomos se mide, no se asume
+          res["sin_solapamiento"] = (res["tarija_resoluciones_unicas"] == res["tarija_sumado_por_tomo"])
+          json.dump(res, open(d + "/RESUMEN.json", "w"), ensure_ascii=False, indent=1)
           print(json.dumps({k: v for k, v in res.items() if k not in ("tarija_listado", "por_tomo")}, indent=1))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("## RESUMEN " + gestion + chr(10) + "```json" + chr(10) +
+                      json.dumps({k: v for k, v in res.items() if k not in ("tarija_listado", "por_tomo")}, indent=1) +
+                      chr(10) + "```" + chr(10))
           PY
           git config user.name "gaceta-ci"
           git config user.email "ci@mudh.local"
-          git add mediciones/gaceta-2022
-          git commit -m "censo(gaceta 2022): 10 tomos medidos en Actions, JSON por tomo + RESUMEN" || echo "nada que commitear"
+          git pull --rebase --autostash || true
+          git add "${DIR}"
+          git commit -m "censo(gaceta ${GESTION}): tomos medidos en Actions, JSON por tomo + RESUMEN" || echo "nada que commitear"
           git push || echo "push fallo"
