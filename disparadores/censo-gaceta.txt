@@ -1,5 +1,6 @@
 censo Gaceta Constitucional Plurinacional
 gestion: 2022
-disparo: 2026-09-05T16:57Z
-motivo: cerrar el censo de una gestion completa y resolver la discrepancia
-        entre la Gaceta (19 de Tarija en el tomo I) y el buscador (380 en 2016).
+disparo: 2026-09-05T17:01Z (segundo)
+motivo: el disparo 1 corrio VERDE en 1m39s con los 10 tomos y el control
+        negativo, pero los datos quedaron solo como artifact. Este disparo
+        agrega el job juntar, que los commitea a mediciones/gaceta-2022/.
