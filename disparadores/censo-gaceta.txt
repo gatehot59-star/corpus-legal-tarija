@@ -1,6 +1,8 @@
 censo Gaceta Constitucional Plurinacional
-gestion: 2022
-disparo: 2026-09-05T17:01Z (segundo)
-motivo: el disparo 1 corrio VERDE en 1m39s con los 10 tomos y el control
-        negativo, pero los datos quedaron solo como artifact. Este disparo
-        agrega el job juntar, que los commitea a mediciones/gaceta-2022/.
+gestion: 2018
+disparo: 2026-09-05T18:47Z (tercero)
+motivo: EL CRUCE. El buscador dio 301 resoluciones de Tarija en 2018 y 290 en
+        2019. La Gaceta es la otra fuente del mismo tramo. Si los numeros no
+        se acercan, uno de los dos metodos esta mal definido y hay que decirlo.
+estructura descubierta: 2018 es pagina PLANA con 5 tomos (TomoI2018.pdf).
+        NO tiene semestres como 2022 ni trimestres como 2019.
