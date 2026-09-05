@@ -1,8 +1,8 @@
 name: censo-gaceta-tcp
 
 # Por que aca y no en brain-env: el taller es un Celeron sin AVX y el primer
-# tomo tardo entre 10 y 18 min solo en extraer texto. Diez tomos en serie son
-# 2-3 horas. Aca son 10 jobs EN PARALELO, gratis por ser repo publico.
+# tomo tardo mas de 25 min solo en extraer texto, sin terminar. Aca los 10
+# tomos y el control negativo cerraron en 1m39s. Medido, no estimado.
 # runs-on: ubuntu-latest (hosted). NO self-hosted: el runner self-hosted vive
 # dentro de brain-env y ya saturo el taller una vez.
 #
@@ -19,6 +19,9 @@ on:
   push:
     paths:
       - "disparadores/censo-gaceta.txt"
+
+permissions:
+  contents: write
 
 jobs:
   tomo:
@@ -103,7 +106,10 @@ jobs:
           # GUARD que puede dar ROJO: un PDF escaneado sin capa de texto da 0 y 0
           out["veredicto"] = "ROJO_SIN_TEXTO_UTIL" if (out["scp_unicas"] == 0 or out["campo_departamento"] == 0) else "VERDE"
           json.dump(out, open(nombre + ".json", "w"), ensure_ascii=False, indent=1)
-          print(json.dumps({k: v for k, v in out.items() if k != "tarija_resoluciones"}, indent=1))
+          resumen = {k: v for k, v in out.items() if k != "tarija_resoluciones"}
+          print(json.dumps(resumen, indent=1))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("### " + nombre + chr(10) + "```json" + chr(10) + json.dumps(out, indent=1) + chr(10) + "```" + chr(10))
           if out["veredicto"] != "VERDE":
               raise SystemExit("GUARD ROJO: " + nombre)
           PY
@@ -111,9 +117,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: censo-${{ steps.bajar.outputs.nombre }}
-          path: |
-            ${{ steps.bajar.outputs.nombre }}.json
-            tomo.txt
+          path: ${{ steps.bajar.outputs.nombre }}.json
           retention-days: 14
 
   control-negativo:
@@ -135,3 +139,54 @@ jobs:
             exit 1
           fi
           echo "CONTROL NEGATIVO OK: el inventado no devuelve PDF"
+
+  juntar:
+    # Un artifact que expira en 14 dias NO es memoria del proyecto.
+    # git si. Este job baja los 10 JSON y los commitea.
+    needs: [tomo, control-negativo]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: bajados
+          pattern: censo-Tomo*
+          merge-multiple: true
+      - name: consolidar y commitear
+        run: |
+          set -uo pipefail
+          mkdir -p mediciones/gaceta-2022
+          cp bajados/*.json mediciones/gaceta-2022/ 2>/dev/null || true
+          ls -la mediciones/gaceta-2022/
+          python3 - <<'PY'
+          import glob, json
+          filas = []
+          for p in sorted(glob.glob("mediciones/gaceta-2022/Tomo*.json")):
+              filas.append(json.load(open(p)))
+          verdes = [f for f in filas if f.get("veredicto") == "VERDE"]
+          todas = set()
+          for f in verdes:
+              todas.update(f.get("tarija_resoluciones", []))
+          res = {
+              "gestion": "2022",
+              "tomos_medidos": len(filas),
+              "tomos_verdes": len(verdes),
+              "scp_unicas_sumadas": sum(f["scp_unicas"] for f in verdes),
+              "tarija_resoluciones_unicas": len(todas),
+              "tarija_sumado_por_tomo": sum(f["tarija_total"] for f in verdes),
+              "caracteres_total": sum(f["caracteres"] for f in verdes),
+              "tarija_listado": sorted(todas),
+              "por_tomo": [
+                  {k: f[k] for k in ("tomo", "scp_unicas", "tarija_total", "caracteres", "bytes_pdf", "sha256_pdf", "veredicto")}
+                  for f in filas
+              ],
+          }
+          json.dump(res, open("mediciones/gaceta-2022/RESUMEN.json", "w"), ensure_ascii=False, indent=1)
+          print(json.dumps({k: v for k, v in res.items() if k not in ("tarija_listado", "por_tomo")}, indent=1))
+          PY
+          git config user.name "gaceta-ci"
+          git config user.email "ci@mudh.local"
+          git add mediciones/gaceta-2022
+          git commit -m "censo(gaceta 2022): 10 tomos medidos en Actions, JSON por tomo + RESUMEN" || echo "nada que commitear"
+          git push || echo "push fallo"
