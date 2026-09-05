@@ -1,8 +1,9 @@
 censo Gaceta Constitucional Plurinacional
-gestion: 2019
-disparo: 2026-09-05T18:52Z (cuarto)
-motivo: cerrar EL CRUCE. 2018 ya dio 194 unicas contra 301 del buscador.
-        2019 es el segundo ano del tramo compartido; el buscador dio 290.
-estructura descubierta: 2019 tiene CUATRO subpaginas trimestrales (t1..t4) con
-        5 tomos cada una = 20 tomos. NI plana como 2018 NI semestral como 2022.
-        Por eso la matriz se descubre y no se supone.
+gestion: 2018
+disparo: 2026-09-05T18:53Z (quinto)
+motivo: RE-CENSO con el parser v2. El v1 dio 193 Tarija validas contra 301 del
+        buscador (-36 %) y la causa NO era la Gaceta: el TomoV2018 tiene 1.451
+        AUTOS y 84 DECLARACIONES contra 29 sentencias, y el v1 partia el texto
+        solo por encabezado de SENTENCIA. Perdia ~1.300 resoluciones.
+        El v2 reconoce los tres tipos y trae un guard nuevo que da ROJO si los
+        encabezados hallados son menos de la mitad de los campos Departamento.
