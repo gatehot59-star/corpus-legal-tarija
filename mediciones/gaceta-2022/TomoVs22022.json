@@ -1,0 +1,22 @@
+{
+ "tomo": "TomoVs22022",
+ "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoVs22022.pdf",
+ "sha256_pdf": "9d5e59f0a9bb45f9d2d94cc43415d84bba99655f197a474c42c46514c031b7b2",
+ "bytes_pdf": 27898307,
+ "caracteres": 15287906,
+ "scp_unicas": 48,
+ "tarija_resoluciones": [
+  "0034/2022",
+  "0052/2022",
+  "0054/2022",
+  "0066/2022",
+  "0072/2022",
+  "0078/2022",
+  "1317/2022-S2"
+ ],
+ "tarija_total": 7,
+ "campo_departamento": 683,
+ "autos": 863,
+ "declaraciones": 16,
+ "veredicto": "VERDE"
+}
