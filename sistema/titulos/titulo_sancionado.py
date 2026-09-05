@@ -15,32 +15,41 @@ materia directamente:
 Ese es el titulo y no empieza por "ley". El ancla correcta es la formula de sancion,
 no la primera palabra del titulo.
 
-DOS COSAS QUE CORRIGIO EL BANCO DE NEGATIVOS, y ninguna se veia sin el:
+CUATRO COSAS QUE CORRIGIO LA LECTURA DE LOS RESULTADOS, y ninguna se veia antes:
 
 1. La LD 006 tiene entre comillas, detras de SANCIONA:, la frase "y el paragrafo II
-   del mismo Articulo senala que:". El extractor la devolvia como titulo. Un titulo
-   NO arranca en minuscula ni con un conector: se rechaza por eso.
+   del mismo Articulo senala que:". La devolvia como titulo. Un titulo NO arranca en
+   minuscula ni con un conector.
 2. "ASAMBLEA LEGISLATIVA" no puede ser ruido a secas: la LD 022 se titula "Asamblea
-   Legislativa Departamental de Ninas, Ninos y Adolescentes". Es ruido solo cuando
-   la linea ES el organo, o sea cuando termina ahi o en "de Tarija".
+   Legislativa Departamental de Ninas, Ninos y Adolescentes". Es ruido solo cuando la
+   linea ES el organo, o sea cuando termina ahi o en "de Tarija".
+3. EL APOSTROFO CERRABA EL BLOQUE. Tenia ' y \u2019 en la lista de comillas, asi que
+   "SUBGOBERNACION O'CONNOR" se cortaba en "SUBGOBERNACION O". Delimitan solo \u201c
+   \u201d y ", nunca el apostrofo: en castellano boliviano aparece en O'Connor, que es
+   una provincia entera del departamento.
+4. La LD 240 devolvia "Articulo 1. (OBJETO) L Aprobar la Modificacion...": cuerpo de
+   articulo disfrazado de titulo, la misma clase de basura que ya arreglamos una vez.
 
-Si nada pasa los filtros devuelve (None, motivo) y el documento no se toca: un
-titulo inventado es peor que un slug feo, porque el slug se ve mal y no engana.
+Si nada pasa los filtros devuelve (None, motivo) y el documento no se toca: un titulo
+inventado es peor que un slug feo, porque el slug se ve mal y no engana.
 
 Devuelve siempre una tupla (titulo_o_None, via).
 """
 import re
 import unicodedata
 
-COMILLAS = "\u201c\u201d\u2018\u2019\"'"
+# Delimitadores de bloque citado. SIN apostrofo: ver punto 3 del encabezado.
+DELIMITADORES = "\u201c\u201d\""
+# Para limpiar bordes si el OCR dejo un apostrofo suelto, ahi si se saca.
+BORDES = "\u201c\u201d\u2018\u2019\"'"
 MARCADORES = ("sanciona:", "decreta:", "sancionado la siguiente",
               "sancionado la siquiente", "promulga la siguiente",
               "sanciona la siguiente", "decreta la siguiente")
-CORTES = re.compile(r"^\s*(t[i\u00ed]tulo|cap[i\u00ed]tulo|art[i\u00ed]?[ck]?ulo|considerando|"
-                    r"por\s+tanto|por\s+cuanto|disposici[o\u00f3]n|secci[o\u00f3]n|"
-                    r"exposici[o\u00f3]n\s+de\s+motivos)(\s|$|[\d.:])", re.I)
+ESTRUCTURA = re.compile(r"^\s*(t[i\u00ed]tulo|cap[i\u00ed]tulo|art[i\u00ed]?[ck]?ulo|art\.|"
+                        r"considerando|por\s+tanto|por\s+cuanto|disposici[o\u00f3]n|"
+                        r"secci[o\u00f3]n|exposici[o\u00f3]n\s+de\s+motivos)(\s|$|[\d.:])",
+                        re.I)
 # Lo que NUNCA es titulo, aunque venga en mayusculas o entre comillas.
-# "asamblea legislativa ..." solo es ruido cuando la linea ES el organo y termina ahi.
 RUIDO = re.compile(
     r"(^la\s+asamblea\s+legislativa|"
     r"^asamblea\s+legislativa\s+departamental(\s+de\s+tarija)?\s*$|"
@@ -49,10 +58,11 @@ RUIDO = re.compile(
     r"^\d{1,2}\s+de\s+\w+\s+de\s+\d{4}|^del?\s+\d{1,2}\s+de\s+|"
     r"^por\s+(cuanto|tanto)|^sanciona|^decreta|^promulga|^remitase|^es\s+dada)",
     re.I)
-# Un titulo no empieza con un conector ni con una preposicion suelta.
+# Un titulo no empieza NI TERMINA con un conector o una preposicion suelta.
+# Si termina asi, el bloque quedo truncado y no se escribe.
 CONECTORES = {"y", "o", "que", "el", "la", "los", "las", "de", "del", "en", "a",
               "al", "con", "por", "para", "se", "su", "sus", "lo", "un", "una",
-              "como", "pero", "asimismo", "mismo", "misma"}
+              "como", "pero", "asimismo", "mismo", "misma", "e", "u", "i", "l"}
 
 
 def sin_tildes(s):
@@ -68,7 +78,7 @@ def _mayus(linea):
 
 
 def _limpia(t):
-    return re.sub(r"\s+", " ", t or "").strip(" \t" + COMILLAS + "*_-.,;:")
+    return re.sub(r"\s+", " ", t or "").strip(" \t" + BORDES + "*_-.,;:")
 
 
 def _aceptable(t):
@@ -79,14 +89,16 @@ def _aceptable(t):
     palabras = t.split()
     if len(palabras) < 3 or len(t) < 14 or len(t) > 320:
         return None
-    if RUIDO.search(sin_tildes(t)):
+    llano = sin_tildes(t)
+    if RUIDO.search(llano) or ESTRUCTURA.match(llano):
         return None
-    # un titulo no arranca en minuscula
     primera_letra = next((ch for ch in t if ch.isalpha()), "")
     if primera_letra and primera_letra.islower():
         return None
-    # ni con un conector, aunque venga capitalizado
     if sin_tildes(palabras[0]).lower().strip(".,;:") in CONECTORES:
+        return None
+    # cola colgada: el bloque quedo cortado a mitad de frase
+    if sin_tildes(palabras[-1]).lower().strip(".,;:" + BORDES + "()-") in CONECTORES:
         return None
     letras = [ch for ch in t if ch.isalpha()]
     if len(letras) < 12 or len(letras) / len(t) < 0.6:
@@ -107,8 +119,8 @@ def extraer(texto, limite=2200):
     resto = cabeza[corte:]
 
     # 1) bloque entre comillas: el caso limpio
-    m = re.search("[" + COMILLAS + "]([^" + COMILLAS + "]{10,320})[" + COMILLAS + "]",
-                  resto, re.S)
+    m = re.search("[" + DELIMITADORES + "]([^" + DELIMITADORES + "]{10,320})["
+                  + DELIMITADORES + "]", resto, re.S)
     if m:
         t = _aceptable(m.group(1))
         if t:
@@ -117,12 +129,12 @@ def extraer(texto, limite=2200):
     # 2) bloque en mayusculas hasta el primer corte de estructura
     bloque = []
     for linea in resto.split("\n"):
-        l = linea.strip(" \t" + COMILLAS + "*_-")
+        l = linea.strip(" \t" + BORDES + "*_-")
         if not l:
             if bloque:
                 break
             continue
-        if CORTES.match(l):
+        if ESTRUCTURA.match(l):
             break
         if not _mayus(l) or RUIDO.search(sin_tildes(l)):
             if bloque:
