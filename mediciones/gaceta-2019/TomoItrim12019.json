@@ -1,18 +1,21 @@
 {
+ "parser": "v3-tipos-flexibles",
  "gestion": "2019",
  "tomo": "TomoItrim12019",
  "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoItrim12019.pdf",
  "sha256_pdf": "39fff52e4aad55ac2f40c4b44d338703c43f081a08e5a666a156f511a324bbb0",
  "bytes_pdf": 4414094,
  "caracteres": 1621560,
- "scp_unicas": 42,
+ "resoluciones_unicas": 42,
+ "encabezados_por_tipo": {
+  "SCP": 42
+ },
  "tarija_resoluciones": [
-  "0027/2019-S1",
-  "0041/2019-S1"
+  "SCP 0027/2019-S1",
+  "SCP 0041/2019-S1"
  ],
  "tarija_total": 2,
  "campo_departamento": 42,
- "autos": 7,
- "declaraciones": 0,
+ "cobertura_encabezado_vs_campo": 1.0,
  "veredicto": "VERDE"
 }

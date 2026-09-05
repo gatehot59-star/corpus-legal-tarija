@@ -1,21 +1,35 @@
 {
+ "parser": "v3-tipos-flexibles",
  "gestion": "2019",
  "tomo": "TomoVtrim22019",
  "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoVtrim22019.pdf",
  "sha256_pdf": "58a703a70fda2aeab64126477bf6eefed03a6b402fe05beea49b3523ff8b436a",
  "bytes_pdf": 20790522,
  "caracteres": 9946289,
- "scp_unicas": 17,
+ "resoluciones_unicas": 189,
+ "encabezados_por_tipo": {
+  "SCP": 17,
+  "DCP": 16,
+  "ACP": 157
+ },
  "tarija_resoluciones": [
-  "0019/2019",
-  "0033/2019",
-  "0199/2019-S2",
-  "0263/2019-",
-  "0389/2019-S2"
+  "ACP 0027/2019-O",
+  "ACP 0029/2019-O",
+  "ACP 0094/2019-RCA",
+  "ACP 0104/2019-RCA",
+  "ACP 0108/2019-RCA",
+  "ACP 0119/2019-RCA",
+  "ACP 0120/2019-RCA",
+  "ACP 0124/2019-RCA",
+  "ACP 0136/2019-RCA",
+  "ACP 0178/2019-RCA",
+  "SCP 0019/2019",
+  "SCP 0199/2019-S2",
+  "SCP 0263/2019",
+  "SCP 0389/2019-S2"
  ],
- "tarija_total": 5,
+ "tarija_total": 14,
  "campo_departamento": 372,
- "autos": 332,
- "declaraciones": 17,
+ "cobertura_encabezado_vs_campo": 0.508,
  "veredicto": "VERDE"
 }

@@ -1,15 +1,18 @@
 {
+ "parser": "v3-tipos-flexibles",
  "gestion": "2019",
  "tomo": "TomoIItrim12019",
  "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoIItrim12019.pdf",
  "sha256_pdf": "98a87142440a394c1a6d8ca3108307944df81b9af02d0bf4e29c89f135f8f9f5",
  "bytes_pdf": 4372954,
  "caracteres": 1575072,
- "scp_unicas": 36,
+ "resoluciones_unicas": 36,
+ "encabezados_por_tipo": {
+  "SCP": 36
+ },
  "tarija_resoluciones": [],
  "tarija_total": 0,
  "campo_departamento": 38,
- "autos": 2,
- "declaraciones": 0,
+ "cobertura_encabezado_vs_campo": 0.947,
  "veredicto": "VERDE"
 }
