@@ -1,8 +1,8 @@
 censo Gaceta Constitucional Plurinacional
-gestion: 2018
-disparo: 2026-09-05T18:47Z (tercero)
-motivo: EL CRUCE. El buscador dio 301 resoluciones de Tarija en 2018 y 290 en
-        2019. La Gaceta es la otra fuente del mismo tramo. Si los numeros no
-        se acercan, uno de los dos metodos esta mal definido y hay que decirlo.
-estructura descubierta: 2018 es pagina PLANA con 5 tomos (TomoI2018.pdf).
-        NO tiene semestres como 2022 ni trimestres como 2019.
+gestion: 2019
+disparo: 2026-09-05T18:52Z (cuarto)
+motivo: cerrar EL CRUCE. 2018 ya dio 194 unicas contra 301 del buscador.
+        2019 es el segundo ano del tramo compartido; el buscador dio 290.
+estructura descubierta: 2019 tiene CUATRO subpaginas trimestrales (t1..t4) con
+        5 tomos cada una = 20 tomos. NI plana como 2018 NI semestral como 2022.
+        Por eso la matriz se descubre y no se supone.
