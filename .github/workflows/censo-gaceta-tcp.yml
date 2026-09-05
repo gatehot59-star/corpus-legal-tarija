@@ -1,8 +1,7 @@
 name: censo-gaceta-tcp
 
 # Por que en Actions y no en brain-env: el Celeron llevaba mas de 25 min en UN
-# tomo sin terminar. Aca los 10 tomos de 2022 y el control negativo cerraron en
-# 1m39s. Medido, no estimado.
+# tomo sin terminar. Aca 20 tomos y el control negativo cierran en ~1m30s.
 # runs-on: ubuntu-latest (hosted). NO self-hosted: ese runner vive DENTRO de
 # brain-env y ya saturo el taller una vez.
 #
@@ -11,14 +10,24 @@ name: censo-gaceta-tcp
 # 10 tomos). Generalizar el patron de 2022 a 2019 habria pedido 10 URLs
 # inexistentes y concluido que la gestion no existe.
 #
-# HISTORIAL DE DEFECTOS DE ESTE INSTRUMENTO (v1 -> v2), medidos:
-#   D1. v1 partia el texto SOLO por encabezado de SENTENCIA. El TomoV2018 tiene
-#       1.451 AUTOS y 84 DECLARACIONES contra 29 sentencias: se perdian ~1.300
-#       resoluciones y con ellas sus Tarija. Ahi estaba el -36 % del cruce
-#       contra el buscador, que yo casi atribui a que la Gaceta no publica todo.
-#   D2. el sufijo de sala era `[-A-Za-z0-9]*`, que acepta un guion FINAL sin
-#       sala e inventa un ID fantasma ("0339/2018-" junto a "0339/2018-S2").
-#   Los dos eran defectos MIOS, no de la fuente.
+# HISTORIAL DE DEFECTOS DE ESTE INSTRUMENTO, todos MIOS y todos medidos:
+#   D1 (v1->v2). v1 partia el texto SOLO por encabezado de SENTENCIA. El
+#      TomoV2018 tiene 1.451 AUTOS y 84 DECLARACIONES contra 29 sentencias:
+#      se perdian ~1.300 resoluciones. Ahi estaba el -36 % del cruce contra el
+#      buscador, que casi atribui a que la Gaceta no publica todo.
+#   D2 (v1->v2). El sufijo de sala era `[-A-Za-z0-9]*`, que acepta un guion
+#      FINAL sin sala e inventa un ID fantasma ("0339/2018-").
+#   D3 (v2->v3). v2 exigia "CONSTITUCIONAL PLURINACIONAL" y el TomoV2018 dio
+#      cobertura 0,022: sus autos NO llevan "PLURINACIONAL". El guard nuevo lo
+#      caza y el job muere, que es lo correcto. v3 hace PLURINACIONAL opcional
+#      y ADEMAS imprime el encabezado real verbatim cuando el guard da rojo,
+#      para no volver a adivinar el formato.
+#   D4 (v2->v3). El consolidador copiaba los JSON nuevos SOBRE los viejos ya
+#      commiteados. Si un tomo fallaba, quedaba su archivo de la corrida
+#      anterior y el RESUMEN mezclaba dos parsers reportando 5/5 VERDES. Mi
+#      propio "documento que no se entero de que el mundo cambio". v3 borra el
+#      directorio antes de consolidar y exige la etiqueta de parser en cada
+#      tomo.
 
 on:
   workflow_dispatch:
@@ -34,6 +43,9 @@ on:
 permissions:
   contents: write
 
+env:
+  PARSER: v3-tipos-flexibles
+
 jobs:
   descubrir:
     runs-on: ubuntu-latest
@@ -48,7 +60,6 @@ jobs:
           ENTRADA: ${{ github.event.inputs.gestion }}
         run: |
           set -uo pipefail
-          # la gestion viene del input, o del propio disparador commiteado
           GESTION="${ENTRADA}"
           if [ -z "${GESTION}" ]; then
             GESTION=$(grep -oE 'gestion:[[:space:]]*[0-9]{4}' disparadores/censo-gaceta.txt | grep -oE '[0-9]{4}' | head -1)
@@ -58,12 +69,11 @@ jobs:
             exit 1
           fi
           echo "gestion=${GESTION}" >> "$GITHUB_OUTPUT"
-          echo "censando gestion ${GESTION}"
           python3 instrumentos/descubrir_gaceta.py "${GESTION}" > matriz.json
           CUANTOS=$(python3 -c "import json;print(len(json.load(open('matriz.json'))))")
           echo "cuantos=${CUANTOS}" >> "$GITHUB_OUTPUT"
           echo "matriz=$(cat matriz.json)" >> "$GITHUB_OUTPUT"
-          echo "tomos descubiertos: ${CUANTOS}"
+          echo "gestion ${GESTION} | tomos descubiertos: ${CUANTOS}"
           cat matriz.json
 
   tomo:
@@ -103,10 +113,9 @@ jobs:
           NOMBRE: ${{ matrix.t.nombre }}
           URL: ${{ matrix.t.url }}
           GESTION: ${{ needs.descubrir.outputs.gestion }}
+          PARSER: ${{ env.PARSER }}
         run: |
           set -uo pipefail
-          # pdftotext primero: es C y mucho mas rapido que pypdf.
-          # Si no produce texto util, cae a pypdf. Los dos pueden dar rojo.
           pdftotext -q tomo.pdf tomo.txt || true
           if [ ! -s tomo.txt ] || [ "$(wc -c < tomo.txt)" -lt 100000 ]; then
             echo "pdftotext no sirvio, probando pypdf"
@@ -118,34 +127,38 @@ jobs:
           gestion = os.environ["GESTION"]
           txt = open("tomo.txt", encoding="utf-8", errors="replace").read()
 
-          # v2: los TRES tipos. El TomoV2018 tiene 1.451 autos y 29 sentencias:
-          # reconocer solo sentencias perdia el 97 % de ese tomo.
-          # El sufijo de sala ya NO acepta un guion final suelto (defecto D2).
-          TIPO = r"(SENTENCIA|AUTO|DECLARACI[OÓ]N)\s+CONSTITUCIONAL\s+PLURINACIONAL"
+          # v3: PLURINACIONAL OPCIONAL. Medido: los autos del TomoV2018 no lo
+          # llevan, y exigirlo dejaba ese tomo en cobertura 0,022.
+          TIPO = r"(SENTENCIA|AUTO|DECLARACI[O\u00d3]N)\s+CONSTITUCIONAL(?:\s+PLURINACIONAL)?"
           NUM = r"([0-9]{1,4}/[0-9]{4})(-[A-Za-z0-9]+)?"
           ENC = re.compile(TIPO + r"\s+" + NUM)
-          SIGLA = {"SENTENCIA": "SCP", "AUTO": "ACP", "DECLARACION": "DCP", "DECLARACIÓN": "DCP"}
+          SIGLA = {"SENTENCIA": "SCP", "AUTO": "ACP", "DECLARACION": "DCP"}
 
           def ident(m):
-              t = SIGLA.get(m.group(1).upper(), m.group(1)[:3].upper())
-              return t + " " + m.group(2) + (m.group(3) or "")
+              crudo = m.group(1).upper().replace("\u00d3", "O")
+              return SIGLA.get(crudo, crudo[:3]) + " " + m.group(2) + (m.group(3) or "")
 
           todos = set()
           por_tipo = {}
           for m in ENC.finditer(txt):
               i = ident(m)
               todos.add(i)
-              por_tipo[i.split()[0]] = por_tipo.get(i.split()[0], 0) + 1
+              k = i.split()[0]
+              por_tipo[k] = por_tipo.get(k, 0) + 1
 
-          # atribuir cada Tarija a SU resolucion, partiendo por CUALQUIER encabezado
+          # atribuir cada Tarija a SU resolucion, partiendo por CUALQUIER
+          # encabezado. Sin grupo de captura en el lookahead: re.split con
+          # captura devuelve tambien los grupos y ensucia la lista.
           tarija = set()
-          for p in re.split(r"(?=" + TIPO + r")", txt):
+          TIPO_NC = TIPO.replace("(SENTENCIA", "(?:SENTENCIA")
+          for p in re.split(r"(?=" + TIPO_NC + r")", txt):
               m = ENC.search(p)
               if m and re.search(r"Departamento:\s*Tarija", p):
                   tarija.add(ident(m))
 
+          campo = len(re.findall(r"Departamento:", txt))
           out = {
-              "parser": "v2-tres-tipos",
+              "parser": os.environ["PARSER"],
               "gestion": gestion,
               "tomo": nombre,
               "url": os.environ["URL"],
@@ -156,38 +169,48 @@ jobs:
               "encabezados_por_tipo": por_tipo,
               "tarija_resoluciones": sorted(tarija),
               "tarija_total": len(tarija),
-              "campo_departamento": len(re.findall(r"Departamento:", txt)),
+              "campo_departamento": campo,
           }
-          # GUARD 1: un PDF escaneado sin capa de texto da 0 y 0
-          # GUARD 2 (nuevo): si los encabezados hallados son MUCHO menos que los
-          # campos "Departamento:", el parser esta perdiendo resoluciones. Es el
-          # defecto D1 convertido en falsador: con v1 el TomoV daba 29 contra
-          # 1307 y el guard NO existia, asi que paso como VERDE.
-          cobertura = out["resoluciones_unicas"] / max(1, out["campo_departamento"])
+          cobertura = len(todos) / max(1, campo)
           out["cobertura_encabezado_vs_campo"] = round(cobertura, 3)
-          if out["resoluciones_unicas"] == 0 or out["campo_departamento"] == 0:
+          if len(todos) == 0 or campo == 0:
               out["veredicto"] = "ROJO_SIN_TEXTO_UTIL"
           elif cobertura < 0.5:
               out["veredicto"] = "ROJO_PARSER_PIERDE_RESOLUCIONES"
           else:
               out["veredicto"] = "VERDE"
+
+          # DIAGNOSTICO cuando el guard da rojo: el encabezado real, verbatim.
+          # Sin esto hay que adivinar el formato, y ya adivine mal una vez.
+          if out["veredicto"] != "VERDE":
+              muestras = []
+              for m in re.finditer(r"(?:AUTO|SENTENCIA|DECLARACI)[^\n]{0,90}", txt):
+                  s = " ".join(m.group(0).split())
+                  if s not in muestras:
+                      muestras.append(s)
+                  if len(muestras) >= 8:
+                      break
+              out["muestras_de_encabezado"] = muestras
+
           json.dump(out, open(nombre + ".json", "w"), ensure_ascii=False, indent=1)
-          print(json.dumps({k: v for k, v in out.items() if k != "tarija_resoluciones"}, indent=1))
+          liviano = {k: v for k, v in out.items() if k != "tarija_resoluciones"}
+          print(json.dumps(liviano, indent=1, ensure_ascii=False))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
-              f.write("### " + nombre + chr(10) + "```json" + chr(10) + json.dumps(out, indent=1) + chr(10) + "```" + chr(10))
+              f.write("### " + nombre + chr(10) + "```json" + chr(10) +
+                      json.dumps(liviano, indent=1, ensure_ascii=False) + chr(10) + "```" + chr(10))
           if out["veredicto"] != "VERDE":
               raise SystemExit("GUARD ROJO: " + nombre + " -> " + out["veredicto"])
           PY
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: censo-${{ matrix.t.nombre }}
           path: ${{ matrix.t.nombre }}.json
           retention-days: 14
+          if-no-files-found: warn
 
   control-negativo:
-    # Sin esto, un 200 no distingue existe de no existe. Este job DEBE fallar en
-    # bajar un tomo inventado; si lo consigue, todos los verdes quedan sin valor.
     needs: descubrir
     runs-on: ubuntu-latest
     steps:
@@ -208,7 +231,6 @@ jobs:
           echo "CONTROL NEGATIVO OK: el inventado no devuelve PDF"
 
   juntar:
-    # Un artifact que expira en 14 dias NO es memoria del proyecto. git si.
     needs: [descubrir, tomo, control-negativo]
     if: always()
     runs-on: ubuntu-latest
@@ -223,32 +245,49 @@ jobs:
         env:
           GESTION: ${{ needs.descubrir.outputs.gestion }}
           ESPERADOS: ${{ needs.descubrir.outputs.cuantos }}
+          PARSER: ${{ env.PARSER }}
         run: |
           set -uo pipefail
           DIR="mediciones/gaceta-${GESTION}"
+          # D4: borrar antes de copiar. Si un tomo falla, su archivo de la
+          # corrida anterior NO debe sobrevivir y contaminar el resumen.
+          rm -rf "${DIR}"
           mkdir -p "${DIR}"
           cp bajados/*.json "${DIR}/" 2>/dev/null || true
           ls -la "${DIR}/"
           python3 - <<'PY'
           import glob, json, os
           gestion = os.environ["GESTION"]
+          parser = os.environ["PARSER"]
           esperados = int(os.environ.get("ESPERADOS") or 0)
           d = "mediciones/gaceta-" + gestion
           filas = [json.load(open(p)) for p in sorted(glob.glob(d + "/Tomo*.json"))]
-          verdes = [f for f in filas if f.get("veredicto") == "VERDE"]
-          todas = set()
-          repetidas = {}
+          # D4: ningun tomo de otro parser entra al resumen
+          ajenos = [f["tomo"] for f in filas if f.get("parser") != parser]
+          verdes = [f for f in filas if f.get("veredicto") == "VERDE" and f.get("parser") == parser]
+          rojos = [{"tomo": f["tomo"], "veredicto": f.get("veredicto"),
+                    "cobertura": f.get("cobertura_encabezado_vs_campo"),
+                    "muestras": f.get("muestras_de_encabezado")}
+                   for f in filas if f.get("veredicto") != "VERDE"]
+          todas, donde = set(), {}
           for f in verdes:
               for r in f.get("tarija_resoluciones", []):
-                  repetidas.setdefault(r, []).append(f["tomo"])
+                  donde.setdefault(r, []).append(f["tomo"])
                   todas.add(r)
-          dobles = {r: v for r, v in repetidas.items() if len(v) > 1}
+          dobles = {r: v for r, v in donde.items() if len(v) > 1}
+          tipos = {}
+          for f in verdes:
+              for k, v in (f.get("encabezados_por_tipo") or {}).items():
+                  tipos[k] = tipos.get(k, 0) + v
           res = {
               "gestion": gestion,
-              "parser": "v2-tres-tipos",
+              "parser": parser,
               "tomos_descubiertos": esperados,
               "tomos_medidos": len(filas),
               "tomos_verdes": len(verdes),
+              "tomos_rojos": rojos,
+              "tomos_de_otro_parser_descartados": ajenos,
+              "encabezados_por_tipo": tipos,
               "resoluciones_unicas_sumadas": sum(f.get("resoluciones_unicas", 0) for f in verdes),
               "tarija_resoluciones_unicas": len(todas),
               "tarija_sumado_por_tomo": sum(f["tarija_total"] for f in verdes),
@@ -256,26 +295,27 @@ jobs:
               "repetidas_entre_tomos": dobles,
               "tarija_listado": sorted(todas),
               "por_tomo": [
-                  {k: f.get(k) for k in ("tomo", "resoluciones_unicas", "tarija_total", "campo_departamento", "cobertura_encabezado_vs_campo", "caracteres", "bytes_pdf", "sha256_pdf", "veredicto")}
+                  {k: f.get(k) for k in ("tomo", "parser", "resoluciones_unicas", "tarija_total",
+                                          "campo_departamento", "cobertura_encabezado_vs_campo",
+                                          "caracteres", "bytes_pdf", "sha256_pdf", "veredicto")}
                   for f in filas
               ],
           }
-          # GUARD DE COMPLETITUD: si faltan tomos, el censo NO esta cerrado.
-          # Sin esto, 18 de 20 tomos se leerian como "la gestion completa".
-          res["completo"] = (esperados > 0 and len(verdes) == esperados)
+          res["completo"] = (esperados > 0 and len(verdes) == esperados and not ajenos)
           if not res["completo"]:
-              res["ADVERTENCIA"] = "censo PARCIAL: %d verdes de %d descubiertos" % (len(verdes), esperados)
+              res["ADVERTENCIA"] = ("censo PARCIAL: %d verdes de %d descubiertos"
+                                    % (len(verdes), esperados))
           res["sin_solapamiento"] = (len(dobles) == 0)
           json.dump(res, open(d + "/RESUMEN.json", "w"), ensure_ascii=False, indent=1)
           liviano = {k: v for k, v in res.items() if k not in ("tarija_listado", "por_tomo")}
-          print(json.dumps(liviano, indent=1))
+          print(json.dumps(liviano, indent=1, ensure_ascii=False))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write("## RESUMEN " + gestion + chr(10) + "```json" + chr(10) +
-                      json.dumps(liviano, indent=1) + chr(10) + "```" + chr(10))
+                      json.dumps(liviano, indent=1, ensure_ascii=False) + chr(10) + "```" + chr(10))
           PY
           git config user.name "gaceta-ci"
           git config user.email "ci@mudh.local"
           git pull --rebase --autostash || true
-          git add "${DIR}"
-          git commit -m "censo(gaceta ${GESTION}): parser v2 tres tipos, JSON por tomo + RESUMEN" || echo "nada que commitear"
+          git add -A "${DIR}"
+          git commit -m "censo(gaceta ${GESTION}): parser ${PARSER}, JSON por tomo + RESUMEN" || echo "nada que commitear"
           git push || echo "push fallo"
