@@ -1,5 +1,5 @@
 {
- "parser": "v2-tres-tipos",
+ "parser": "v3-tipos-flexibles",
  "gestion": "2018",
  "tomo": "TomoII2018",
  "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoII2018.pdf",
@@ -29,8 +29,6 @@
   "SCP 0310/2018-S2",
   "SCP 0311/2018-S2",
   "SCP 0313/2018-S2",
-  "SCP 0318/2018-S2",
-  "SCP 0330/2018-S2",
   "SCP 0339/2018-S2",
   "SCP 0353/2018-S2",
   "SCP 0366/2018-S2",
@@ -65,7 +63,7 @@
   "SCP 0837/2018-S2",
   "SCP 0863/2018-S2"
  ],
- "tarija_total": 53,
+ "tarija_total": 51,
  "campo_departamento": 840,
  "cobertura_encabezado_vs_campo": 0.915,
  "veredicto": "VERDE"

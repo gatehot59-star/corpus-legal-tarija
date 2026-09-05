@@ -1,14 +1,14 @@
 {
- "parser": "v2-tres-tipos",
+ "parser": "v3-tipos-flexibles",
  "gestion": "2018",
  "tomo": "TomoI2018",
  "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoI2018.pdf",
  "sha256_pdf": "e4594a46a4f4f9f795068eee1b39997b6cfa4d4d2b6eec809885f0ed0096dd60",
  "bytes_pdf": 73977882,
  "caracteres": 34108324,
- "resoluciones_unicas": 854,
+ "resoluciones_unicas": 855,
  "encabezados_por_tipo": {
-  "SCP": 858
+  "SCP": 859
  },
  "tarija_resoluciones": [
   "SCP 0022/2018-S1",
@@ -65,6 +65,6 @@
  ],
  "tarija_total": 51,
  "campo_departamento": 858,
- "cobertura_encabezado_vs_campo": 0.995,
+ "cobertura_encabezado_vs_campo": 0.997,
  "veredicto": "VERDE"
 }
