@@ -1,0 +1,33 @@
+{
+ "gestion": "2019",
+ "tomo": "TomoIVtrim22019",
+ "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoIVtrim22019.pdf",
+ "sha256_pdf": "7e5584261d1cce2c5bbea43f623be4f5e48ac1fe3eddfe2c3805c37f994c30f4",
+ "bytes_pdf": 25911127,
+ "caracteres": 12954661,
+ "scp_unicas": 371,
+ "tarija_resoluciones": [
+  "0025/2019-S4",
+  "0043/2019-S4",
+  "0047/2019-S4",
+  "0049/2019-S4",
+  "0090/2019-S4",
+  "0113/2019-S4",
+  "0125/2019-S4",
+  "0126/2019-S4",
+  "0148/2019-S4",
+  "0189/2019-S4",
+  "0239/2019-S4",
+  "0246/2019-S4",
+  "0271/2019-S4",
+  "0297/2019-S4",
+  "0305/2019-S4",
+  "0335/2019-S4",
+  "0337/2019-S4"
+ ],
+ "tarija_total": 17,
+ "campo_departamento": 375,
+ "autos": 37,
+ "declaraciones": 0,
+ "veredicto": "VERDE"
+}
