@@ -1,9 +1,8 @@
 censo Gaceta Constitucional Plurinacional
 gestion: 2018
-disparo: 2026-09-05T18:53Z (quinto)
-motivo: RE-CENSO con el parser v2. El v1 dio 193 Tarija validas contra 301 del
-        buscador (-36 %) y la causa NO era la Gaceta: el TomoV2018 tiene 1.451
-        AUTOS y 84 DECLARACIONES contra 29 sentencias, y el v1 partia el texto
-        solo por encabezado de SENTENCIA. Perdia ~1.300 resoluciones.
-        El v2 reconoce los tres tipos y trae un guard nuevo que da ROJO si los
-        encabezados hallados son menos de la mitad de los campos Departamento.
+disparo: 2026-09-05T18:58Z (sexto)
+motivo: el v2 dejo el TomoV2018 en ROJO_PARSER_PIERDE_RESOLUCIONES con
+        cobertura 0,022. El guard funciono: sus autos NO llevan la palabra
+        PLURINACIONAL y el v2 la exigia. El v3 la hace opcional, imprime el
+        encabezado real cuando el guard da rojo, y el consolidador borra el
+        directorio antes de escribir para no mezclar parsers.
