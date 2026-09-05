@@ -1,0 +1,22 @@
+{
+ "gestion": "2018",
+ "tomo": "TomoV2018",
+ "url": "https://tcpbolivia.bo/wp-content/uploads/2025/03/TomoV2018.pdf",
+ "sha256_pdf": "023a340cfa37cf921ae2a5df263136f04735bda56a90153eb1ceaaa5c527068c",
+ "bytes_pdf": 66451588,
+ "caracteres": 29749793,
+ "scp_unicas": 29,
+ "tarija_resoluciones": [
+  "0010/2018",
+  "0023/2018",
+  "0049/2018",
+  "0353/2018-S2",
+  "0534/2018-S1",
+  "0872/2018-S2"
+ ],
+ "tarija_total": 6,
+ "campo_departamento": 1307,
+ "autos": 1451,
+ "declaraciones": 84,
+ "veredicto": "VERDE"
+}
