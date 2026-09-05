@@ -15,10 +15,17 @@ materia directamente:
 Ese es el titulo y no empieza por "ley". El ancla correcta es la formula de sancion,
 no la primera palabra del titulo.
 
-Despues del marcador se toma el bloque entre comillas y, si no hay comillas, el
-bloque en mayusculas. Si nada pasa los filtros devuelve (None, motivo) y el
-documento no se toca: un titulo inventado es peor que un slug feo, porque el slug
-se ve mal y no engana.
+DOS COSAS QUE CORRIGIO EL BANCO DE NEGATIVOS, y ninguna se veia sin el:
+
+1. La LD 006 tiene entre comillas, detras de SANCIONA:, la frase "y el paragrafo II
+   del mismo Articulo senala que:". El extractor la devolvia como titulo. Un titulo
+   NO arranca en minuscula ni con un conector: se rechaza por eso.
+2. "ASAMBLEA LEGISLATIVA" no puede ser ruido a secas: la LD 022 se titula "Asamblea
+   Legislativa Departamental de Ninas, Ninos y Adolescentes". Es ruido solo cuando
+   la linea ES el organo, o sea cuando termina ahi o en "de Tarija".
+
+Si nada pasa los filtros devuelve (None, motivo) y el documento no se toca: un
+titulo inventado es peor que un slug feo, porque el slug se ve mal y no engana.
 
 Devuelve siempre una tupla (titulo_o_None, via).
 """
@@ -33,12 +40,19 @@ CORTES = re.compile(r"^\s*(t[i\u00ed]tulo|cap[i\u00ed]tulo|art[i\u00ed]?[ck]?ulo
                     r"por\s+tanto|por\s+cuanto|disposici[o\u00f3]n|secci[o\u00f3]n|"
                     r"exposici[o\u00f3]n\s+de\s+motivos)(\s|$|[\d.:])", re.I)
 # Lo que NUNCA es titulo, aunque venga en mayusculas o entre comillas.
+# "asamblea legislativa ..." solo es ruido cuando la linea ES el organo y termina ahi.
 RUIDO = re.compile(
-    r"(asamblea\s+legislativa|gobernador|vicegobernador|presidente|secretari|"
+    r"(^la\s+asamblea\s+legislativa|"
+    r"^asamblea\s+legislativa\s+departamental(\s+de\s+tarija)?\s*$|"
+    r"gobernador|vicegobernador|presidente|secretari|"
     r"^tarija$|^bolivia$|^ley\s+n\S{0,3}\s*\d|^ley\s+de\s+\d|"
     r"^\d{1,2}\s+de\s+\w+\s+de\s+\d{4}|^del?\s+\d{1,2}\s+de\s+|"
     r"^por\s+(cuanto|tanto)|^sanciona|^decreta|^promulga|^remitase|^es\s+dada)",
     re.I)
+# Un titulo no empieza con un conector ni con una preposicion suelta.
+CONECTORES = {"y", "o", "que", "el", "la", "los", "las", "de", "del", "en", "a",
+              "al", "con", "por", "para", "se", "su", "sus", "lo", "un", "una",
+              "como", "pero", "asimismo", "mismo", "misma"}
 
 
 def sin_tildes(s):
@@ -62,9 +76,17 @@ def _aceptable(t):
     t = _limpia(t)
     if not t:
         return None
-    if len(t.split()) < 3 or len(t) < 14 or len(t) > 320:
+    palabras = t.split()
+    if len(palabras) < 3 or len(t) < 14 or len(t) > 320:
         return None
     if RUIDO.search(sin_tildes(t)):
+        return None
+    # un titulo no arranca en minuscula
+    primera_letra = next((ch for ch in t if ch.isalpha()), "")
+    if primera_letra and primera_letra.islower():
+        return None
+    # ni con un conector, aunque venga capitalizado
+    if sin_tildes(palabras[0]).lower().strip(".,;:") in CONECTORES:
         return None
     letras = [ch for ch in t if ch.isalpha()]
     if len(letras) < 12 or len(letras) / len(t) < 0.6:
