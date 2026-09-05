@@ -10,6 +10,15 @@ name: censo-gaceta-tcp
 # gestion (2018 plano 5 tomos, 2019 trimestral 20 tomos, 2020 y 2022 semestral
 # 10 tomos). Generalizar el patron de 2022 a 2019 habria pedido 10 URLs
 # inexistentes y concluido que la gestion no existe.
+#
+# HISTORIAL DE DEFECTOS DE ESTE INSTRUMENTO (v1 -> v2), medidos:
+#   D1. v1 partia el texto SOLO por encabezado de SENTENCIA. El TomoV2018 tiene
+#       1.451 AUTOS y 84 DECLARACIONES contra 29 sentencias: se perdian ~1.300
+#       resoluciones y con ellas sus Tarija. Ahi estaba el -36 % del cruce
+#       contra el buscador, que yo casi atribui a que la Gaceta no publica todo.
+#   D2. el sufijo de sala era `[-A-Za-z0-9]*`, que acepta un guion FINAL sin
+#       sala e inventa un ID fantasma ("0339/2018-" junto a "0339/2018-S2").
+#   Los dos eran defectos MIOS, no de la fuente.
 
 on:
   workflow_dispatch:
@@ -108,36 +117,66 @@ jobs:
           nombre = os.environ["NOMBRE"]
           gestion = os.environ["GESTION"]
           txt = open("tomo.txt", encoding="utf-8", errors="replace").read()
-          enc = r"SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+([0-9]{3,4}/[0-9]{4}[-A-Za-z0-9]*)"
-          scp = set(re.findall(enc, txt))
+
+          # v2: los TRES tipos. El TomoV2018 tiene 1.451 autos y 29 sentencias:
+          # reconocer solo sentencias perdia el 97 % de ese tomo.
+          # El sufijo de sala ya NO acepta un guion final suelto (defecto D2).
+          TIPO = r"(SENTENCIA|AUTO|DECLARACI[OÓ]N)\s+CONSTITUCIONAL\s+PLURINACIONAL"
+          NUM = r"([0-9]{1,4}/[0-9]{4})(-[A-Za-z0-9]+)?"
+          ENC = re.compile(TIPO + r"\s+" + NUM)
+          SIGLA = {"SENTENCIA": "SCP", "AUTO": "ACP", "DECLARACION": "DCP", "DECLARACIÓN": "DCP"}
+
+          def ident(m):
+              t = SIGLA.get(m.group(1).upper(), m.group(1)[:3].upper())
+              return t + " " + m.group(2) + (m.group(3) or "")
+
+          todos = set()
+          por_tipo = {}
+          for m in ENC.finditer(txt):
+              i = ident(m)
+              todos.add(i)
+              por_tipo[i.split()[0]] = por_tipo.get(i.split()[0], 0) + 1
+
+          # atribuir cada Tarija a SU resolucion, partiendo por CUALQUIER encabezado
           tarija = set()
-          # atribuir cada Tarija a SU resolucion: se parte el texto por encabezado
-          for p in re.split(r"(?=SENTENCIA CONSTITUCIONAL PLURINACIONAL\s+[0-9]{3,4}/)", txt):
-              m = re.search(enc, p)
+          for p in re.split(r"(?=" + TIPO + r")", txt):
+              m = ENC.search(p)
               if m and re.search(r"Departamento:\s*Tarija", p):
-                  tarija.add(m.group(1))
+                  tarija.add(ident(m))
+
           out = {
+              "parser": "v2-tres-tipos",
               "gestion": gestion,
               "tomo": nombre,
               "url": os.environ["URL"],
               "sha256_pdf": hashlib.sha256(open("tomo.pdf", "rb").read()).hexdigest(),
               "bytes_pdf": os.path.getsize("tomo.pdf"),
               "caracteres": len(txt),
-              "scp_unicas": len(scp),
+              "resoluciones_unicas": len(todos),
+              "encabezados_por_tipo": por_tipo,
               "tarija_resoluciones": sorted(tarija),
               "tarija_total": len(tarija),
               "campo_departamento": len(re.findall(r"Departamento:", txt)),
-              "autos": len(re.findall("AUTO CONSTITU", txt, re.I)),
-              "declaraciones": len(re.findall("DECLARACI", txt)),
           }
-          # GUARD que puede dar ROJO: un PDF escaneado sin capa de texto da 0 y 0
-          out["veredicto"] = "ROJO_SIN_TEXTO_UTIL" if (out["scp_unicas"] == 0 or out["campo_departamento"] == 0) else "VERDE"
+          # GUARD 1: un PDF escaneado sin capa de texto da 0 y 0
+          # GUARD 2 (nuevo): si los encabezados hallados son MUCHO menos que los
+          # campos "Departamento:", el parser esta perdiendo resoluciones. Es el
+          # defecto D1 convertido en falsador: con v1 el TomoV daba 29 contra
+          # 1307 y el guard NO existia, asi que paso como VERDE.
+          cobertura = out["resoluciones_unicas"] / max(1, out["campo_departamento"])
+          out["cobertura_encabezado_vs_campo"] = round(cobertura, 3)
+          if out["resoluciones_unicas"] == 0 or out["campo_departamento"] == 0:
+              out["veredicto"] = "ROJO_SIN_TEXTO_UTIL"
+          elif cobertura < 0.5:
+              out["veredicto"] = "ROJO_PARSER_PIERDE_RESOLUCIONES"
+          else:
+              out["veredicto"] = "VERDE"
           json.dump(out, open(nombre + ".json", "w"), ensure_ascii=False, indent=1)
           print(json.dumps({k: v for k, v in out.items() if k != "tarija_resoluciones"}, indent=1))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write("### " + nombre + chr(10) + "```json" + chr(10) + json.dumps(out, indent=1) + chr(10) + "```" + chr(10))
           if out["veredicto"] != "VERDE":
-              raise SystemExit("GUARD ROJO: " + nombre)
+              raise SystemExit("GUARD ROJO: " + nombre + " -> " + out["veredicto"])
           PY
 
       - uses: actions/upload-artifact@v4
@@ -198,40 +237,45 @@ jobs:
           filas = [json.load(open(p)) for p in sorted(glob.glob(d + "/Tomo*.json"))]
           verdes = [f for f in filas if f.get("veredicto") == "VERDE"]
           todas = set()
+          repetidas = {}
           for f in verdes:
-              todas.update(f.get("tarija_resoluciones", []))
+              for r in f.get("tarija_resoluciones", []):
+                  repetidas.setdefault(r, []).append(f["tomo"])
+                  todas.add(r)
+          dobles = {r: v for r, v in repetidas.items() if len(v) > 1}
           res = {
               "gestion": gestion,
+              "parser": "v2-tres-tipos",
               "tomos_descubiertos": esperados,
               "tomos_medidos": len(filas),
               "tomos_verdes": len(verdes),
-              "scp_unicas_sumadas": sum(f["scp_unicas"] for f in verdes),
+              "resoluciones_unicas_sumadas": sum(f.get("resoluciones_unicas", 0) for f in verdes),
               "tarija_resoluciones_unicas": len(todas),
               "tarija_sumado_por_tomo": sum(f["tarija_total"] for f in verdes),
               "caracteres_total": sum(f["caracteres"] for f in verdes),
+              "repetidas_entre_tomos": dobles,
               "tarija_listado": sorted(todas),
               "por_tomo": [
-                  {k: f[k] for k in ("tomo", "scp_unicas", "tarija_total", "caracteres", "bytes_pdf", "sha256_pdf", "veredicto")}
+                  {k: f.get(k) for k in ("tomo", "resoluciones_unicas", "tarija_total", "campo_departamento", "cobertura_encabezado_vs_campo", "caracteres", "bytes_pdf", "sha256_pdf", "veredicto")}
                   for f in filas
               ],
           }
-          # GUARD DE COMPLETITUD: si faltan tomos, el censo NO esta cerrado y se dice.
+          # GUARD DE COMPLETITUD: si faltan tomos, el censo NO esta cerrado.
           # Sin esto, 18 de 20 tomos se leerian como "la gestion completa".
           res["completo"] = (esperados > 0 and len(verdes) == esperados)
           if not res["completo"]:
               res["ADVERTENCIA"] = "censo PARCIAL: %d verdes de %d descubiertos" % (len(verdes), esperados)
-          # el solapamiento entre tomos se mide, no se asume
-          res["sin_solapamiento"] = (res["tarija_resoluciones_unicas"] == res["tarija_sumado_por_tomo"])
+          res["sin_solapamiento"] = (len(dobles) == 0)
           json.dump(res, open(d + "/RESUMEN.json", "w"), ensure_ascii=False, indent=1)
-          print(json.dumps({k: v for k, v in res.items() if k not in ("tarija_listado", "por_tomo")}, indent=1))
+          liviano = {k: v for k, v in res.items() if k not in ("tarija_listado", "por_tomo")}
+          print(json.dumps(liviano, indent=1))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write("## RESUMEN " + gestion + chr(10) + "```json" + chr(10) +
-                      json.dumps({k: v for k, v in res.items() if k not in ("tarija_listado", "por_tomo")}, indent=1) +
-                      chr(10) + "```" + chr(10))
+                      json.dumps(liviano, indent=1) + chr(10) + "```" + chr(10))
           PY
           git config user.name "gaceta-ci"
           git config user.email "ci@mudh.local"
           git pull --rebase --autostash || true
           git add "${DIR}"
-          git commit -m "censo(gaceta ${GESTION}): tomos medidos en Actions, JSON por tomo + RESUMEN" || echo "nada que commitear"
+          git commit -m "censo(gaceta ${GESTION}): parser v2 tres tipos, JSON por tomo + RESUMEN" || echo "nada que commitear"
           git push || echo "push fallo"
