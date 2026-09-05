@@ -8,13 +8,20 @@ solo las 64 leyes departamentales que reporte antes. El reparto real es
 DIFERENCIA CON aplica_titulo_sancionado.py, y es la razon de que sean dos scripts:
 aquel RECONSTRUYE el titulo leyendo el texto oficial, y por eso puede equivocarse y
 necesita banco. Este solo BORRA un parametro de URL. No infiere, no lee el texto, no
-inventa: recorta y nada mas. Por eso es seguro correrlo sobre los 355 aunque el
-resto del titulo siga siendo pobre.
+inventa: recorta y nada mas. Por eso es seguro correrlo sobre los 355 aunque el resto
+del titulo siga siendo pobre.
 
 En las Resoluciones del Pleno lo que queda detras del recorte SI describe el acto
 ("r p a n 115 2022 2023 aprobar el acta de la sesion ordinaria n 020 2022 2023"),
 asi que el recorte ya deja un titulo buscable. Reconstruirlas desde la clausula
 RESUELVE es trabajo aparte y queda NO MEDIDO.
+
+ERROR MIO EN LA VERIFICACION, corregido aca: la primera version contaba los titulos
+vacios DE TODO EL CORPUS despues de escribir, veia 4.709 y gritaba ROJO. Esos 4.709
+ya estaban vacios antes (4.650 Autos Supremos, 54 Sentencias, 5 Resoluciones) y no
+tienen nada que ver con el recorte: de los 354 tocados quedaron vacios CERO. Medir el
+universo en vez del subconjunto que toque es la misma clase de error que confundir la
+norma citada con la norma juzgada.
 
 Uso:
     python3 limpia_start.py <base.db>              # solo plan
@@ -52,7 +59,6 @@ def main():
     for uid, tipo, numero, anio, viejo in filas:
         nuevo = COLA.sub("", viejo or "").strip()
         if not nuevo or nuevo == viejo:
-            # el fragmento no estaba al final: no se toca a ciegas
             raros.append((tipo, numero, anio, viejo))
             continue
         reparto[tipo] = reparto.get(tipo, 0) + 1
@@ -63,14 +69,14 @@ def main():
           % (len(plan), len(raros)))
     print("reparto: %s" % reparto)
     print()
-    for _, tipo, numero, anio, viejo, nuevo in plan[:8]:
+    for _, tipo, numero, anio, viejo, nuevo in plan[:6]:
         print("   %-24s %-6s %-6s" % (tipo, numero, anio))
-        print("      ANTES: %s" % viejo[:120])
-        print("      AHORA: %s" % nuevo[:120])
+        print("      ANTES: %s" % viejo[-70:])
+        print("      AHORA: %s" % nuevo[-70:])
     if raros:
         print()
         print("NO TOCADOS:")
-        for tipo, numero, anio, viejo in raros[:8]:
+        for tipo, numero, anio, viejo in raros[:6]:
             print("   %-24s %-6s %-6s %s" % (tipo, numero, anio, (viejo or "")[:90]))
     print()
 
@@ -93,18 +99,26 @@ def main():
                     [(n, u) for u, _, _, _, _, n in plan])
     con.commit()
     con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+    # Verificacion SOBRE EL SUBCONJUNTO TOCADO, no sobre el corpus entero.
+    mal = 0
+    vacios_tocados = 0
+    for uid, _, _, _, _, esperado in plan:
+        leido = con.execute("SELECT titulo FROM documentos WHERE uid=?",
+                            (uid,)).fetchone()[0]
+        if leido is None or not leido.strip():
+            vacios_tocados += 1
+        elif leido != esperado:
+            mal += 1
     quedan = con.execute(
         "SELECT COUNT(*) FROM documentos WHERE titulo LIKE ?",
         ("%&start=%",)).fetchone()[0]
-    vacios = con.execute(
-        "SELECT COUNT(*) FROM documentos WHERE titulo IS NULL OR trim(titulo)=?",
-        ("",)).fetchone()[0]
     con.close()
 
-    print("escritos: %d" % len(plan))
+    print("escritos: %d | discrepancias: %d | vacios entre los tocados: %d"
+          % (len(plan), mal, vacios_tocados))
     print("quedan con el parametro: %d (esperado %d)" % (quedan, len(raros)))
-    print("titulos vacios tras el recorte: %d (esperado 0)" % vacios)
-    if quedan != len(raros) or vacios:
+    if mal or vacios_tocados or quedan != len(raros):
         print("VEREDICTO: ROJO")
         return 1
     print("VEREDICTO: VERDE")
