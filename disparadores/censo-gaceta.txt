@@ -1,0 +1,5 @@
+censo Gaceta Constitucional Plurinacional
+gestion: 2022
+disparo: 2026-09-05T16:57Z
+motivo: cerrar el censo de una gestion completa y resolver la discrepancia
+        entre la Gaceta (19 de Tarija en el tomo I) y el buscador (380 en 2016).
