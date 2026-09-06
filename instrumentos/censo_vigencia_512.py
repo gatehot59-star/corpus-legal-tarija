@@ -1,23 +1,38 @@
 #!/usr/bin/env python3
-"""Censa el estado de vigencia de las leyes departamentales. NO ESCRIBE NADA.
+"""Censa el estado de vigencia de las normas departamentales. NO ESCRIBE NADA.
 
-Por que un censo antes de un extractor: la vez pasada arranque a construir el
-aparato y despues descubri que la fuente no podia contestar la pregunta. Esto
-mide primero:
+HISTORIAL DE DEFECTOS DE ESTE INSTRUMENTO:
+  v1 busco la columna de texto en la tabla `documentos` y no la encontro, asi
+     que reporto "columna_texto: NO EXISTE" y dejo SIN MEDIR el numero que
+     decide todo (cuantos pasajes de abrogacion hay). El texto vive en
+     `chunks.cuerpo`, particionado, y se une por doc_id. Un instrumento que
+     mira la tabla equivocada devuelve "no hay" igual que una ausencia real.
+  v1 tampoco desglosaba por tipo_norma, y por eso yo vengo diciendo "las 512"
+     cuando las departamentales son 1.034: 512 es otro sujeto.
 
-  A) el esquema real (que columnas hay, no las que recuerdo)
-  B) cuantas departamentales hay y cuantas tienen vigencia declarada
-  C) cuantas tienen TEXTO suficiente para que un extractor las lea
-  D) cuantos pasajes con abroga/deroga hay, con tolerancia a OCR
-  E) el titulo: cuantos son basura extraida del cuerpo
+Que mide:
+  A) el esquema real
+  B) desglose por tipo_norma, para saber DE QUE hablamos
+  C) vigencia, fecha, materia y titulo por campo
+  D) pasajes de abrogacion sobre el texto REAL (chunks), con tolerancia a OCR
+  E) de los numeros de ley mencionados como derogados, cuantos estan en el corpus
 
-Cada numero sale con su consulta al lado para que se pueda recomputar.
 Uso: python3 censo_vigencia_512.py <ruta.db>
 """
 import json
 import re
 import sqlite3
 import sys
+
+DEP = "jurisdiccion = 'departamental'"
+
+# El OCR confunde la N de "N 500" con W, M y H. Medido: la abrogacion mas
+# importante del corpus (LD 520 abroga LD 500) estaba escrita "W 500" y un
+# regex que exigia 'n' la perdio entera.
+RE_LEY = re.compile(
+    r"[Ll]ey(?:es)?\s+[Dd]epartamental(?:es)?"
+    r"(?:\s*(?:N|W|M|H|Nro|Num|No)\b)?\s*[.\u00ba\u00b0]?\s*(\d{1,4})")
+RE_ABROGA = re.compile(r"(abrog|derog)", re.I)
 
 
 def main():
@@ -27,129 +42,108 @@ def main():
     cur = con.cursor()
     out = {"db": ruta}
 
-    # A) esquema REAL, no el que recuerdo
-    tablas = [r[0] for r in cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
-    out["tablas"] = tablas
-    principal = None
-    for cand in ("documentos", "docs", "documento"):
-        if cand in tablas:
-            principal = cand
-            break
-    if principal is None:
-        # elegir la tabla con mas filas que no sea fts
-        mejor, n_mejor = None, -1
-        for t in tablas:
-            if "fts" in t or t.startswith("sqlite_"):
-                continue
-            try:
-                n = cur.execute("SELECT COUNT(*) FROM \"%s\"" % t).fetchone()[0]
-            except Exception:
-                continue
-            if n > n_mejor:
-                mejor, n_mejor = t, n
-        principal = mejor
-    out["tabla_principal"] = principal
-    cols = [r[1] for r in cur.execute('PRAGMA table_info("%s")' % principal)]
-    out["columnas"] = cols
+    # B) DE QUE hablamos: desglose por tipo_norma
+    out["por_tipo_norma"] = [
+        {"tipo": r[0], "n": r[1]}
+        for r in cur.execute(
+            "SELECT tipo_norma, COUNT(*) FROM documentos WHERE %s"
+            " GROUP BY tipo_norma ORDER BY 2 DESC" % DEP)
+    ]
+    out["departamentales"] = cur.execute(
+        "SELECT COUNT(*) FROM documentos WHERE %s" % DEP).fetchone()[0]
 
-    def tiene(c):
-        return c in cols
+    # C) campos, contando vacio Y nulo como lo mismo (un '' no es un dato)
+    campos = {}
+    for c in ("vigente", "derogada_por", "fecha", "anio", "materia", "titulo"):
+        vac = cur.execute(
+            "SELECT COUNT(*) FROM documentos WHERE %s AND"
+            " (\"%s\" IS NULL OR TRIM(CAST(\"%s\" AS TEXT))='')" % (DEP, c, c)
+        ).fetchone()[0]
+        campos[c] = {"vacios": vac, "con_dato": out["departamentales"] - vac}
+    out["campos"] = campos
 
-    # B) cuantas departamentales y su vigencia declarada
-    filtro_dep = None
-    for c, v in (("jurisdiccion", "departamental"),):
-        if tiene(c):
-            filtro_dep = "%s = '%s'" % (c, v)
-    if filtro_dep is None and tiene("tipo_norma"):
-        filtro_dep = "tipo_norma LIKE '%Departamental%'"
-    out["filtro_departamental"] = filtro_dep
+    # solo las LEYES departamentales, que es el sujeto que importa para vigencia
+    n_leyes = cur.execute(
+        "SELECT COUNT(*) FROM documentos WHERE %s AND tipo_norma LIKE '%%Ley%%'" % DEP
+    ).fetchone()[0]
+    out["leyes_departamentales"] = n_leyes
 
-    total = cur.execute("SELECT COUNT(*) FROM \"%s\"" % principal).fetchone()[0]
-    out["documentos_total"] = total
+    # D) EL NUMERO QUE DECIDE: pasajes de abrogacion en el texto real.
+    #    El texto esta en chunks.cuerpo y se une por doc_id.
+    docs = {}
+    for r in cur.execute(
+            "SELECT doc_id, uid, numero, anio, tipo_norma, titulo"
+            " FROM documentos WHERE %s" % DEP):
+        docs[r["doc_id"]] = dict(r)
 
-    if filtro_dep:
-        n_dep = cur.execute("SELECT COUNT(*) FROM \"%s\" WHERE %s"
-                            % (principal, filtro_dep)).fetchone()[0]
-        out["departamentales"] = n_dep
+    textos = {}
+    q = ("SELECT c.doc_id AS d, c.cuerpo AS t FROM chunks c"
+         " JOIN documentos x ON x.doc_id = c.doc_id WHERE x.%s" % DEP)
+    for r in cur.execute(q):
+        textos.setdefault(r["d"], []).append(r["t"] or "")
 
-    for c in ("vigente", "derogada_por", "fecha", "anio", "materia", "titulo", "numero"):
-        if not tiene(c):
-            out["campo_%s" % c] = "NO EXISTE"
+    hallazgos = []
+    con_marca = 0
+    pasajes = 0
+    chars = 0
+    mencionados = set()
+    for d, partes in textos.items():
+        t = "\n".join(partes)
+        chars += len(t)
+        hits = list(RE_ABROGA.finditer(t))
+        if not hits:
             continue
-        base = "FROM \"%s\"" % principal + (" WHERE %s" % filtro_dep if filtro_dep else "")
-        nulos = cur.execute(
-            "SELECT COUNT(*) %s AND \"%s\" IS NULL" % (base, c)
-            if filtro_dep else
-            "SELECT COUNT(*) %s WHERE \"%s\" IS NULL" % (base, c)).fetchone()[0]
-        vacios = cur.execute(
-            "SELECT COUNT(*) %s AND (\"%s\" IS NULL OR TRIM(CAST(\"%s\" AS TEXT))='')"
-            % (base, c, c) if filtro_dep else
-            "SELECT COUNT(*) %s WHERE (\"%s\" IS NULL OR TRIM(CAST(\"%s\" AS TEXT))='')"
-            % (base, c, c)).fetchone()[0]
-        out["campo_%s" % c] = {"nulos": nulos, "nulos_o_vacios": vacios}
+        con_marca += 1
+        pasajes += len(hits)
+        for m in hits:
+            ventana = t[max(0, m.start() - 250):m.start() + 350]
+            for mm in RE_LEY.finditer(ventana):
+                num = mm.group(1).lstrip("0") or "0"
+                mencionados.add(num)
+                hallazgos.append({
+                    "doc_id": d,
+                    "uid": docs.get(d, {}).get("uid"),
+                    "numero_propio": docs.get(d, {}).get("numero"),
+                    "anio_propio": docs.get(d, {}).get("anio"),
+                    "ley_mencionada": num,
+                    "pasaje": " ".join(ventana.split())[:300],
+                })
 
-    # C) hay texto para leer?
-    col_texto = None
-    for cand in ("texto", "cuerpo", "contenido"):
-        if tiene(cand):
-            col_texto = cand
-            break
-    out["columna_texto"] = col_texto or "NO EXISTE EN LA TABLA PRINCIPAL"
+    # E) de los numeros mencionados, cuantos ESTAN en el corpus. Este es el que
+    #    dice si la via del texto propio es aplicable sin salir a internet.
+    en_corpus = []
+    for num in sorted(mencionados, key=lambda x: int(x)):
+        n = cur.execute(
+            "SELECT COUNT(*) FROM documentos WHERE %s AND tipo_norma LIKE '%%Ley%%'"
+            " AND CAST(numero AS INTEGER) = ?" % DEP, (int(num),)).fetchone()[0]
+        if n:
+            en_corpus.append(num)
 
-    # D) pasajes de abrogacion, con tolerancia a OCR (N confundida con W/M/H)
-    #    Este es el numero que decide si la via del texto propio sirve.
-    if col_texto and filtro_dep:
-        q = ("SELECT uid, \"%s\" AS t FROM \"%s\" WHERE %s"
-             % (col_texto, principal, filtro_dep)) if tiene("uid") else (
-             "SELECT rowid AS uid, \"%s\" AS t FROM \"%s\" WHERE %s"
-             % (col_texto, principal, filtro_dep))
-        RE_ABROGA = re.compile(r"(se\s+)?(abrog|derog)", re.I)
-        # ley departamental N/W/M/H/nro/num + numero, tolerante al OCR
-        RE_LEY = re.compile(
-            r"[Ll]ey\s+[Dd]epartamental(?:es)?\s*(?:N|W|M|H|Nro|Num|No|\u00b0|\u00ba)?\s*[.\u00ba\u00b0]?\s*(\d{1,4})")
-        con_marca = 0
-        pasajes = 0
-        numeros = set()
-        chars = 0
-        for r in cur.execute(q):
-            t = r["t"] or ""
-            chars += len(t)
-            hits = list(RE_ABROGA.finditer(t))
-            if hits:
-                con_marca += 1
-                pasajes += len(hits)
-                for m in hits:
-                    ventana = t[max(0, m.start() - 200):m.start() + 300]
-                    for mm in RE_LEY.finditer(ventana):
-                        numeros.add(mm.group(1).lstrip("0") or "0")
-        out["texto"] = {
-            "caracteres_departamentales": chars,
-            "documentos_con_abroga_o_deroga": con_marca,
-            "pasajes_totales": pasajes,
-            "numeros_de_ley_mencionados": len(numeros),
-            "numeros": sorted(numeros, key=lambda x: int(x))[:60],
-        }
+    out["texto"] = {
+        "documentos_con_texto": len(textos),
+        "caracteres": chars,
+        "documentos_con_abrogar_o_derogar": con_marca,
+        "pasajes": pasajes,
+        "leyes_mencionadas": len(mencionados),
+        "leyes_mencionadas_lista": sorted(mencionados, key=lambda x: int(x)),
+        "de_esas_en_el_corpus": len(en_corpus),
+        "en_corpus_lista": en_corpus,
+    }
+    # GUARD que puede dar rojo: si no hay texto, todo lo de arriba es un cero
+    # que miente, y hay que decirlo en vez de reportar "0 abrogaciones".
+    if not textos:
+        out["texto"]["VEREDICTO"] = "ROJO: cero texto unido. El join esta mal, no es que no haya abrogaciones."
 
-    # E) el titulo es basura? heuristica: empieza con digito+punto, o es muy largo,
-    #    o no contiene la palabra ley/decreto/resolucion
-    if tiene("titulo") and filtro_dep:
-        q = "SELECT titulo FROM \"%s\" WHERE %s" % (principal, filtro_dep)
-        n, sospechosos, muestras = 0, 0, []
-        for r in cur.execute(q):
-            t = (r["titulo"] or "").strip()
-            n += 1
-            malo = (
-                not t
-                or len(t) > 160
-                or re.match(r"^\s*\d+[.)]", t)
-                or not re.search(r"ley|decreto|resoluci|reglamento|estatuto", t, re.I)
-            )
-            if malo:
-                sospechosos += 1
-                if len(muestras) < 8:
-                    muestras.append(t[:110])
-        out["titulo"] = {"evaluados": n, "sospechosos": sospechosos, "muestras": muestras}
+    # hallazgos deduplicados por (documento, ley mencionada)
+    vistos = set()
+    unicos = []
+    for h in hallazgos:
+        k = (h["doc_id"], h["ley_mencionada"])
+        if k in vistos:
+            continue
+        vistos.add(k)
+        unicos.append(h)
+    out["hallazgos"] = unicos
 
     print(json.dumps(out, ensure_ascii=False, indent=1))
 
