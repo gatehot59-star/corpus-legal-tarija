@@ -1,0 +1,21 @@
+{
+  "candidate_sha": "2360f27d43fdc9a1e2a74a3f6465698918df2ad1",
+  "module_sha256": "53e2c84d00bfae3bd064230dbdab1247433efbe94641e96a8b547cc127537fc0",
+  "scope": "isolated exact class; synthetic files only; no production ingestion",
+  "checks": [
+    {
+      "case": "matching",
+      "sha_equal": true,
+      "accepted": true
+    },
+    {
+      "case": "changed",
+      "sha_equal": false,
+      "accepted": true
+    },
+    {
+      "case": "missing",
+      "accepted": false
+    }
+  ]
+}
