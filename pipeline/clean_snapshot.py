@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import sys
 import tempfile
 from urllib.parse import quote
@@ -25,6 +26,39 @@ from legal_html import extract, MAX_BYTES
 
 class CandidateError(ValueError):
     """Candidate cannot preserve the requested identity or source conditions."""
+
+
+def read_regular(path: Path, limit: int) -> bytes:
+    """Read a bounded regular file; never block opening a FIFO or follow a leaf link.
+
+    Descriptor fstat checks the opened object. Parent directories remain trusted;
+    this does not promise protection from all same-UID directory races.
+    """
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+    with os.fdopen(fd, 'rb') as stream:
+        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+            raise CandidateError('regular file required')
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise CandidateError('input exceeds byte limit')
+    return raw
+
+
+def validate_mapping(item: object) -> None:
+    """Require typed mapping fields before opening any referenced HTML."""
+    if not isinstance(item, dict):
+        raise CandidateError('mapping entry must be an object')
+    fields = ('uid', 'old_text_sha256', 'source_url', 'original_sha256', 'expected_title', 'html_file')
+    for key in fields:
+        value = item.get(key)
+        if not isinstance(value, str) or not value.strip() or len(value) > 4096 or any(ord(c) < 32 for c in value):
+            raise CandidateError('invalid mapping field')
+    for key in ('old_text_sha256', 'original_sha256'):
+        if len(item[key]) != 64 or any(c not in '0123456789abcdef' for c in item[key]):
+            raise CandidateError('full mapping digest required')
+    name = item['html_file']
+    if Path(name).name != name or '\\' in name or name in ('.', '..'):
+        raise CandidateError('invalid input filename')
 
 
 def uid_digest(connection: sqlite3.Connection) -> tuple[int, str]:
@@ -92,7 +126,6 @@ def build(source_db: Path, output: Path, changes: list[dict], expected_count: in
                 if not cleaned:
                     raise CandidateError('empty extraction')
                 for number, text in enumerate(cleaned, 1):
-                    # Old citation expansions referred to old offsets/text. Do not reuse.
                     db.execute('INSERT INTO chunks(cuerpo,citas,encabezado,uid,doc_id,nro) VALUES(?,?,?,?,?,?)',
                                (text, '', heading if number == 1 else '', uid, row['doc_id'], number))
                 db.execute('UPDATE documentos SET sha256=?,chars=?,via_texto=?,confianza=? WHERE uid=?',
@@ -133,19 +166,17 @@ def main() -> int:
     ap.add_argument('--expected-uid-sha256',required=True)
     args=ap.parse_args()
     try:
-        with args.mapping.open('rb') as f:raw=f.read(1024*1024+1)
+        raw = read_regular(args.mapping, 1024*1024)
         if len(raw)>1024*1024 or hashlib.sha256(raw).hexdigest()!=args.mapping_sha256:
             raise CandidateError('mapping digest or size mismatch')
         mappings=json.loads(raw)
         if not isinstance(mappings,list) or not 1<=len(mappings)<=100:
             raise CandidateError('invalid mapping list')
         for item in mappings:
-            name=item.pop('html_file')
-            if not isinstance(name,str) or Path(name).name!=name or '\\' in name or name in ('.','..'):
-                raise CandidateError('invalid input filename')
-            path=args.mapping.parent/name
-            if path.is_symlink():raise CandidateError('symlink input forbidden')
-            with path.open('rb') as f:item['original_html']=f.read(MAX_BYTES+1)
+            validate_mapping(item)
+        for item in mappings:
+            path = args.mapping.parent / item.pop('html_file')
+            item['original_html'] = read_regular(path, MAX_BYTES)
         info=build(args.source_db,args.output,mappings,args.expected_count,args.expected_uid_sha256)
     except (ValueError,OSError,sqlite3.Error,KeyError,TypeError) as exc:
         print(json.dumps({'ok':False,'error':type(exc).__name__}));return 2
