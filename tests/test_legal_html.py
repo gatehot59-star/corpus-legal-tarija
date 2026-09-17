@@ -117,4 +117,58 @@ class ExtractionTests(unittest.TestCase):
             self.assertEqual((p/'out.json').read_bytes(),before);self.assertEqual((p/'in.html').read_bytes(),raw)
 
 
+    def test_hidden_ancestor_requires_review(self):
+        for attrs in ["hidden", "hidden=hidden", "aria-hidden=TRUE", 'style="display: none"', 'style="visibility:hidden"', "inert"]:
+            raw = ("<section " + attrs + "><article>").encode() + page("<p>No pagar.</p>") + b"</article></section>"
+            with self.subTest(attrs=attrs), self.assertRaises(m.ExtractionError):
+                run(raw)
+
+    def test_inactive_ancestor_requires_review(self):
+        for tag in ["template", "noscript", "textarea", "title"]:
+            raw = ("<" + tag + ">").encode() + page("<p>No pagar.</p>") + ("</" + tag + ">").encode()
+            with self.subTest(tag=tag), self.assertRaises(m.ExtractionError):
+                run(raw)
+
+    def test_visible_ancestors_preserve_exact_body(self):
+        raw = page("<p>No pagar &amp; conservar.</p>")
+        wrapped = b"<html><body><main aria-hidden=false><section>" + raw + b"</section></main></body></html>"
+        self.assertEqual(run(raw)["text"], run(wrapped)["text"])
+        self.assertEqual(run(raw)["legal_html"], run(wrapped)["legal_html"])
+
+    def test_closed_hidden_sibling_does_not_hide_legal_body(self):
+        raw = page("<p>No pagar.</p>")
+        prefix = b"<section hidden><p>not law</p></section><template><p>not law</p></template>"
+        self.assertEqual(run(prefix + raw)["text"], run(raw)["text"])
+
+    def test_void_hidden_sibling_does_not_hide_legal_body(self):
+        raw = page("<p>No pagar.</p>")
+        self.assertEqual(run(b"<input hidden><br/>" + raw)["text"], run(raw)["text"])
+
+    def test_self_closing_nonvoid_outer_markup_requires_review(self):
+        raw = page("<p>No pagar.</p>")
+        with self.assertRaises(m.ExtractionError):
+            run(b"<section hidden/>" + raw)
+
+    def test_duplicate_ancestor_attributes_require_review(self):
+        raw = b"<section aria-hidden=true aria-hidden=false>" + page("<p>No pagar.</p>") + b"</section>"
+        with self.assertRaises(m.ExtractionError):
+            run(raw)
+
+    def test_ancestor_depth_limit(self):
+        raw = b"<section>" * 130 + page("<p>No pagar.</p>") + b"</section>" * 130
+        with self.assertRaises(m.ExtractionError):
+            run(raw)
+
+    def test_hidden_ancestor_cli_creates_no_candidate(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td)
+            raw = b"<div hidden>" + page("<p>No pagar.</p>") + b"</div>"
+            (p/"in.html").write_bytes(raw)
+            cmd = [sys.executable, str(ROOT/"pipeline/legal_html.py"), "--input", str(p/"in.html"), "--output", str(p/"out.json"), "--sha256", hashlib.sha256(raw).hexdigest(), "--title", TITLE]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 2)
+            self.assertFalse((p/"out.json").exists())
+            self.assertEqual((p/"in.html").read_bytes(), raw)
+
+
 if __name__ == '__main__': unittest.main(verbosity=2)
