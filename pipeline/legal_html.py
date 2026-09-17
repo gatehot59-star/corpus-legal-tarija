@@ -119,12 +119,11 @@ class LegalParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         """Close only a balanced legal subtree; no browser-style guessing."""
         if not self.stack:
-            # A closed hidden sibling must not taint a following legal body.
-            # Ignore unmatched outer closing tags; do not guess browser CSS.
-            for index in range(len(self.ancestors) - 1, -1, -1):
-                if self.ancestors[index][0] == tag:
-                    del self.ancestors[index:]
-                    break
+            # Reject ambiguity rather than recovering by deleting open context.
+            # A crossed close must never erase a hidden or inactive ancestor.
+            if tag in VOID or not self.ancestors or self.ancestors[-1][0] != tag:
+                raise ExtractionError("unmatched or crossed outer closing tag")
+            self.ancestors.pop()
             return
         if tag in VOID or self.stack[-1] != tag:
             raise ExtractionError('unbalanced legal markup')

@@ -4,6 +4,7 @@ on:
     paths:
       - 'pipeline/legal_html.py'
       - 'tests/test_legal_html.py'
+      - 'tests/test_legal_html_crossed.py'
       - 'tests/check_legal_html_mutations.py'
       - '.github/workflows/legal-html.yml'
   workflow_dispatch:
@@ -21,6 +22,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile pipeline/legal_html.py tests/test_legal_html.py tests/check_legal_html_mutations.py
+          python3 -m py_compile pipeline/legal_html.py tests/test_legal_html.py tests/test_legal_html_crossed.py tests/check_legal_html_mutations.py
           python3 tests/test_legal_html.py
+          python3 tests/test_legal_html_crossed.py
           python3 tests/check_legal_html_mutations.py
