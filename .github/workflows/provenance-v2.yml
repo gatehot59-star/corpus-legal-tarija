@@ -3,7 +3,9 @@ on:
   pull_request:
     paths:
       - 'contracts/provenance_v2.py'
+      - 'sistema/api/fuente_nacional.py'
       - 'tests/*provenance*'
+      - 'tests/test_fuente_nacional_integridad.py'
       - '.github/workflows/provenance-v2.yml'
   workflow_dispatch:
 permissions:
@@ -21,6 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 --version
-          python3 -m compileall -q contracts tests/test_provenance_v2.py tests/check_provenance_mutations.py
+          python3 -m compileall -q contracts tests/test_provenance_v2.py tests/check_provenance_mutations.py sistema/api/fuente_nacional.py tests/test_fuente_nacional_integridad.py
           python3 tests/test_provenance_v2.py
           python3 tests/check_provenance_mutations.py
+          python3 tests/test_fuente_nacional_integridad.py
