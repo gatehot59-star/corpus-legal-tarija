@@ -4,8 +4,13 @@ on:
     paths:
       - 'contracts/provenance_v2.py'
       - 'sistema/api/fuente_nacional.py'
+      - 'sistema/api/ingesta.py'
+      - 'sistema/api/esquema.sql'
+      - 'sistema/api/ingesta_nacional_segura.py'
       - 'tests/*provenance*'
       - 'tests/test_fuente_nacional_integridad.py'
+      - 'tests/test_ingesta_nacional_segura.py'
+      - 'tests/check_batch_mutation.py'
       - '.github/workflows/provenance-v2.yml'
   workflow_dispatch:
 permissions:
@@ -18,12 +23,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Compile and check contracts
+      - name: Compile and check contracts and isolated ingestion
         shell: bash
         run: |
           set -euo pipefail
           python3 --version
-          python3 -m compileall -q contracts tests/test_provenance_v2.py tests/check_provenance_mutations.py sistema/api/fuente_nacional.py tests/test_fuente_nacional_integridad.py
+          python3 -m compileall -q contracts sistema/api tests
           python3 tests/test_provenance_v2.py
           python3 tests/check_provenance_mutations.py
           python3 tests/test_fuente_nacional_integridad.py
+          python3 tests/test_ingesta_nacional_segura.py
+          python3 tests/check_batch_mutation.py
