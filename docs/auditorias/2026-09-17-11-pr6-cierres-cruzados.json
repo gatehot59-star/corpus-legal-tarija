@@ -1,0 +1,31 @@
+{
+"subject":"452a75678d5e8160ee62dd8829f9b85fb6f4a072",
+"module_sha256":"867444ece1574270d97c6dfbd2fee3674a82711563d8dc9b0e6db1d9312ea1e0",
+"extractor_output":{
+  "sha": "452a75678d5e8160ee62dd8829f9b85fb6f4a072",
+  "module_sha256": "867444ece1574270d97c6dfbd2fee3674a82711563d8dc9b0e6db1d9312ea1e0",
+  "cases": [
+    {"case":"visible","html":"<div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div>","accepted":true,"text":"Ley sintetica 1\nNo pagar 390000.\n"},
+    {"case":"hidden_balanced","html":"<div hidden><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></div>","accepted":false,"error":"hidden or inactive ancestor requires review"},
+    {"case":"cross_table","html":"<div hidden><table></div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></table></div>","accepted":true,"text":"Ley sintetica 1\nNo pagar 390000.\n"},
+    {"case":"cross_template","html":"<div hidden><template></div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></template></div>","accepted":true,"text":"Ley sintetica 1\nNo pagar 390000.\n"},
+    {"case":"closed_hidden_sibling","html":"<div hidden>otro</div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div>","accepted":true,"text":"Ley sintetica 1\nNo pagar 390000.\n"},
+    {"case":"cross_object","html":"<div hidden><object></div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></object></div>","accepted":true,"text":"Ley sintetica 1\nNo pagar 390000.\n"}
+  ]
+},
+"browser_output":{
+  "userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0.0.0 Safari/537.36",
+  "method":"DOMParser text/html; detached documents, no network, no script execution",
+  "cases":[
+    {"case":"visible","html":"<div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div>","body_serialized":"<div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div>","target_in_document":true,"hidden_ancestor":false,"target_in_template":false,"ancestors":[{"tag":"BODY","hidden":false},{"tag":"HTML","hidden":false}]},
+    {"case":"hidden_balanced","html":"<div hidden><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></div>","body_serialized":"<div hidden=\"\"><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></div>","target_in_document":true,"hidden_ancestor":true,"target_in_template":false,"ancestors":[{"tag":"DIV","hidden":true},{"tag":"BODY","hidden":false},{"tag":"HTML","hidden":false}]},
+    {"case":"cross_table","html":"<div hidden><table></div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></table></div>","body_serialized":"<div hidden=\"\"><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div><table></table></div>","target_in_document":true,"hidden_ancestor":true,"target_in_template":false,"ancestors":[{"tag":"DIV","hidden":true},{"tag":"BODY","hidden":false},{"tag":"HTML","hidden":false}]},
+    {"case":"cross_template","html":"<div hidden><template></div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></template></div>","body_serialized":"<div hidden=\"\"><template><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></template></div>","target_in_document":false,"hidden_ancestor":null,"target_in_template":true,"ancestors":[]},
+    {"case":"closed_hidden_sibling","html":"<div hidden>otro</div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div>","body_serialized":"<div hidden=\"\">otro</div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div>","target_in_document":true,"hidden_ancestor":false,"target_in_template":false,"ancestors":[{"tag":"BODY","hidden":false},{"tag":"HTML","hidden":false}]},
+    {"case":"cross_object","html":"<div hidden><object></div><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></object></div>","body_serialized":"<div hidden=\"\"><object><div id=\"normTxtId\"><h1>Ley sintetica 1</h1><p>No pagar 390000.</p></div></object></div>","target_in_document":true,"hidden_ancestor":true,"target_in_template":false,"ancestors":[{"tag":"OBJECT","hidden":false},{"tag":"DIV","hidden":true},{"tag":"BODY","hidden":false},{"tag":"HTML","hidden":false}]}
+  ]
+},
+"baseline_summary":{"command":["python3","tests/test_legal_html.py"],"exit":0,"tests":29,"seconds":0.459,"result":"OK","kind":"summary; full stderr retained locally, not represented as full raw log here"},
+"reproduce_browser":"For each exact html above: new DOMParser().parseFromString(html,'text/html'); query #normTxtId in document, inspect its parentElement.closest('[hidden]'), and query each template.content for #normTxtId. Serialize document.body.innerHTML. No navigation or scripts needed.",
+"scope":"Own-fix adversarial test, not independent audit; no production, actual rendering or code changes."
+}
