@@ -11,6 +11,11 @@ Medido el 2026-09-03 antes de escribir esto:
   - De 2.664 resoluciones reales: 2.539 por HTML oficial, 120 con texto nativo en el PDF, y
     solo **5 necesitaron OCR**. Total: 312,8 s de OCR para once gestiones.
 
+**Y medido el 2026-09-03 a la noche, lo que faltaba saber: cuantas hay.** La API declara **26
+gestiones (2001-2026)** en `/catalogos/gestiones` y esta corrida uso 12. El censo real de Tarija
+son **5.070 resoluciones** contra 2.862 en el corpus: faltaban las 14 gestiones de 2001 a 2014,
+que nadie habia pedido. Ver `censar_genesis.py`.
+
 **Por que hay timeout y tope de paginas, con el caso medido:** la gestion 2025 colgo un job de
 Actions por casi dos horas. Yo primero "refute" la hipotesis del PDF gigante mirando las
 paginas de los documentos que YA habian terminado, que es sesgo de supervivencia: el que cuelga
@@ -26,11 +31,17 @@ Tres decisiones de diseno con su motivo:
    demandante, forma de resolucion) son la mitad del valor para un estudio, y sobreviven aunque
    el texto falle.
 3. **El PDF no se commitea.** Se guarda su URL y su sha256; el texto es el producto.
+
+**Y una cuarta, agregada tras medir brain-env:** si faltan `tesseract` o `pdftoppm`, el documento
+queda `SIN_HERRAMIENTA_OCR` **declarado**, no revienta la corrida. La version anterior moria con
+`FileNotFoundError` sin capturar en el primer escaneado, y con 2.208 documentos en fila eso es
+perder todo por el 5%.
 """
 import argparse
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -106,7 +117,13 @@ def ocr_pdf(datos: bytes, args) -> tuple:
 
     El timeout NO es prolijidad: un solo documento escaneado de 22 paginas colgo un job de
     Actions casi dos horas, con 198 documentos en serie detras esperandolo.
+
+    Y la ausencia de herramientas se DECLARA: `brain-env` no tiene tesseract ni pdftoppm (el OCR
+    masivo corrio en Actions), y la version anterior moria con FileNotFoundError sin capturar.
     """
+    falta = [b for b in (args.pdfinfo, args.pdftotext) if not shutil.which(b)]
+    if falta:
+        return "", 0, 0.0, "sin herramienta: " + ", ".join(falta)
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         pdf = tmp / "r.pdf"
@@ -121,6 +138,10 @@ def ocr_pdf(datos: bytes, args) -> tuple:
         cp = subprocess.run([args.pdftotext, str(pdf), "-"], capture_output=True, text=True)
         if len(cp.stdout.strip()) > 200 * max(pags, 1):
             return cp.stdout, pags, 0.0, ""
+        # Recien aca hace falta OCR de verdad.
+        falta_ocr = [b for b in (args.pdftoppm, args.tesseract) if not shutil.which(b)]
+        if falta_ocr:
+            return "", pags, 0.0, "sin herramienta de OCR: " + ", ".join(falta_ocr)
         if pags > args.max_paginas:
             return "", pags, 0.0, "tope de paginas: " + str(pags) + " > " + str(args.max_paginas)
         t0 = time.time()
@@ -149,7 +170,7 @@ def procesar(meta: dict, salida: Path, args) -> dict:
     reg = {"id": rid, "nro_resolucion": meta.get("nro_resolucion"),
            "fecha_emision": meta.get("fecha_emision"),
            "departamento": meta.get("departamento"), "sala": meta.get("sala"),
-           "gestion": args.gestion, "jurisdiccion": "nacional_tsj",
+           "gestion": meta.get("_gestion", args.gestion), "jurisdiccion": "nacional_tsj",
            "tipo_norma": meta.get("tipo_resolucion") or meta.get("_tipo_nombre") or "?",
            "confidencialidad": "PUBLICO", "estado": "", "motivo": "", "via": ""}
 
@@ -163,7 +184,7 @@ def procesar(meta: dict, salida: Path, args) -> dict:
         reg[k] = d.get(k)
     reg["url_pdf_escaneado"] = d.get("url_pdf_escaneado") or ""
 
-    stem = stem_seguro("tsj", meta.get("departamento"), args.gestion,
+    stem = stem_seguro("tsj", meta.get("departamento"), reg["gestion"],
                        meta.get("nro_resolucion"), rid)
     (salida / "meta").mkdir(parents=True, exist_ok=True)
     (salida / "meta" / (stem + ".json")).write_text(
@@ -190,9 +211,16 @@ def procesar(meta: dict, salida: Path, args) -> dict:
         reg.update(paginas=pags, segundos=seg, chars=len(texto),
                    via="ocr_pdf_escaneado" if seg else "texto_nativo_pdf")
         if motivo:
-            reg.update(estado="TIMEOUT_OCR" if "timeout" in motivo else "DEMASIADAS_PAGINAS",
-                       motivo=motivo)
+            if "sin herramienta" in motivo:
+                estado = "SIN_HERRAMIENTA_OCR"
+            elif "timeout" in motivo:
+                estado = "TIMEOUT_OCR"
+            else:
+                estado = "DEMASIADAS_PAGINAS"
+            reg.update(estado=estado, motivo=motivo)
             if not texto:
+                # El JSON de metadatos YA quedo escrito: el documento existe, se sabe que
+                # existe, y su texto queda pendiente con el motivo dicho.
                 return reg
         else:
             reg["estado"] = "OK" if len(texto) > 500 else "REVISION_HUMANA"
@@ -209,6 +237,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--departamento", default="Tarija")
     ap.add_argument("--gestion", type=int, default=2026)
+    ap.add_argument("--gestiones", default="",
+                    help="varias gestiones separadas por coma; gana sobre --gestion")
     ap.add_argument("--tipos", default="1,2,3",
                     help="ids de tipo de resolucion; 1=Auto Supremo 2=Sentencia 3=Resolucion")
     ap.add_argument("--salida", default="salida-genesis")
@@ -238,33 +268,40 @@ def main() -> int:
     s, b = pedir(BASE + "/catalogos/tipos_resoluciones")
     catalogo_tipos = {t["id"]: t["nombre"] for t in (lista(b) if s == 200 else [])}
     tipos = [int(x) for x in args.tipos.split(",") if x.strip()]
+    gestiones = ([int(x) for x in args.gestiones.split(",") if x.strip()]
+                 if args.gestiones else [args.gestion])
     print("salas: " + str(len(salas)) + " | tipos: "
-          + ", ".join(str(t) + "=" + catalogo_tipos.get(t, "?") for t in tipos), flush=True)
+          + ", ".join(str(t) + "=" + catalogo_tipos.get(t, "?") for t in tipos)
+          + " | gestiones: " + str(gestiones), flush=True)
 
     objetivo = args.departamento.upper()
     pendientes = []
-    for tipo in tipos:
-        for sala in salas:
-            s2, b2 = pedir(BASE + "/resoluciones/busqueda_por_gestion",
-                           {"idSala": sala["id"], "gestion": args.gestion, "idTipoRes": tipo})
-            if s2 != 200:
-                print("  " + str(sala["nombre"]) + " tipo " + str(tipo) + ": HTTP " + str(s2), flush=True)
-                continue
-            mios = [dict(f, sala=sala["nombre"], _tipo_nombre=catalogo_tipos.get(tipo, "?"))
-                    for f in lista(b2)
-                    if str(f.get("departamento") or "").upper().startswith(objetivo)]
-            pendientes += mios
+    for gestion in gestiones:
+        for tipo in tipos:
+            for sala in salas:
+                s2, b2 = pedir(BASE + "/resoluciones/busqueda_por_gestion",
+                               {"idSala": sala["id"], "gestion": gestion, "idTipoRes": tipo})
+                if s2 != 200:
+                    print("  " + str(sala["nombre"]) + " " + str(gestion) + " tipo "
+                          + str(tipo) + ": HTTP " + str(s2), flush=True)
+                    continue
+                pendientes += [dict(f, sala=sala["nombre"], _gestion=gestion,
+                                    _tipo_nombre=catalogo_tipos.get(tipo, "?"))
+                               for f in lista(b2)
+                               if str(f.get("departamento") or "").upper().startswith(objetivo)]
 
     # Reparto estable por id: un re-run del shard 3 procesa exactamente lo mismo.
     pendientes.sort(key=lambda f: f["id"])
     mios = [d for i, d in enumerate(pendientes) if i % args.shards == args.shard]
     if args.limite:
         mios = mios[:args.limite]
-    print("total " + args.departamento + " gestion " + str(args.gestion) + ": "
-          + str(len(pendientes)) + " | shard " + str(args.shard) + "/" + str(args.shards)
+    print("total " + args.departamento + ": " + str(len(pendientes))
+          + " | shard " + str(args.shard) + "/" + str(args.shards)
           + ": " + str(len(mios)), flush=True)
 
-    jsonl = salida / ("resoluciones-%s-%02d.jsonl" % (args.gestion, args.shard))
+    etiqueta = (str(gestiones[0]) if len(gestiones) == 1
+                else str(min(gestiones)) + "_" + str(max(gestiones)))
+    jsonl = salida / ("resoluciones-%s-%02d.jsonl" % (etiqueta, args.shard))
     registros = []
     for i, meta in enumerate(mios, start=1):
         reg = procesar(meta, salida, args)
@@ -283,13 +320,13 @@ def main() -> int:
         if r["via"]:
             vias[r["via"]] = vias.get(r["via"], 0) + 1
         portipo[r["tipo_norma"]] = portipo.get(r["tipo_norma"], 0) + 1
-    resumen = {"departamento": args.departamento, "gestion": args.gestion, "tipos": tipos,
+    resumen = {"departamento": args.departamento, "gestiones": gestiones, "tipos": tipos,
                "shard": args.shard, "shards": args.shards, "resoluciones": len(registros),
                "estados": conteo, "vias": vias, "por_tipo": portipo,
                "caracteres": sum(r.get("chars", 0) or 0 for r in registros),
                "paginas_ocr": sum(r.get("paginas") or 0 for r in registros),
                "segundos": round(sum(r.get("segundos") or 0 for r in registros), 1)}
-    (salida / ("resumen-%s-%02d.json" % (args.gestion, args.shard))).write_text(
+    (salida / ("resumen-%s-%02d.json" % (etiqueta, args.shard))).write_text(
         json.dumps(resumen, ensure_ascii=False, indent=1), encoding="utf-8")
     print("\nRESUMEN:", json.dumps(resumen, ensure_ascii=False), flush=True)
     return 0
