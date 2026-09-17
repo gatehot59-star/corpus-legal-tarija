@@ -1,0 +1,43 @@
+{
+  "scope": "selected verbatim fields from A01 observations, plus complete deployed-server diff; not the full process or database dump",
+  "timestamp_utc": "2026-09-17T04:30:25.982949+00:00",
+  "database_path": "/home/ubuntu/rag-abogacia-v7.db",
+  "database": {
+    "documentos": 6079,
+    "pasajes": 78930,
+    "journal_mode": "wal",
+    "user_version": 0,
+    "uid_set_sha256": "31481e481177eb6d487492f7f30b7f8e1c21843f092054bf5288e298e2c542d0",
+    "uid_unique": 6079,
+    "sources": [["lexivox_nacional",15],["tarija_gaceta",1034],["tsj_genesis",5030]]
+  },
+  "services": {
+    "corpus-api": "MainPID=201508\nActiveState=active\nSubState=running\nActiveEnterTimestamp=Wed 2026-09-16 10:54:27 UTC\n",
+    "cloudflared-corpus": "MainPID=112150\nActiveState=active\nSubState=running\nActiveEnterTimestamp=Fri Sep 11 14:02:03 2026 UTC (timestamp formatting normalized; raw observation: Fri 2026-09-11 14:02:03 UTC)\n",
+    "nginx": "active",
+    "gitea": "active"
+  },
+  "meminfo_kib": {"MemTotal":8148564,"MemAvailable":6299896,"SwapTotal":4194300,"SwapFree":4194172},
+  "cpu":2,
+  "disk_available_bytes":31875313664,
+  "http_counts": {
+    "/censo":{"http":200,"documentos":6079,"pasajes":78930},
+    "/estado":{"http":200,"documentos":6079,"pasajes":78930},
+    "/buscar?q=ley&limit=1":{"http":200,"total_pasajes":32896,"devueltos":1}
+  },
+  "backups": [
+    {"path":"/home/ubuntu/rag-abogacia-v7.db.previo","size":217571328,"sha256":"8314119adabc86e3ed670089fddb0513e170469c64bbd21df1b50de146ffef39","quick_check":[["ok"]],"documents":6079,"chunks":78930,"uid_set_sha256":"31481e481177eb6d487492f7f30b7f8e1c21843f092054bf5288e298e2c542d0"},
+    {"path":"/home/ubuntu/rag-abogacia-v9.db","size":212422656,"sha256":"06852d27ad994ee9935ce6f9e9c297b0a8a1452153621e80dccbde68522ee144","quick_check":[["ok"]],"documents":6079,"chunks":78930,"uid_set_sha256":"31481e481177eb6d487492f7f30b7f8e1c21843f092054bf5288e298e2c542d0"},
+    {"path":"/home/ubuntu/rag-abogacia-v7.db.antes-de-vigencia","size":217571328,"sha256":"db16d00ba7c0638e3e3089f30552e4b30e6de4f5773001d3920a0ac811c8e8d6","quick_check":[["ok"]],"documents":6079,"chunks":78930,"uid_set_sha256":"31481e481177eb6d487492f7f30b7f8e1c21843f092054bf5288e298e2c542d0"}
+  ],
+  "backup_limit": "readable candidates, not tested restore or offsite backups",
+  "main":"245cafb381884eed1d6f017de5f92f51745b9559",
+  "pr1":"2360f27d43fdc9a1e2a74a3f6465698918df2ad1",
+  "pagination":"84358cc821490cd90e31cb3f049ef7e691ccc4da",
+  "deployed_sha256":"01daf5e1cf7e75eb5adff0bdeb5fdd57af1ab5b3b79a5d56466b1179f34d5b48",
+  "deployed_bytes":18140,
+  "deployed_diff":"--- pagination/servidor.py\n+++ vm/api.py\n@@ -290,4 +290,4 @@\n             filtros={n:one(n) for n,_ in FACETS if one(n)};res,err=buscar(q,limit,filtros,offset);return self._json(400 if err else 200,{\"error\":err} if err else res)\n         return self._json(404,{\"error\":\"ruta desconocida\",\"rutas\":[\"/censo\",\"/estado\",\"/buscar\",\"/texto\",\"/verificar\"]})\n     def log_message(self,*a):pass\n-if __name__==\"__main__\":print(\"corpus/2 en 0.0.0.0:%d sobre %s\"%(PORT,DB),flush=True);ThreadingHTTPServer((\"0.0.0.0\",PORT),H).serve_forever()\n+if __name__==\"__main__\":print(\"corpus/2 en 127.0.0.1:%d (loopback; nginx expone) sobre %s\"%(PORT,DB),flush=True);ThreadingHTTPServer((\"127.0.0.1\",PORT),H).serve_forever()\n",
+  "status":{"A01":"inventory and readable backup candidates identified","A02":"partial","B01":"not started"},
+  "production_changes":false,
+  "doc":"https://app.clickup.com/90171457413/docs/2kza6fw5-12557"
+}
