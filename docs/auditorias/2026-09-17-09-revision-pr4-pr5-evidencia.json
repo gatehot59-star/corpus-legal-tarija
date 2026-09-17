@@ -1,0 +1,41 @@
+{
+  "sha": "ee8e5c24bc3dff91d03149928e87c30a88fd56c5",
+  "new_test_runs": [
+    {
+      "command": ["python3", "tests/test_ingesta_nacional_segura.py"],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "test_duplicate_key_rejected (__main__.BatchTests.test_duplicate_key_rejected) ... ok\ntest_existing_destination_is_not_overwritten (__main__.BatchTests.test_existing_destination_is_not_overwritten) ... ok\ntest_expected_count_not_adjusted_to_available_rows (__main__.BatchTests.test_expected_count_not_adjusted_to_available_rows) ... ok\ntest_explicit_empty_requires_zero_expected (__main__.BatchTests.test_explicit_empty_requires_zero_expected) ... ok\ntest_incomplete_metadata_rejected (__main__.BatchTests.test_incomplete_metadata_rejected) ... ok\ntest_manifest_digest_mismatch (__main__.BatchTests.test_manifest_digest_mismatch) ... ok\ntest_missing_manifest_is_not_empty_success (__main__.BatchTests.test_missing_manifest_is_not_empty_success) ... ok\ntest_one_bad_record_does_not_publish_partial_candidate (__main__.BatchTests.test_one_bad_record_does_not_publish_partial_candidate) ... ok\ntest_text_root_symlink_rejected (__main__.BatchTests.test_text_root_symlink_rejected) ... ok\ntest_uid_collision_rejected (__main__.BatchTests.test_uid_collision_rejected) ... ok\ntest_valid_two_records_and_reader_sqlite (__main__.BatchTests.test_valid_two_records_and_reader_sqlite) ... ok\n\n----------------------------------------------------------------------\nRan 11 tests in 1.906s\n\nOK\n"
+    },
+    {
+      "command": ["python3", "tests/test_legal_html.py"],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "test_active_or_image_content_requires_review (__main__.ExtractionTests.test_active_or_image_content_requires_review) ... ok\ntest_bad_hash_and_utf8 (__main__.ExtractionTests.test_bad_hash_and_utf8) ... ok\ntest_cli_and_no_overwrite (__main__.ExtractionTests.test_cli_and_no_overwrite) ... ok\ntest_comment_not_search_text_but_retained_in_html (__main__.ExtractionTests.test_comment_not_search_text_but_retained_in_html) ... ok\ntest_depth_limit (__main__.ExtractionTests.test_depth_limit) ... ok\ntest_duplicate_or_nested_container_rejected (__main__.ExtractionTests.test_duplicate_or_nested_container_rejected) ... ok\ntest_duplicate_title_rejected (__main__.ExtractionTests.test_duplicate_title_rejected) ... ok\ntest_exact_source_span_and_distinct_digests (__main__.ExtractionTests.test_exact_source_span_and_distinct_digests) ... ok\ntest_hidden_body_content_not_silently_removed (__main__.ExtractionTests.test_hidden_body_content_not_silently_removed) ... ok\ntest_hidden_root_rejected (__main__.ExtractionTests.test_hidden_root_rejected) ... ok\ntest_inline_anchor_and_entities (__main__.ExtractionTests.test_inline_anchor_and_entities) ... ok\ntest_list_numbering_attributes_and_nested_lists_retained (__main__.ExtractionTests.test_list_numbering_attributes_and_nested_lists_retained) ... ok\ntest_navigation_and_related_excluded (__main__.ExtractionTests.test_navigation_and_related_excluded) ... ok\ntest_no_fallback_when_container_missing (__main__.ExtractionTests.test_no_fallback_when_container_missing) ... ok\ntest_no_keyword_blacklist (__main__.ExtractionTests.test_no_keyword_blacklist) ... ok\ntest_rejection_produces_no_destination (__main__.ExtractionTests.test_rejection_produces_no_destination) ... ok\ntest_repeated_numbers_and_transitory_provisions_retained (__main__.ExtractionTests.test_repeated_numbers_and_transitory_provisions_retained) ... ok\ntest_table_cells_and_spans_preserved (__main__.ExtractionTests.test_table_cells_and_spans_preserved) ... ok\ntest_unclosed_and_mismatched_markup_rejected (__main__.ExtractionTests.test_unclosed_and_mismatched_markup_rejected) ... ok\ntest_wrong_title_rejected (__main__.ExtractionTests.test_wrong_title_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 20 tests in 0.384s\n\nOK\n"
+    }
+  ],
+  "probes_and_sources": {
+    "sha": "ee8e5c24bc3dff91d03149928e87c30a88fd56c5",
+    "probes": [
+      {"case": "visible_control", "accepted": true, "text": "Ley sintetica 1\nArticulo 1. No pagar 390000.\n"},
+      {"case": "hidden_parent", "accepted": true, "text": "Ley sintetica 1\nArticulo 1. No pagar 390000.\n"},
+      {"case": "template_parent", "accepted": true, "text": "Ley sintetica 1\nArticulo 1. No pagar 390000.\n"},
+      {"case": "hidden_root_control", "accepted": false, "error": "hidden legal container requires review"}
+    ],
+    "real": [
+      {"key": "family", "url": "https://www.lexivox.org/norms/BO-COD-DL10426.xhtml", "source_sha256": "d91e5f640046f408a7f0870d6f71cd86b9b01429f0d1e8c141eda47b698a06ff", "characters": 195893, "all_nonwhitespace_equal": true, "paragraphs": 496, "missing_paragraphs": 0, "title_scope": "observed source title, not independent legal identity"},
+      {"key": "commerce", "url": "https://www.lexivox.org/norms/BO-COD-DL14379.xhtml", "source_sha256": "ea76821146aa9b5697c950bb511200bd61fc208820d72b4c8547287ce4b6cc42", "characters": 693914, "all_nonwhitespace_equal": true, "paragraphs": 1697, "missing_paragraphs": 0, "title_scope": "observed source title, not independent legal identity"},
+      {"key": "cpe", "url": "https://www.lexivox.org/norms/BO-CPE-20090207.xhtml", "source_sha256": "c6f3d32f52c5f21dc54263f4ec99d677ac14bd4d8df2e9271502202fd8b31f74", "characters": 263357, "all_nonwhitespace_equal": true, "paragraphs": 435, "missing_paragraphs": 0, "title_scope": "observed source title, not independent legal identity"}
+    ],
+    "scope": "source-body preservation, not legal authenticity; synthetic ancestor tests, no browser render"
+  },
+  "national": {
+    "command": ["python3", "sistema/api/ingesta_nacional_segura.py", "--source", "/workspace/nacional", "--output", "/workspace/sol-review-pr45-20260917/national-readback.db", "--expected-records", "15", "--manifest-sha256", "e650ef071bdf62fb647ff5156666f7aaa643d069332aefa484d5de2f6bdbd696"],
+    "exit": 0,
+    "stdout": "{\"authority\": \"secondary\", \"database_sha256\": \"569f4da804f10f7c9c2f92c9970a43e7e7fbee3172c05d3353d071761457e6a0\", \"expected\": 15, \"legal_validity\": \"NOT_MEASURED\", \"manifest_sha256\": \"e650ef071bdf62fb647ff5156666f7aaa643d069332aefa484d5de2f6bdbd696\", \"ok\": true, \"publication_authorized\": false, \"rejected\": 0, \"scope\": \"national-only candidate, not production\", \"uid_set_sha256\": \"53c2460c8eba39bdc0e5eb1581d0e1dc92cebc00f6f8b375d7f6ac90d9829e35\", \"written\": 15}\n",
+    "stderr": "",
+    "readback": {"documents": 15, "chunks": 3473, "unknown": 15, "quick_check": [["ok"]]},
+    "source_manifest_unchanged": true,
+    "pr4_code_matches_pr5": {"sistema/api/ingesta_nacional_segura.py": true, "sistema/api/ingesta.py": true, "sistema/api/esquema.sql": true}
+  }
+}
