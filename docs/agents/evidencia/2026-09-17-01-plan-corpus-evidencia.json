@@ -1,0 +1,83 @@
+{
+  "delivery": {
+    "author": "auditor-sol",
+    "type": "planning and research, not product implementation",
+    "doc": "https://app.clickup.com/90171457413/docs/2kza6fw5-12477",
+    "plan_path": "docs/agents/respuestas/2026-09-17-01-plan-integral-corpus-titan-full.md",
+    "plan_commit": "86d57c2790082b25b81554acdd20d77d86d59730",
+    "scope_limit": "bounded sources and repository research; not exhaustive census of all Bolivian law; production not remeasured",
+    "no_changes": ["product code", "PR merge", "deployment", "credentials", "university outreach", "contracts", "bulk task creation"],
+    "price": {"amount_usd": 10, "monthly_period": "planning assumption, not confirmed"}
+  },
+  "environment_stdout_json": {
+    "utc": "2026-09-17T03:21:41.240569+00:00",
+    "machine": "brain-env via gateway build.run",
+    "hostname": "6c09d8604b07",
+    "uid": 1000,
+    "cpu": 2,
+    "python": "3.12.14",
+    "arch": "x86_64",
+    "sqlite": "3.46.1",
+    "load": [0.94140625, 0.90771484375, 0.73583984375],
+    "workspace_free_gib": 117.82,
+    "meminfo": ["MemTotal:        7989580 kB", "MemAvailable:    2632136 kB"],
+    "tools": {
+      "git": "/usr/bin/git",
+      "gcc": "/usr/bin/gcc",
+      "docker": null,
+      "tesseract": null,
+      "pdftotext": null,
+      "node": "/home/estudiante/.nvm/versions/node/v24.18.0/bin/node",
+      "npm": "/home/estudiante/.nvm/versions/node/v24.18.0/bin/npm"
+    },
+    "fts5_positive": 1,
+    "fts5_negative": 0
+  },
+  "registry_stdout_json": {
+    "utc": "2026-09-17T03:24:13.306575+00:00",
+    "packages": [
+      {"name": "Django", "version": "6.1.1", "requires_python": ">=3.12", "license_expression": "BSD-3-Clause", "vulnerabilities": [], "source": "https://pypi.org/pypi/Django/json"},
+      {"name": "pypdf", "version": "6.19.0", "requires_python": ">=3.9", "license_expression": "BSD-3-Clause", "vulnerabilities": [], "source": "https://pypi.org/pypi/pypdf/json"},
+      {"name": "ocrmypdf", "version": "17.12.1", "requires_python": ">=3.11", "license_expression": "MPL-2.0", "vulnerabilities": [], "source": "https://pypi.org/pypi/ocrmypdf/json"},
+      {"name": "trafilatura", "version": "2.2.0", "requires_python": ">=3.10", "license_expression": "Apache-2.0", "vulnerabilities": [], "source": "https://pypi.org/pypi/trafilatura/json"},
+      {"name": "playwright", "version": "1.63.0", "requires_python": ">=3.10", "license_expression": "Apache-2.0", "vulnerabilities": [], "source": "https://pypi.org/pypi/playwright/json"}
+    ],
+    "scope": "registry metadata only; not installed or scanned transitively"
+  },
+  "published_validation_stdout_json": {
+    "commit": "86d57c2790082b25b81554acdd20d77d86d59730",
+    "url": "https://raw.githubusercontent.com/gatehot59-star/corpus-legal-tarija/86d57c2790082b25b81554acdd20d77d86d59730/docs/agents/respuestas/2026-09-17-01-plan-integral-corpus-titan-full.md",
+    "bytes": 47415,
+    "sha256": "a3a6a0afa97e99abe873811c9dc2683098de729fd977d5e12b7c9a76dd22bb2f",
+    "tasks": 72,
+    "base_hours": 271,
+    "hours_with_lots": 391,
+    "by_role": {"E": 191, "J": 128, "D": 54, "A": 18},
+    "multipliers": {"A05": 4, "C01": 4, "C02": 4, "C03": 4, "C05": 6, "C06": 2, "E01": 4, "G03": 4, "G04": 4, "G05": 4},
+    "all_units_le4h": true,
+    "dependency_cycles": false,
+    "reserve_technical_editorial": 73.5,
+    "total_with_reserve": 464.5
+  },
+  "execution": {
+    "environment_exit": 0,
+    "registry_exit": 0,
+    "published_validation_exit": 0,
+    "raw_local_files": ["/workspace/corpus-plan-20260917/environment-probe.json", "/workspace/corpus-plan-20260917/registry.json", "/workspace/corpus-plan-20260917/published-validation.json", "/workspace/corpus-plan-20260917/published-plan.md"],
+    "environment_measurement": "Python os/platform/shutil/sqlite3; os.cpu_count, os.getloadavg, shutil.disk_usage('/workspace'), /proc/meminfo, shutil.which. SQLite :memory:, create virtual table probe using fts5(body), insert 'norma sintetica'; match 'norma' => 1 and 'ausente' => 0.",
+    "registry_measurement": "urllib.request.urlopen each listed PyPI JSON URL, json.load, select info.version/requires_python/license_expression and vulnerabilities; no package install.",
+    "validation_program": "import urllib.request,json,re,collections,hashlib\nurl='https://raw.githubusercontent.com/gatehot59-star/corpus-legal-tarija/86d57c2790082b25b81554acdd20d77d86d59730/docs/agents/respuestas/2026-09-17-01-plan-integral-corpus-titan-full.md'\nraw=urllib.request.urlopen(url,timeout=20).read(); rows=[]\nfor line in raw.decode().splitlines():\n if re.match(r'\\| [A-I]\\d\\d \\|',line):\n  a=[c.strip() for c in line.strip('|').split('|')]; rows.append(dict(id=a[0],deps=[] if a[2]=='Inicio' else a[2].split(','),role=a[3],hours=int(a[4])))\nids={r['id'] for r in rows}; assert len(rows)==72 and len(ids)==72\nassert all(0<r['hours']<=4 and set(r['deps'])<=ids for r in rows)\ndone=set()\nwhile len(done)<len(ids):\n ready=[r for r in rows if r['id'] not in done and set(r['deps'])<=done]; assert ready,'cycle'; done.update(r['id'] for r in ready)\nmult=dict(A05=4,C01=4,C02=4,C03=4,C05=6,C06=2,E01=4,G03=4,G04=4,G05=4); by=collections.Counter()\nfor r in rows: by[r['role']]+=r['hours']*mult.get(r['id'],1)\nprint(len(raw),hashlib.sha256(raw).hexdigest(),len(rows),sum(r['hours'] for r in rows),dict(by),sum(by.values()))\n",
+    "program_note": "validation_program reproduces the executed parser and assertions; display serialization abbreviated here, full result preserved in published_validation_stdout_json. Not product code or benchmark."
+  },
+  "qa": {
+    "reviewer": "separate research instance a6, not contracted external auditor",
+    "first_preflight": "35/45: rejected hidden legal effort, backup dependencies, recruitment and withdrawal semantics",
+    "corrections": ["I01-I08 explicit", "B03 depends I05", "C08 depends I06/I07", "F03 depends account/permissions/collections/reports", "F07 includes legal/recruitment/calibration gates", "H04 restore paid periods", "original/text/manifest identity", "downloaded exports cannot be revoked", "staging isolated until security gates"],
+    "published_content_verdict": "41/45 = 91.1/100, content reviewed at commit86d57c; not product certification",
+    "scores": {"completeness": "14/15", "reasoning_architecture": "9/10", "documentation": "9/10", "design_innovation": "5/5", "qa_process": "4/5"},
+    "not_applicable_points": 55,
+    "not_applicable_reason": "No new executable product, implemented security, product testing or deployment delivered",
+    "digest_limit_and_resolution": "Reviewer did not claim full-byte digest due remote text truncation. Parent subsequently read raw all47415bytes, parsed all72rows and computed hash as preserved above.",
+    "doc_readability": "Doc copy read back and prose spacing corrected before user delivery; WBS preserved. Canonical Git text and Doc are not byte-identical formats."
+  }
+}
