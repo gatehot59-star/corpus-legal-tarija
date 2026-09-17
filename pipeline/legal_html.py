@@ -7,7 +7,8 @@ Unsupported or ambiguous legal containers are rejected, never guessed.
 from __future__ import annotations
 import argparse
 import hashlib
-import html
+import os
+import tempfile
 from html.parser import HTMLParser
 import json
 from pathlib import Path
@@ -62,6 +63,10 @@ class LegalParser(HTMLParser):
                 raise ExtractionError('ambiguous legal container')
             if len(keys) != len(set(keys)):
                 raise ExtractionError('duplicate container attributes')
+            attributes = dict(attrs)
+            if ('hidden' in attributes or attributes.get('aria-hidden') == 'true'
+                    or re.search(r'display\s*:\s*none|visibility\s*:\s*hidden', attributes.get('style') or '', re.I)):
+                raise ExtractionError('hidden legal container requires review')
             self.start = self.source_offset() + len(self.get_starttag_text())
             self.stack.append(tag)
             return
@@ -176,9 +181,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             raw = stream.read(MAX_BYTES + 1)
         result = extract(raw, args.sha256, args.title)
         encoded = (json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2) + '\n').encode()
-        # No existing derived text or original is overwritten.
-        with args.output.open('xb') as stream:
-            stream.write(encoded)
+        # Stage a complete file, then link exclusively. No partial final output.
+        with tempfile.TemporaryDirectory(prefix='.legal-html-', dir=args.output.parent) as td:
+            stage = Path(td) / 'candidate.json'
+            with stage.open('xb') as stream:
+                stream.write(encoded)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.chmod(stage, 0o600)
+            os.link(stage, args.output)
     except (ValueError, OSError) as exc:
         print(json.dumps({'ok': False, 'error': type(exc).__name__}))
         return 2

@@ -89,6 +89,25 @@ class ExtractionTests(unittest.TestCase):
     def test_depth_limit(self):
         with self.assertRaises(m.ExtractionError): run(page('<div>'*130 + 'text' + '</div>'*130))
 
+    def test_hidden_root_rejected(self):
+        raw = page('<p>x</p>').replace(b'class="norma"', b'hidden')
+        with self.assertRaises(m.ExtractionError): run(raw)
+
+    def test_duplicate_title_rejected(self):
+        with self.assertRaises(m.ExtractionError): run(page('<h1>Otro titulo</h1><p>x</p>'))
+
+    def test_comment_not_search_text_but_retained_in_html(self):
+        out = run(page('<p>Regla<!-- metadata --> aplicable.</p>'))
+        self.assertNotIn('metadata', out['text'])
+        self.assertIn('<!-- metadata -->', out['legal_html'])
+
+    def test_rejection_produces_no_destination(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td); raw = b'<html>no source container</html>'; (p/'in.html').write_bytes(raw)
+            cmd=[sys.executable,str(ROOT/'pipeline/legal_html.py'),'--input',str(p/'in.html'),'--output',str(p/'out.json'),'--sha256',hashlib.sha256(raw).hexdigest(),'--title',TITLE]
+            result=subprocess.run(cmd,capture_output=True)
+            self.assertEqual(result.returncode,2); self.assertFalse((p/'out.json').exists())
+
     def test_cli_and_no_overwrite(self):
         with tempfile.TemporaryDirectory() as td:
             p = Path(td); raw = page('<p>Artículo 1. Vigencia desconocida.</p>'); (p/'in.html').write_bytes(raw)
