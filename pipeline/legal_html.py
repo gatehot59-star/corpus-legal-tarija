@@ -41,6 +41,8 @@ class LegalParser(HTMLParser):
         for match in re.finditer('\n', source):
             self.lines.append(match.end())
         self.stack: list[str] = []
+        # Ancestors outside the selected body still determine its context.
+        self.ancestors: list[tuple[str, dict[str, str | None], bool]] = []
         self.targets = 0
         self.start = self.end = None
         self.text: list[str] = []
@@ -48,6 +50,14 @@ class LegalParser(HTMLParser):
         self.title_count = 0
         self.nodes = 0
         self.structure: list[dict] = []
+
+    @staticmethod
+    def hidden_context(attributes: dict[str, str | None]) -> bool:
+        """Recognize explicit hidden/inactive attributes, not computed CSS."""
+        return ("hidden" in attributes or "inert" in attributes
+                or (attributes.get("aria-hidden") or "").strip().lower() == "true"
+                or re.search(r"display\s*:\s*none|visibility\s*:\s*hidden",
+                             attributes.get("style") or "", re.I) is not None)
 
     def source_offset(self) -> int:
         """Return the source character offset of the current parser event."""
@@ -64,13 +74,20 @@ class LegalParser(HTMLParser):
             if len(keys) != len(set(keys)):
                 raise ExtractionError('duplicate container attributes')
             attributes = dict(attrs)
-            if ('hidden' in attributes or attributes.get('aria-hidden') == 'true'
-                    or re.search(r'display\s*:\s*none|visibility\s*:\s*hidden', attributes.get('style') or '', re.I)):
+            if self.hidden_context(attributes):
                 raise ExtractionError('hidden legal container requires review')
+            for ancestor_tag, ancestor_attrs, duplicate in self.ancestors:
+                if (duplicate or ancestor_tag in {"template", "noscript", "textarea", "title"}
+                        or self.hidden_context(ancestor_attrs)):
+                    raise ExtractionError("hidden or inactive ancestor requires review")
             self.start = self.source_offset() + len(self.get_starttag_text())
             self.stack.append(tag)
             return
         if not self.stack:
+            if tag not in VOID:
+                if len(self.ancestors) >= MAX_DEPTH:
+                    raise ExtractionError("ancestor depth limit exceeded")
+                self.ancestors.append((tag, dict(attrs), len(keys) != len(set(keys))))
             return
         self.nodes += 1
         if self.nodes > MAX_NODES or len(self.stack) >= MAX_DEPTH:
@@ -78,8 +95,7 @@ class LegalParser(HTMLParser):
         if tag not in ALLOWED or len(keys) != len(set(keys)):
             raise ExtractionError('unsupported element or duplicate attributes in legal body')
         attributes = dict(attrs)
-        if ('hidden' in attributes or attributes.get('aria-hidden') == 'true'
-                or re.search(r'display\s*:\s*none|visibility\s*:\s*hidden', attributes.get('style') or '', re.I)):
+        if self.hidden_context(attributes):
             raise ExtractionError('hidden legal content requires review')
         if tag in BLOCK or tag == 'br':
             self.text.append('\n')
@@ -94,14 +110,20 @@ class LegalParser(HTMLParser):
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """Handle explicit self-closing markup without inventing end tags."""
-        active = bool(self.stack)
+        if not self.stack and tag not in VOID:
+            raise ExtractionError('ambiguous self-closing ancestor requires review')
         self.handle_starttag(tag, attrs)
-        if tag not in VOID and (active or self.stack):
+        if tag not in VOID:
             self.handle_endtag(tag)
 
     def handle_endtag(self, tag: str) -> None:
         """Close only a balanced legal subtree; no browser-style guessing."""
         if not self.stack:
+            # Reject ambiguity rather than recovering by deleting open context.
+            # A crossed close must never erase a hidden or inactive ancestor.
+            if tag in VOID or not self.ancestors or self.ancestors[-1][0] != tag:
+                raise ExtractionError("unmatched or crossed outer closing tag")
+            self.ancestors.pop()
             return
         if tag in VOID or self.stack[-1] != tag:
             raise ExtractionError('unbalanced legal markup')
