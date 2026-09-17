@@ -1,0 +1,28 @@
+name: B04 legal HTML preservation
+on:
+  pull_request:
+    paths:
+      - 'pipeline/legal_html.py'
+      - 'tests/test_legal_html.py'
+      - 'tests/test_legal_html_crossed.py'
+      - 'tests/check_legal_html_mutations.py'
+      - '.github/workflows/legal-html.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preservation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check source boundaries and mutation controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile pipeline/legal_html.py tests/test_legal_html.py tests/test_legal_html_crossed.py tests/check_legal_html_mutations.py
+          python3 tests/test_legal_html.py
+          python3 tests/test_legal_html_crossed.py
+          python3 tests/check_legal_html_mutations.py

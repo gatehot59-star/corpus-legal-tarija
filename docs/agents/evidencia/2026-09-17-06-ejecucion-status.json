@@ -1,0 +1,18 @@
+{
+  "plan_revision":"3b6cb6d85a012e8a277668fa8c12515236b91c27",
+  "source_base":"245cafb381884eed1d6f017de5f92f51745b9559",
+  "tested_candidate":"1bc07a4332d5bf7da31fe0904ec7945309169b0e",
+  "historical_reader":"2360f27d43fdc9a1e2a74a3f6465698918df2ad1",
+  "observations":{"contract_tests":23,"contract_exit":0,"national_tests":11,"national_exit":0,"national_old_exit":1,"national_old_assertion_failures":13,"national_old_errors":1,"mutation_baseline_exit":0,"mutations":[{"name":"hash_ignored","exit":1,"detected":true},{"name":"authority_inferred_from_method","exit":1,"detected":true},{"name":"duplicate_overwrite","exit":1,"detected":true}]},
+  "ci":{"name":"contracts","status":"completed","conclusion":"success","url":"https://github.com/gatehot59-star/corpus-legal-tarija/actions/runs/35183386834/job/105080181387","started_at":"2026-09-17T04:49:46Z","completed_at":"2026-09-17T04:49:51Z"},
+  "review_requested":true,
+  "reviews_observed":[],
+  "local_set_reconciliation":{"copies":2,"document_count_each":6079,"chunk_count_each":78930,"uid_sha256":"31481e481177eb6d487492f7f30b7f8e1c21843f092054bf5288e298e2c542d0","same_as_live_uid_digest":true,"whole_content_equal":"NOT_MEASURED"},
+  "status":{"A02":"additional set comparison executed; per-branch rebuild incomplete","A04":"protocol prepared; human review and interviews not completed","B01":"isolated contracts tested; persistence and integration pending","I05":"byte and manifest contracts tested; cache withdrawal pending","B03":"reader fix tested; not deployed","entire_plan":"INCOMPLETE"},
+  "production_changes":false,
+  "merges":0,
+  "legal_reviews_simulated":0,
+  "interviews_simulated":0,
+  "doc":"https://app.clickup.com/90171457413/docs/2kza6fw5-12577",
+  "evidence_kind":"structured summary, not full verbatim logs"
+}
