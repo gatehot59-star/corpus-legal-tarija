@@ -1,0 +1,142 @@
+{
+  "subject_commit": "3b6cb6d85a012e8a277668fa8c12515236b91c27",
+  "subject_sha256": "92f3bbc2d6b15a8896e43dffeef526813aff1ddf594d85f898562ee550a08d90",
+  "graph_nodes": 110,
+  "prior_invariants_passed": 44,
+  "prior_invariants_total": 44,
+  "unmodified_graph": true,
+  "witnesses": [
+    {
+      "target": "C04",
+      "blocked": [
+        "A08",
+        "A09",
+        "I02",
+        "I08",
+        "I09"
+      ],
+      "reached": true,
+      "order": [
+        "A01",
+        "A04",
+        "A02",
+        "A05.1",
+        "A03",
+        "A05.2",
+        "B01",
+        "A05.3",
+        "B06",
+        "A05.4",
+        "A06",
+        "C04"
+      ]
+    },
+    {
+      "target": "C06.1",
+      "blocked": [
+        "A08",
+        "A09",
+        "I02",
+        "I08",
+        "I09"
+      ],
+      "reached": true,
+      "order": [
+        "A01",
+        "A04",
+        "A02",
+        "A05.1",
+        "A03",
+        "A05.2",
+        "B01",
+        "A05.3",
+        "B06",
+        "A05.4",
+        "A06",
+        "C06.1"
+      ]
+    },
+    {
+      "target": "C01.1",
+      "blocked": [
+        "A08",
+        "A09",
+        "I02",
+        "I08",
+        "I09"
+      ],
+      "reached": false,
+      "order": [
+        "A01",
+        "A04",
+        "A02",
+        "A05.1",
+        "A03",
+        "A05.2",
+        "A07",
+        "B01",
+        "A05.3",
+        "I05",
+        "A05.4",
+        "B03",
+        "A06",
+        "B04"
+      ]
+    },
+    {
+      "target": "D01",
+      "blocked": [
+        "A08",
+        "A09",
+        "I02",
+        "I08",
+        "I09"
+      ],
+      "reached": false,
+      "order": [
+        "A01",
+        "A04",
+        "I03",
+        "A02",
+        "A05.1",
+        "A03",
+        "A05.2",
+        "A07",
+        "B01",
+        "A05.3",
+        "B02",
+        "I01",
+        "A05.4",
+        "A06"
+      ]
+    }
+  ],
+  "scope_replay": {
+    "synthetic_grant": "approved only C01.2, max4h",
+    "steps": [
+      {
+        "target": "C01.2",
+        "dependency_ready": true,
+        "scoped_authorization": true,
+        "completed_I09_count": 1,
+        "spent_before": 0
+      },
+      {
+        "target": "C01.3",
+        "dependency_ready": true,
+        "scoped_authorization": false,
+        "completed_I09_count": 1,
+        "spent_before": 4
+      },
+      {
+        "target": "C01.4",
+        "dependency_ready": true,
+        "scoped_authorization": false,
+        "completed_I09_count": 1,
+        "spent_before": 8
+      }
+    ],
+    "total_hours": 12
+  },
+  "scope_limit": "dependency-table model only, not a real task executor or permission system; no forged real approvals"
+}
