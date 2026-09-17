@@ -1,0 +1,26 @@
+name: Corpus provenance contracts
+on:
+  pull_request:
+    paths:
+      - 'contracts/provenance_v2.py'
+      - 'tests/*provenance*'
+      - '.github/workflows/provenance-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compile and check contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m compileall -q contracts tests/test_provenance_v2.py tests/check_provenance_mutations.py
+          python3 tests/test_provenance_v2.py
+          python3 tests/check_provenance_mutations.py
