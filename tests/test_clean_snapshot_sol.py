@@ -1,22 +1,20 @@
 """SOL regressions plus exact-version fixed oracles. Synthetic data only."""
 import hashlib
-import importlib.util
 import json
 import os
 from pathlib import Path
 import sqlite3
 import subprocess
 import sys
-import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'sistema/api'))
 from version_text import read_version, VersionReadError
-from test_clean_snapshot import CleanCopyTests
+import test_clean_snapshot as baseline
 
 
-class InputTests(CleanCopyTests):
+class InputTests(baseline.CleanCopyTests):
     def test_nonobject_mapping_items_return_json(self):
         for value in [None,7,[],True,'bad']:
             self.mapping=[value]
@@ -25,9 +23,9 @@ class InputTests(CleanCopyTests):
                 self.assertFalse(self.out.exists())
 
     def test_wrong_required_types_return_json(self):
-        baseline=dict(self.mapping[0])
-        for field in baseline:
-            self.mapping=[dict(baseline,**{field:[]})]
+        original=dict(self.mapping[0])
+        for field in original:
+            self.mapping=[dict(original,**{field:[]})]
             with self.subTest(field=field):
                 self.assertEqual(self.invoke()[0],2)
                 self.assertFalse(self.out.exists())

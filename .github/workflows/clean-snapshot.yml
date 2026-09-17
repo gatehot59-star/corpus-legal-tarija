@@ -6,7 +6,9 @@ on:
       - 'pipeline/legal_html.py'
       - 'sistema/api/ingesta.py'
       - 'sistema/api/esquema.sql'
+      - 'sistema/api/version_text.py'
       - 'tests/test_clean_snapshot.py'
+      - 'tests/test_clean_snapshot_sol.py'
       - '.github/workflows/clean-snapshot.yml'
   workflow_dispatch:
 permissions:
@@ -19,9 +21,9 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Compile and test full-copy integration
+      - name: Compile and test copy plus exact-version reading
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile pipeline/clean_snapshot.py tests/test_clean_snapshot.py
-          python3 tests/test_clean_snapshot.py
+          python3 -m py_compile pipeline/clean_snapshot.py sistema/api/version_text.py tests/test_clean_snapshot_sol.py
+          timeout 60s python3 tests/test_clean_snapshot_sol.py
