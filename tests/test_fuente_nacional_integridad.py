@@ -40,7 +40,9 @@ class NationalTests(unittest.TestCase):
                 self.assertIsNone(m.FuenteNacional(self.base).resolver({**self.row, 'sha256': h}))
 
     def test_traversal_and_absolute_paths(self):
-        for name in ['../law.txt', '/etc/passwd', 'x\\law.txt', '', '..']:
+        outside = self.base / 'outside.txt'
+        outside.write_bytes(self.payload)
+        for name in ['../outside.txt', str(outside), 'x\\law.txt', '', '..']:
             with self.subTest(name=name):
                 self.assertIsNone(m.FuenteNacional(self.base).resolver({**self.row, 'archivo_texto': name}))
 
