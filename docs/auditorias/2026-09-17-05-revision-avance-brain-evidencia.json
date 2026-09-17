@@ -1,0 +1,7 @@
+{
+"scope":"Reviewer execution of Corpus PR2 head eac03e8ac3670638fada9d1baad682edb798b5bf and Custos regression at 0f1fdae90b88014b45e58c4e1b86f21cbe449b48. No production probe.",
+"format":"gzip compressed UTF-8 JSON, base64 encoded; decompressed JSON contains full stdout/stderr for every baseline and mutation, source hashes, isolated reader probes and Custos regression",
+"raw_sha256":"30fa0f2a6d483874d2d3c311a67f679098eefbd4dc384d1515555c89ed327800",
+"decode":"base64 decode gzip_base64, gzip decompress, verify SHA256, parse UTF-8 JSON",
+"gzip_base64":"H4sIAAAAAAACA+1c62/bOBL/3r9CZ+CQFEgcvaxHcFmg121xxS3aRbdfDuueQJGUzY1M6UQqiVvkf78hJdmy4shKN692bSBxTJG/mSGH84rJry8MYxQjQVPG6fgPkfHRqfEVGqFZzBF8GFGETYcGCDueb3pOkCCCQmLFCBEvsCmJ/TCIJ3EyOqqGJSylIoLB9sRbgUE7zrgsEJbiJC+yC8oRxzS6sMf5UlFJJiYObWI69oRi3w1sMzATx4tDnyTtY","transfer_status":"incomplete transfer placeholder rejected: full data replaced before final publication"
+}
