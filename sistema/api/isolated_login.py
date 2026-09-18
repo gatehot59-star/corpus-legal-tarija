@@ -38,6 +38,10 @@ CREATE TABLE login_budget (
  window_start INTEGER NOT NULL,
  attempts INTEGER NOT NULL CHECK(attempts>=0)
 ) STRICT;
+CREATE TABLE login_clock (
+ singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+ last_seen REAL NOT NULL CHECK(last_seen>=0)
+) STRICT;
 """
 
 
@@ -76,6 +80,7 @@ class IsolatedLoginApp:
                  clock: Callable[[], float] = time.time):
         self.reader = make_app(candidate, store, collection, clock)
         self.uri = Path(store).resolve(strict=True).as_uri() + "?mode=rw"
+        self.read_uri = Path(store).resolve(strict=True).as_uri() + "?mode=ro"
         self.enabled = enable_test_login is True
         self.clock = clock
 
@@ -87,6 +92,16 @@ class IsolatedLoginApp:
                 return self.reply(start_response, 403, {"error": "ISOLATED_LOGIN_DISABLED"})
         except ValueError:
             return self.reply(start_response, 403, {"error": "ISOLATED_LOGIN_DISABLED"})
+        # The marker is now a dispatch guard for ALL routes, not only issuance.
+        # A request already past this check is not recalled if the marker changes.
+        try:
+            with closing(sqlite3.connect(self.read_uri, uri=True, timeout=1)) as db:
+                db.execute("PRAGMA query_only=ON")
+                marker = db.execute("SELECT mode FROM login_environment WHERE singleton=1").fetchone()
+            if marker != ("isolated_test",):
+                return self.reply(start_response, 403, {"error": "ISOLATED_LOGIN_DISABLED"})
+        except sqlite3.Error:
+            return self.reply(start_response, 503, {"error": "ISOLATION_UNAVAILABLE"})
         if environ.get("PATH_INFO") != "/api/v2/login":
             return self.reader(environ, start_response)
         try:
@@ -140,6 +155,7 @@ class IsolatedLoginApp:
         now = self.clock()
         if isinstance(now, bool) or not isinstance(now, (int, float)) or not math.isfinite(now) or now < 0:
             raise ValueError("INVALID_CLOCK")
+        observed = now
         now = int(now)
         with closing(sqlite3.connect(self.uri, uri=True, timeout=1)) as db:
             db.execute("PRAGMA foreign_keys=ON")
@@ -149,6 +165,13 @@ class IsolatedLoginApp:
                 mode = db.execute("SELECT mode FROM login_environment WHERE singleton=1").fetchone()
                 if mode != ("isolated_test",) or not self.enabled:
                     return 403, {"error": "ISOLATED_LOGIN_DISABLED"}
+                # Persist the last committed observation, including fractional
+                # seconds, wrong passwords and throttled attempts. Not a global
+                # clock guarantee: read routes still use PR10's validity checks.
+                high_water = db.execute("SELECT last_seen FROM login_clock WHERE singleton=1").fetchone()
+                if high_water and observed < high_water[0]:
+                    raise ValueError("CLOCK_ROLLBACK")
+                db.execute("INSERT OR REPLACE INTO login_clock VALUES(1,?)", (observed,))
                 budget = db.execute("SELECT window_start,attempts FROM login_budget WHERE singleton=1").fetchone()
                 if budget and now < budget[0]:
                     raise ValueError("CLOCK_ROLLBACK")
