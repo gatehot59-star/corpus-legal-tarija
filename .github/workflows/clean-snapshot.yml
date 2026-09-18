@@ -7,8 +7,17 @@ on:
       - 'sistema/api/ingesta.py'
       - 'sistema/api/esquema.sql'
       - 'sistema/api/version_text.py'
+      - 'sistema/api/exact_http.py'
+      - 'sistema/api/access_policy.py'
+      - 'sistema/api/isolated_login.py'
+      - 'sistema/api/isolated_session.py'
       - 'tests/test_clean_snapshot.py'
       - 'tests/test_clean_snapshot_sol.py'
+      - 'tests/test_exact_http.py'
+      - 'tests/test_access_policy.py'
+      - 'tests/test_isolated_login.py'
+      - 'tests/test_login_guards.py'
+      - 'tests/test_isolated_session.py'
       - '.github/workflows/clean-snapshot.yml'
   workflow_dispatch:
 permissions:
@@ -21,9 +30,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Compile and test copy plus exact-version reading
+      - name: Compile and test copy, exact reading and isolated session lifecycle
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile pipeline/clean_snapshot.py sistema/api/version_text.py tests/test_clean_snapshot_sol.py
+          python3 -m py_compile pipeline/clean_snapshot.py sistema/api/version_text.py sistema/api/exact_http.py sistema/api/access_policy.py sistema/api/isolated_login.py sistema/api/isolated_session.py tests/test_clean_snapshot_sol.py tests/test_exact_http.py tests/test_access_policy.py tests/test_isolated_login.py tests/test_login_guards.py tests/test_isolated_session.py
           timeout 60s python3 tests/test_clean_snapshot_sol.py
+          timeout 60s python3 tests/test_exact_http.py
+          timeout 60s python3 tests/test_access_policy.py
+          # GuardTests inherits the original 12 login tests; do not run them twice.
+          timeout 90s python3 tests/test_login_guards.py
+          timeout 90s python3 tests/test_isolated_session.py
