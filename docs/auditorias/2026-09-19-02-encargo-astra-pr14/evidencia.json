@@ -1,0 +1,54 @@
+{
+  "captured_at_utc": "2026-09-19T12:30:26.561124+00:00",
+  "scope": "Documentary preflight only; no product tests executed. Complete stdout/stderr for the listed commands. No environment secrets or databases captured.",
+  "commands": [
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "7d506fe5f51fc90fc2a7e5c47ed3a665f0cc5f4a"
+      ],
+      "returncode": 0,
+      "stdout": "7d506fe5f51fc90fc2a7e5c47ed3a665f0cc5f4a\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "merge-base",
+        "--is-ancestor",
+        "9913d8dd5074d6aedd0d261c42caea6480e794fe",
+        "7d506fe5f51fc90fc2a7e5c47ed3a665f0cc5f4a"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--name-status",
+        "9913d8dd5074d6aedd0d261c42caea6480e794fe",
+        "7d506fe5f51fc90fc2a7e5c47ed3a665f0cc5f4a"
+      ],
+      "returncode": 0,
+      "stdout": "A\tdocs/agents/evidencia/2026-09-18-08-demo-main-tests.json\nA\tdocs/agents/evidencia/2026-09-18-08-demo-merges-ci.json\nA\tdocs/agents/evidencia/2026-09-18-09-restore-capture.json\nA\tdocs/agents/evidencia/2026-09-18-09-restore-probe.py.txt\nA\tdocs/agents/evidencia/2026-09-18-10-restore-evidence.json\nA\tdocs/agents/respuestas/2026-09-18-08-demo-integrada-main.md\nA\tdocs/agents/respuestas/2026-09-18-09-restore-reabre-accesos.md\nA\tdocs/agents/respuestas/2026-09-18-10-restore-cuarentena-pr16.md\nA\tdocs/auditorias/2026-09-19-01-astra-pr16-cuarentena.md\nA\tdocs/auditorias/2026-09-19-01-astra-pr16-cuarentena/evidence.xz.b64\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "ls-tree",
+        "7d506fe5f51fc90fc2a7e5c47ed3a665f0cc5f4a",
+        "sistema/api/demo_aislada.py",
+        "tests/test_demo_aislada.py",
+        "sistema/DEMO-AISLADA.md",
+        ".github/workflows/clean-snapshot.yml"
+      ],
+      "returncode": 0,
+      "stdout": "100644 blob 3b7756e4a1427b86a3f740f73fdcd05d4d1160d6\t.github/workflows/clean-snapshot.yml\n100644 blob cc15cc55a49a26a27aabe80992915e43d8e67914\tsistema/DEMO-AISLADA.md\n100644 blob 77ae5ce08502bf5e576882389dff547a9ceba1fc\tsistema/api/demo_aislada.py\n100644 blob 6d49d597f766debdd031a4ceb832bbbb8d71c992\ttests/test_demo_aislada.py\n",
+      "stderr": ""
+    }
+  ]
+}
