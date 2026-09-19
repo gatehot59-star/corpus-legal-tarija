@@ -56,13 +56,13 @@ class IsolatedSessionApp(IsolatedLoginApp):
             return 401, {"error": "INVALID_SESSION"}
         now = self.clock()
         if isinstance(now, bool) or not isinstance(now, (int, float)) or not math.isfinite(now) or now < 0:
-            return 400, {"error": "INVALID_CLOCK"}
+            raise ValueError("INVALID_CLOCK")
         digest = hashlib.sha256(match[1].encode("ascii")).hexdigest()
         with closing(sqlite3.connect(self.uri, uri=True, timeout=1)) as db:
             with db:
                 db.execute("BEGIN IMMEDIATE")
                 marker = db.execute("SELECT mode FROM login_environment WHERE singleton=1").fetchone()
-                if marker != ("isolated_test",):
+                if marker != ("isolated_test",) or not self.enabled:
                     return 403, {"error": "ISOLATED_LOGIN_DISABLED"}
                 db.execute(
                     "UPDATE access_sessions SET revoked_at=? "
