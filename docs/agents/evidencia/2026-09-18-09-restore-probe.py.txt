@@ -1,0 +1,147 @@
+"""Measure cold synthetic rollback through the existing CLI, never real data.
+
+Usage: python3 corpus_restore_probe.py ARCHIVED_REPO OUTPUT_JSON
+Uses the already executed DemoTests transport/lifecycle helpers, not discovery.
+Exit 0 means observations completed, NOT that restoring sessions is safe.
+Tokens and passwords are never included in the output.
+"""
+from contextlib import closing
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import shutil
+import sqlite3
+import sys
+import time
+
+
+def main():
+    """Run a cold-copy experiment in the harness-owned temporary directory."""
+    root, output = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
+    spec = importlib.util.spec_from_file_location(
+        "demo_harness", root / "tests/test_demo_aislada.py")
+    harness = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(harness)
+    case = harness.DemoTests()
+    events = []
+
+    def record(name, **values):
+        events.append(dict(name=name, **values))
+        output.write_text(json.dumps(events, ensure_ascii=False, indent=2))
+        print(json.dumps(events[-1], ensure_ascii=False), flush=True)
+
+    def cold_copy(source, name):
+        destination = case.home / name
+        assert not destination.exists()
+        shutil.copytree(source, destination, copy_function=shutil.copy2)
+        assert sorted(p.name for p in destination.iterdir()) == [
+            "candidate.db", "sessions.db"]
+        return destination
+
+    def candidate_hash(directory):
+        return hashlib.sha256((directory / "candidate.db").read_bytes()).hexdigest()
+
+    try:
+        case.setUp()
+        case.init()
+        original = case.directory
+        original_hash = candidate_hash(original)
+        with case.server() as (worker, port):
+            token = case.login(port)
+            assert case.read(port, token)[0] == 200
+            record("baseline", read=200, process_pid=worker.pid)
+        # Both database files copied only after the server is stopped.
+        backup = cold_copy(original, "backup-before-withdrawal")
+        record("cold_backup", server_stopped=True,
+               candidate_sha256=candidate_hash(backup),
+               source_copy_equal=all((original/n).read_bytes() == (backup/n).read_bytes()
+                                     for n in ("candidate.db", "sessions.db")))
+        assert events[-1]["source_copy_equal"]
+
+        with case.server() as (worker, port):
+            assert case.request(port, "POST", "/api/v2/logout", token)[0] == 200
+            assert case.read(port, token)[0] == 403
+            record("logout_on_current_store", read=403, process_pid=worker.pid)
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        revoked = case.sql(
+            "SELECT revoked_at FROM access_sessions WHERE token_sha256=?", (token_hash,))
+        assert revoked[0][0] is not None
+        # Deliberately observable later events which are absent from the backup.
+        case.sql("UPDATE access_grants SET revoked_at=1 WHERE id='ana'")
+        case.sql("UPDATE access_documents SET withdrawn_at=1")
+        future = time.time() + 3600
+        case.sql("INSERT OR REPLACE INTO login_clock(singleton,last_seen) VALUES(1,?)", (future,))
+        with case.server() as (worker, port):
+            status, _ = case.request(port, "POST", "/api/v2/login",
+                                    body={"username": "ben",
+                                          "password": "solo-demo-ficticia"})
+            assert status == 503
+            assert case.read(port, token)[0] == 403
+            record("current_state_before_restore", old_token_read=403,
+                   login_after_future_high_water=503, process_pid=worker.pid,
+                   grant_revoked=True, document_withdrawn=True)
+        current_bytes = {n: (original/n).read_bytes()
+                         for n in ("candidate.db", "sessions.db")}
+
+        # Restore into a NEW directory; never replace even this synthetic source.
+        restored = cold_copy(backup, "restored-old-store")
+        case.directory = restored
+        with case.server() as (worker, port):
+            stale_status, stale_body = case.read(port, token)
+            new_token = case.login(port, "ana")
+            new_status, _ = case.read(port, new_token)
+            restored_clock = case.sql("SELECT last_seen FROM login_clock WHERE singleton=1")[0][0]
+            record("naive_cold_restore", old_token_read=stale_status,
+                   new_login=200, new_token_read=new_status, process_pid=worker.pid,
+                   text_prefix_exact=stale_body.get("text") == harness.EXPECTED[:13],
+                   restored_clock_below_lost_high_water=restored_clock < future,
+                   legal_or_pilot_acceptance=False)
+            assert stale_status == 200 and new_status == 200
+            assert restored_clock < future
+        assert candidate_hash(restored) == original_hash
+        # Acceptance oracle is explicitly RED. Observation success is separate.
+        record("restore_acceptance_oracle",
+               expectation="Previously revoked session must remain denied after recovery",
+               observed_http=stale_status, required_http=403, verdict="FAIL")
+
+        # A sessions-only purge is not sufficient: the old grant/withdrawal also roll back.
+        purged = cold_copy(backup, "restored-sessions-purged")
+        case.directory = purged
+        case.sql("DELETE FROM access_sessions")
+        with case.server() as (worker, port):
+            old_status, _ = case.read(port, token)
+            fresh = case.login(port, "ana")
+            fresh_status, _ = case.read(port, fresh)
+            assert old_status == 403 and fresh_status == 200
+            record("session_purge_is_insufficient", old_token_read=old_status,
+                   fresh_login=200, fresh_token_read=fresh_status,
+                   process_pid=worker.pid,
+                   reason="Stale grant and document availability remain in the backup")
+
+        # Existing offline opt-in marker can quarantine a restored fixture.
+        quarantined = cold_copy(backup, "restored-quarantined")
+        case.directory = quarantined
+        case.sql("DELETE FROM login_environment")
+        before = {n: (quarantined/n).read_bytes()
+                  for n in ("candidate.db", "sessions.db")}
+        denied = case.cli("serve")
+        assert denied.returncode == 2
+        assert before == {n: (quarantined/n).read_bytes() for n in before}
+        record("quarantined_restore", cli_exit=denied.returncode,
+               stdout=denied.stdout, stderr=denied.stderr,
+               ready_event_absent='"event": "ready"' not in denied.stdout,
+               restored_databases_unchanged=True, safe_to_reopen=False)
+        assert current_bytes == {n: (original/n).read_bytes() for n in current_bytes}
+        record("source_preserved", both_source_files_byte_identical=True,
+               candidate_sha256=original_hash,
+               scope="Cold synthetic copy only, no crash/offsite/RPO/RTO claim")
+    finally:
+        case.doCleanups()
+    record("complete", observations_completed=True, restore_security="FAIL",
+           all_harness_servers_stopped=True,
+           interpretation="Diagnostic only; quarantine is not authorization to reopen")
+
+
+if __name__ == "__main__":
+    main()
