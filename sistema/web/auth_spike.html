@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Corpus · acceso local ficticio</title>
+<style>
+:root{font:17px system-ui,sans-serif;color:#241c2a;background:#f4edf3}*{box-sizing:border-box}main{max-width:760px;margin:8vh auto;padding:28px}.stamp{background:#900c7e;color:white;padding:8px 12px;font-weight:700;display:inline-block}h1{font:clamp(32px,7vw,50px)/1.1 Georgia,serif}p{line-height:1.5}.controls{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0}button{font:inherit;padding:12px 18px;min-height:48px;border:2px solid #680369;background:white;color:#680369;cursor:pointer;border-radius:6px}button:first-child{background:#680369;color:white}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible{outline:3px solid #cd64b5;outline-offset:4px}#status{min-height:3em;font-weight:650}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:white;padding:22px;border-left:6px solid #900c7e;font:18px/1.65 Georgia,serif;min-height:100px}.limits{font-size:15px}.version{font:14px/1.5 monospace;overflow-wrap:anywhere}@media(max-width:480px){main{margin:20px auto;padding:20px}button{width:100%}}
+</style></head><body><main><span class="stamp">DEMO FICTICIA · SOLO LOCAL</span><h1>Entrar. Leer. Salir.</h1><p>Prueba de autenticación de Corpus. El botón usa la identidad ficticia <strong>Ana</strong> y una contraseña pública de prueba. No ingreses datos personales.</p><div class="controls"><button id="login" type="button">Entrar como Ana ficticia</button><button id="read" type="button" disabled>Leer texto ficticio</button><button id="logout" type="button" disabled>Cerrar sesión</button></div><p id="status" role="status" aria-live="polite">Sin sesión.</p><pre id="text" aria-label="Texto ficticio autorizado"></pre><p class="version">Versión fija: __FIXTURE_VERSION__</p><p class="limits">Sin valor jurídico. Sin búsqueda, descarga ni cuentas reales. La sesión queda solo en memoria de esta pestaña. Recargar no equivale a revocar: usá Cerrar sesión y esperá la confirmación.</p></main>
+<script>
+/* Synthetic fixed-identity spike. No credential input. One flexible stamped sheet. */
+(() => {
+  "use strict";
+  const ui = Object.fromEntries(["login", "read", "logout", "status", "text"].map(id => [id, document.getElementById(id)]));
+  const version = "__FIXTURE_VERSION__";
+  let token = "", busy = false, generation = 0, controller = null;
+  function controls() {ui.login.disabled = busy || Boolean(token); ui.read.disabled = busy || !token; ui.logout.disabled = busy || !token;}
+  async function request(path, options = {}) {
+    const response = await fetch(path, {...options, credentials: "omit", cache: "no-store", redirect: "error", signal: controller.signal});
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    return response.json();
+  }
+  async function action(kind) {
+    if (busy) return;
+    busy = true; controls(); controller = new AbortController();
+    const run = ++generation;
+    ui.text.textContent = ""; ui.status.textContent = "Esperando respuesta...";
+    try {
+      if (kind === "login") {
+        const r = await request("/api/v2/login", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: "ana", password: "solo-demo-ficticia"})});
+        if (run !== generation) return;
+        if (r.environment !== "isolated_test" || r.token_type !== "Bearer" || !/^[A-Za-z0-9_-]{43,128}$/.test(r.access_token)) throw new Error("Respuesta inválida");
+        token = r.access_token; ui.status.textContent = "Sesión ficticia iniciada.";
+      } else if (kind === "read") {
+        let start = 0, text = "", total = null;
+        for (let page = 0; page < 100; page++) {
+          const r = await request("/api/v2/documento/fixture-demo/texto?version=" + version + "&start=" + start + "&limit=11", {headers: {Authorization: "Bearer " + token}});
+          if (run !== generation) return;
+          if (r.uid !== "fixture-demo" || r.version !== version || r.offset_unit !== "unicode_code_points" || typeof r.text !== "string" || r.start !== start || r.end !== start + Array.from(r.text).length || !Number.isSafeInteger(r.total_characters) || r.total_characters < r.end || (total !== null && total !== r.total_characters)) throw new Error("Respuesta inválida");
+          total = r.total_characters; text += r.text;
+          if (r.next === null) {
+            if (r.end !== total) throw new Error("Texto incompleto");
+            ui.text.textContent = text; ui.status.textContent = "Texto ficticio completo. Sin valor jurídico."; return;
+          }
+          if (r.next.uid !== r.uid || r.next.version !== version || r.next.start !== r.end || r.end <= start) throw new Error("Página inválida");
+          start = r.next.start;
+        }
+        throw new Error("Límite de páginas");
+      } else {
+        const r = await request("/api/v2/logout", {method: "POST", headers: {Authorization: "Bearer " + token}});
+        if (run !== generation) return;
+        if (r.logged_out !== true) throw new Error("Respuesta inválida");
+        token = ""; ui.status.textContent = "Sesión cerrada y revocación confirmada.";
+      }
+    } catch (error) {
+      if (run !== generation) return;
+      ui.text.textContent = "";
+      ui.status.textContent = kind === "logout" ? "Cierre NO confirmado. Reintentá Cerrar sesión." : "No se pudo completar la acción. " + error.message;
+    } finally {if (run === generation) {busy = false; controls();}}
+  }
+  ["login", "read", "logout"].forEach(k => ui[k].addEventListener("click", () => action(k)));
+  function forget() {generation++; if (controller) controller.abort(); token = ""; busy = false; ui.text.textContent = ""; ui.status.textContent = "Sin sesión en esta pestaña."; controls();}
+  window.addEventListener("pagehide", forget);
+  window.addEventListener("pageshow", event => {if (event.persisted) forget();});
+  controls();
+})();
+</script></body></html>

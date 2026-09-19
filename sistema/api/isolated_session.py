@@ -44,7 +44,9 @@ class IsolatedSessionApp(IsolatedLoginApp):
         """
         if environ.get("REQUEST_METHOD") != "POST":
             return 405, {"error": "METHOD_NOT_ALLOWED"}
-        if "HTTP_ORIGIN" in environ or "HTTP_TRANSFER_ENCODING" in environ:
+        origin_ok = (self.browser_request_allowed(environ)
+                     if self.browser_origin is not None else "HTTP_ORIGIN" not in environ)
+        if not origin_ok or "HTTP_TRANSFER_ENCODING" in environ:
             return 403, {"error": "REQUEST_REJECTED"}
         if environ.get("QUERY_STRING", "") or environ.get("CONTENT_LENGTH", "") not in ("", "0"):
             return 400, {"error": "EMPTY_REQUEST_REQUIRED"}
@@ -54,13 +56,13 @@ class IsolatedSessionApp(IsolatedLoginApp):
             return 401, {"error": "INVALID_SESSION"}
         now = self.clock()
         if isinstance(now, bool) or not isinstance(now, (int, float)) or not math.isfinite(now) or now < 0:
-            raise ValueError("INVALID_CLOCK")
+            return 400, {"error": "INVALID_CLOCK"}
         digest = hashlib.sha256(match[1].encode("ascii")).hexdigest()
         with closing(sqlite3.connect(self.uri, uri=True, timeout=1)) as db:
             with db:
                 db.execute("BEGIN IMMEDIATE")
                 marker = db.execute("SELECT mode FROM login_environment WHERE singleton=1").fetchone()
-                if marker != ("isolated_test",) or not self.enabled:
+                if marker != ("isolated_test",):
                     return 403, {"error": "ISOLATED_LOGIN_DISABLED"}
                 db.execute(
                     "UPDATE access_sessions SET revoked_at=? "

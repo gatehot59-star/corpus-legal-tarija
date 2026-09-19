@@ -6,6 +6,8 @@ owner. Initialization is exclusive; serving never provisions or resets state.
 from __future__ import annotations
 
 import argparse
+import base64
+import re
 from contextlib import closing
 import hashlib
 import json
@@ -160,11 +162,19 @@ class DemoHandler(WSGIRequestHandler):
         self.request.settimeout(2)
         super().setup()
 
+    def get_environ(self):
+        """Preserve ambiguity information that WSGI would otherwise flatten."""
+        environ = super().get_environ()
+        environ["corpus.ambiguous_headers"] = any(
+            len(self.headers.get_all(name, [])) > 1 for name in
+            ("Host", "Origin", "Authorization", "Content-Length", "Content-Type"))
+        return environ
+
     def log_message(self, format, *args):
         pass
 
 
-def serve(value: str | Path, port: int) -> int:
+def serve(value: str | Path, port: int, *, browser_spike: bool = False) -> int:
     """Serve the existing wrapper on literal IPv4 loopback until SIGINT/SIGTERM."""
     if not 0 <= port <= 65535:
         raise ValueError("DEMO_INVALID_PORT")
@@ -175,11 +185,43 @@ def serve(value: str | Path, port: int) -> int:
     with make_server("127.0.0.1", port, app, handler_class=DemoHandler) as server:
         # Block browser cross-origin requests/rebinding. No proxy support.
         expected_host = "127.0.0.1:" + str(server.server_port)
+        page = None
+        csp = None
+        if browser_spike:
+            app = IsolatedSessionApp(candidate, store, COLLECTION, enable_test_login=True,
+                                     browser_origin="http://" + expected_host)
+            template = (Path(__file__).resolve().parent.parent /
+                        "web" / "auth_spike.html").read_text(encoding="utf-8")
+            page = template.replace("__FIXTURE_VERSION__", VERSION).encode("utf-8")
+            # Exact inline hashes; no unsafe-inline or network assets.
+            def hashes(tag):
+                return " ".join("'sha256-" + base64.b64encode(
+                    hashlib.sha256(s).digest()).decode() + "'"
+                    for s in re.findall(b"<" + tag + b">(.*?)</" + tag + b">",
+                                        page, re.S))
+            csp = ("default-src 'none'; script-src " + hashes(b"script") +
+                   "; style-src " + hashes(b"style") +
+                   "; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; "
+                   "form-action 'none'; object-src 'none'")
+
 
         def guarded(environ, start_response):
-            if (environ.get("HTTP_HOST") != expected_host
-                    or "HTTP_ORIGIN" in environ):
+            rejected = (not app.browser_request_allowed(environ) if browser_spike
+                        else "HTTP_ORIGIN" in environ)
+            if (environ.get("HTTP_HOST") != expected_host or rejected
+                    or (browser_spike and environ.get("corpus.ambiguous_headers"))):
                 return app.reply(start_response, 403, {"error": "DEMO_LOCAL_REQUEST_REQUIRED"})
+            if browser_spike and environ.get("PATH_INFO") == "/":
+                if environ.get("REQUEST_METHOD") != "GET" or environ.get("QUERY_STRING"):
+                    return app.reply(start_response, 400, {"error": "PAGE_REQUEST_REJECTED"})
+                start_response("200 OK", [
+                    ("Content-Type", "text/html; charset=utf-8"),
+                    ("Content-Length", str(len(page))), ("Cache-Control", "no-store"),
+                    ("Content-Security-Policy", csp), ("X-Frame-Options", "DENY"),
+                    ("X-Content-Type-Options", "nosniff"),
+                    ("Referrer-Policy", "no-referrer"),
+                    ("Cross-Origin-Opener-Policy", "same-origin")])
+                return [page]
             return app(environ, start_response)
 
         server.set_app(guarded)
@@ -209,11 +251,15 @@ def main(argv=None) -> int:
     parser.add_argument("--directory", required=True)
     parser.add_argument("--isolated-demo", action="store_true",
                         help="explicit opt-in: synthetic data, local demo only")
+    parser.add_argument("--browser-spike", action="store_true",
+                        help="serve fixed synthetic browser login/read/logout only")
     parser.add_argument("--port", type=int, default=0,
                         help="serve port; default 0 selects an unused local port")
     args = parser.parse_args(argv)
     if not args.isolated_demo:
         parser.error("--isolated-demo is required; no production mode exists")
+    if args.browser_spike and args.action != "serve":
+        parser.error("--browser-spike is only valid with serve")
     if not 0 <= args.port <= 65535:
         parser.error("--port must be 0..65535")
     if os.name != "posix":
@@ -222,7 +268,7 @@ def main(argv=None) -> int:
         if args.action == "init":
             print(json.dumps(initialize(args.directory)), flush=True)
             return 0
-        return serve(args.directory, args.port)
+        return serve(args.directory, args.port, browser_spike=args.browser_spike)
     except (OSError, ValueError, sqlite3.Error) as exc:
         # No SQL values, bodies or credentials in startup errors.
         print("DEMO_STARTUP_FAILED: " + type(exc).__name__, file=sys.stderr)
