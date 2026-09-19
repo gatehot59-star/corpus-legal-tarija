@@ -54,6 +54,19 @@ async function main() {
     check("empty_persistent_storage",await page.evaluate(()=>localStorage.length===0&&sessionStorage.length===0&&document.cookie===""));
     check("no_token_in_dom",!(await page.content()).includes(token));
     check("no_token_in_url",!page.url().includes(token));
+    // Inject only the consumer protocol response: not a legal/hash integrity test.
+    // U+1F600 is two UTF-16 units but one API code point. BMP-only text cannot
+    // distinguish Array.from(text).length from the incorrect text.length.
+    await page.route("**/api/v2/documento/**",async route=>{
+      const r=await route.fetch(); const body=await r.json();
+      if(body.start===0) body.text=body.text.replace("DEMO",String.fromCodePoint(0x1F600)+"EMO");
+      await route.fulfill({response:r,json:body});
+    });
+    await page.locator("#read").click();
+    await page.waitForFunction(()=>/completo|No se pudo/.test(document.getElementById("status").textContent));
+    check("astral_codepoint_response_contract",
+      await page.locator("#text").textContent()===text.replace("DEMO",String.fromCodePoint(0x1F600)+"EMO"));
+    await page.unroute("**/api/v2/documento/**");
     await page.setViewportSize({width:390,height:844});
     check("mobile_no_horizontal_overflow",await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.screenshot({path:path.join(tmp,"browser-mobile.png"),fullPage:true});
