@@ -1,0 +1,66 @@
+{
+  "subject": "Corpus PR14 post-merge audit, not PR16",
+  "tested_revision": "9913d8dd5074d6aedd0d261c42caea6480e794fe",
+  "main_at_report_readback": "f0b8d48ff44534abcce1e19719b48dfc23465ad5",
+  "product_delta_at_report_readback": [],
+  "gates": {
+    "I": "PASA, corrected independent instrument; invalid first run preserved; inherited author fixture debt separately classified",
+    "II": "PASA, scoped report with causal findings, reproduction and explicit limits",
+    "III": "COMPLETA: report and evidence recovered byte-identical from main, public Doc read back, Nexus 51 inserted and queried"
+  },
+  "report": {
+    "path": "docs/auditorias/2026-09-19-03-astra-pr14-integrado.md",
+    "commit": "f0b8d48ff44534abcce1e19719b48dfc23465ad5",
+    "bytes": 12147,
+    "sha256": "a5150ac0ffb3fe3f3311e21587216234ac1d50e71fdd7c47fb96aaa4f509275d",
+    "remote_byte_comparison": true,
+    "in_main": true,
+    "note": "This closing act supersedes only the initial pending Gate III paragraph; experimental report remains immutable."
+  },
+  "evidence": {
+    "path": "docs/auditorias/2026-09-19-03-astra-pr14-integrado/evidence.xz.b64",
+    "commit": "5db5d6df82eda5db8d8ac1e168acb846c2c4ad8a",
+    "codec": "single complete file, strict base64 then xz",
+    "payload_bytes": 34204,
+    "decoded_bytes": 308634,
+    "decoded_sha256": "4764df2c1a270414709f7d07628271ce93dc4c5f36df7bb0eb0f117bc401f521",
+    "remote_byte_comparison": true,
+    "in_main": true
+  },
+  "clickup": {
+    "document": "https://app.clickup.com/90171457413/docs/2kza6fw5-13317",
+    "page": "https://app.clickup.com/90171457413/docs/2kza6fw5-13317/2kza6fw5-15577",
+    "page_id": "doc:2kza6fw5-15577",
+    "space_id": "90176846840",
+    "visibility": "public",
+    "readback": true,
+    "creation_retry": "First parent reference failed without creating a Doc; validated Space by ID, then used returned URL successfully."
+  },
+  "nexus": {
+    "report_id": 51,
+    "agent": "astra-auditor",
+    "turn": "2026-09-19-03-pr14-integrado",
+    "inserted_utc": "2026-09-19 14:18:03",
+    "readback": true
+  },
+  "resource_recheck": {
+    "utc": "2026-09-19T14:18:10.854655+00:00",
+    "child_processes_absent": 69,
+    "ports_closed": 21,
+    "all_connect_ex": 111,
+    "supervisors": {"1986": "Z", "2132": "Z"},
+    "meaning": "No active work or listening sockets; terminated supervisors await parent reaping."
+  },
+  "results": {
+    "own_baseline": {"assertions": 142, "failures": 0},
+    "own_fresh_repeat": {"assertions": 142, "failures": 0},
+    "target_mutants_detected": 3,
+    "author_cases_passed_once": 97,
+    "verdict": "No new product defect demonstrated in selected isolated contract.",
+    "limit": "Socket timeout measures inactivity, not total request duration."
+  },
+  "not_measured": ["production", "TLS", "sustained concurrent load", "total deadline for slow senders", "crash or power loss recovery", "legal validity"],
+  "writes": ["own documentary evidence and report in main", "public ClickUp Doc", "own Nexus report", "this administrative closing act"],
+  "permissions": "No product changes, merges, deploys, VM, real credentials, live databases, PR16/PR1 operations, issues or messages.",
+  "historical_pending": "Local reports 01/03 remain separate incomplete deliveries."
+}
