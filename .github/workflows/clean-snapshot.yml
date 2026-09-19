@@ -11,6 +11,8 @@ on:
       - 'sistema/api/access_policy.py'
       - 'sistema/api/isolated_login.py'
       - 'sistema/api/isolated_session.py'
+      - 'sistema/api/demo_aislada.py'
+      - 'sistema/DEMO-AISLADA.md'
       - 'tests/test_clean_snapshot.py'
       - 'tests/test_clean_snapshot_sol.py'
       - 'tests/test_exact_http.py'
@@ -18,6 +20,7 @@ on:
       - 'tests/test_isolated_login.py'
       - 'tests/test_login_guards.py'
       - 'tests/test_isolated_session.py'
+      - 'tests/test_demo_aislada.py'
       - '.github/workflows/clean-snapshot.yml'
   workflow_dispatch:
 permissions:
@@ -41,3 +44,9 @@ jobs:
           # GuardTests inherits the original 12 login tests; do not run them twice.
           timeout 90s python3 tests/test_login_guards.py
           timeout 90s python3 tests/test_isolated_session.py
+      - name: Compile and test synthetic demo CLI (real subprocess lifecycle)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile sistema/api/demo_aislada.py tests/test_demo_aislada.py
+          timeout 120s python3 tests/test_demo_aislada.py
