@@ -1,0 +1,55 @@
+"""Run the workflow blocks verbatim locally and falsify the new demo gate."""
+import copy
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import yaml
+
+root = Path(sys.argv[1]).resolve()
+out = Path(sys.argv[2]).resolve()
+data = yaml.load((root / ".github/workflows/clean-snapshot.yml").read_text(), Loader=yaml.BaseLoader)
+steps = data["jobs"]["stable_identity"]["steps"]
+assert data["permissions"] == {"contents": "read"}
+assert data["jobs"]["stable_identity"]["runs-on"] == "ubuntu-24.04"
+assert data["jobs"]["stable_identity"]["timeout-minutes"] == "5"
+assert steps[0]["uses"] == "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+assert steps[0]["with"]["persist-credentials"] == "false"
+paths = data["on"]["pull_request"]["paths"]
+assert all(p in paths for p in ("sistema/api/demo_aislada.py", "tests/test_demo_aislada.py", "sistema/DEMO-AISLADA.md"))
+assert len(steps) == 3 and all("continue-on-error" not in s and "if" not in s for s in steps)
+runs = []
+
+def run(label, command, cwd):
+    result = subprocess.run(command, cwd=cwd, capture_output=True, text=True, timeout=240)
+    row = dict(label=label, command=command, cwd=str(cwd), exit=result.returncode,
+               stdout=result.stdout, stderr=result.stderr)
+    runs.append(row)
+    out.write_text(json.dumps(runs, indent=2))
+    print(label, result.returncode, flush=True)
+    return row
+
+for step in steps[1:]:
+    r = run(step["name"], ["bash", "-c", step["run"]], root)
+    assert r["exit"] == 0
+assert "Ran 18 tests" in runs[1]["stderr"]
+assert sum("Ran "+str(n)+" tests" in runs[0]["stderr"] for n in (21,15,18,10)) == 4
+
+# Same new workflow shell block, broken opt-in only. Expected nonzero must
+# originate from the intended assertion, not from a missing dependency.
+mutant = out.parent / "mutant-opt-in"
+shutil.copytree(root, mutant, ignore=shutil.ignore_patterns("__pycache__"), dirs_exist_ok=True)
+source = mutant / "sistema/api/demo_aislada.py"
+text = source.read_text()
+old, new = "if not args.isolated_demo:", "if False:"
+assert text.count(old) == 1
+source.write_text(text.replace(old, new))
+r = run("broken-opt-in-new-workflow-block", ["bash", "-c", steps[2]["run"]], mutant)
+assert r["exit"] == 1
+assert "test_init_requires_opt_in_without_writes" in r["stderr"] and "AssertionError: 0 != 2" in r["stderr"]
+assert "FAILED (failures=" in r["stderr"]
+out.with_name("structure.json").write_text(json.dumps(dict(
+    workflow=data, mutation=dict(path="sistema/api/demo_aislada.py", before=old, after=new),
+    suite_counts=[21,15,15,18,10,18], total=97, runtime_scope="isolated synthetic CLI, not production"
+), indent=2))

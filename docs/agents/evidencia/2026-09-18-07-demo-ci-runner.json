@@ -1,0 +1,17 @@
+{
+  "workflow_commit": "84cae9a793715355a29fd692fe097003349aa316",
+  "base_commit": "5ac0da781c53de9ffbe2a0752e33ab7aa87b33d2",
+  "job_url": "https://github.com/gatehot59-star/corpus-legal-tarija/actions/runs/35412033482/job/105813396218",
+  "html_sha256": "b13e8560043b8057a8b6bfee5a32ea9c83d228e58f9e839733d229177850ca4d",
+  "html_bytes": 214707,
+  "steps": [
+    {"data-name":"Set up job","data-number":"1","data-conclusion":"success","data-external-id":"b9d65e19-33ba-46be-926b-a9bcfb35d1a4","data-expand":"","data-started-at":"2026-09-19T01:14:42Z","data-completed-at":"2026-09-19T01:14:42Z","data-log-url":"/gatehot59-star/corpus-legal-tarija/commit/84cae9a793715355a29fd692fe097003349aa316/checks/105813396218/logs/1","data-job-completed":"","data-use-actions-ux":""},
+    {"data-name":"Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262","data-number":"2","data-conclusion":"success","data-external-id":"d14fe9eb-2d72-4cb9-8844-95cb08852bd9","data-expand":"","data-started-at":"2026-09-19T01:14:42Z","data-completed-at":"2026-09-19T01:14:43Z","data-log-url":"/gatehot59-star/corpus-legal-tarija/commit/84cae9a793715355a29fd692fe097003349aa316/checks/105813396218/logs/2","data-job-completed":"","data-use-actions-ux":""},
+    {"data-name":"Compile and test copy, exact reading and isolated session lifecycle","data-number":"3","data-conclusion":"success","data-external-id":"de5ad293-9687-4d40-af93-1249cd27a01a","data-expand":"","data-started-at":"2026-09-19T01:14:43Z","data-completed-at":"2026-09-19T01:14:58Z","data-log-url":"/gatehot59-star/corpus-legal-tarija/commit/84cae9a793715355a29fd692fe097003349aa316/checks/105813396218/logs/3","data-job-completed":"","data-use-actions-ux":""},
+    {"data-name":"Compile and test synthetic demo CLI (real subprocess lifecycle)","data-number":"4","data-conclusion":"success","data-external-id":"3bfeecd1-aced-47bf-a97b-2ad4498fdaa8","data-expand":"","data-started-at":"2026-09-19T01:14:58Z","data-completed-at":"2026-09-19T01:15:09Z","data-log-url":"/gatehot59-star/corpus-legal-tarija/commit/84cae9a793715355a29fd692fe097003349aa316/checks/105813396218/logs/4","data-job-completed":"","data-use-actions-ux":""},
+    {"data-name":"Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262","data-number":"8","data-conclusion":"success","data-external-id":"22772366-5eae-4c29-9dc8-69af31e02f7b","data-expand":"","data-started-at":"2026-09-19T01:15:09Z","data-completed-at":"2026-09-19T01:15:10Z","data-log-url":"/gatehot59-star/corpus-legal-tarija/commit/84cae9a793715355a29fd692fe097003349aa316/checks/105813396218/logs/8","data-job-completed":"","data-use-actions-ux":""},
+    {"data-name":"Complete job","data-number":"9","data-conclusion":"success","data-external-id":"9cf872bd-720c-4d57-bc0b-79e749e946cf","data-expand":"","data-started-at":"2026-09-19T01:15:10Z","data-completed-at":"2026-09-19T01:15:10Z","data-log-url":"/gatehot59-star/corpus-legal-tarija/commit/84cae9a793715355a29fd692fe097003349aa316/checks/105813396218/logs/9","data-job-completed":"","data-use-actions-ux":""}
+  ],
+  "capture_scope": "Full data attributes of all job step elements from public HTML. Full HTML retained locally, not included. Raw CI stdout unavailable: log URL returned404. Anonymous jobs API returned403rate limit; MCP check_runs returnedcompleted/success.",
+  "mutation": {"path":"sistema/api/demo_aislada.py","before":"if not args.isolated_demo:","after":"if False:"}
+}
