@@ -27,6 +27,43 @@ async function click(page,id) {
   await page.locator("#"+id).click();
   await page.waitForFunction(()=>!document.querySelector("#status").textContent.includes("Esperando"));
 }
+/** Compare to an independent oracle and retain actual/expected on failure. */
+function checkExact(name, actual, expected) {
+  const equal = require("node:util").isDeepStrictEqual(actual, expected);
+  checks.push({name, pass:equal, actual:structuredClone(actual), expected:structuredClone(expected)});
+  assert.deepEqual(actual, expected, name);
+}
+/** Select a non-derived locator, read it, and compare the real download to it. */
+async function verifySelectedReference(page, index, uid, text) {
+  const version = require("node:crypto").createHash("sha256").update(text,"utf8").digest("hex");
+  const prefix = "selection_" + uid;
+  await page.locator("#results button").nth(index).click();
+  checkExact(prefix+"_clears_previous_text", await page.locator("#text").textContent(), "");
+  checkExact(prefix+"_invalidates_previous_reference", await page.locator("#save").isDisabled(), true);
+  checkExact(prefix+"_pins_clicked_version", await page.locator("#version-label").textContent(), version);
+  await click(page,"read");
+  checkExact(prefix+"_reads_clicked_text", await page.locator("#text").textContent(), text);
+  checkExact(prefix+"_enables_save_after_read", await page.locator("#save").isEnabled(), true);
+  // Attach rejection handling immediately: no unhandled timeout if click fails.
+  const pending = page.waitForEvent("download",{timeout:5000})
+    .then(download=>({download}), error=>({error}));
+  await click(page,"save");
+  const outcome = await pending;
+  if (outcome.error) throw outcome.error;
+  const download = outcome.download;
+  const record = JSON.parse(fs.readFileSync(await download.path(),"utf8"));
+  checkExact(prefix+"_downloads_clicked_locator",
+    [record.uid,record.version,record.text_sha256], [uid,version,version]);
+  checkExact(prefix+"_filename_matches_clicked_locator", download.suggestedFilename(),
+    `corpus-${uid}-${version}.reference.json`);
+  checkExact(prefix+"_provenance_matches_clicked_document",
+    [record.source_sha256,record.source_url,record.total_characters,
+      record.authority,record.oficial,record.legal_validity,record.environment],
+    ["a".repeat(64),"https://example.invalid/discovery/"+uid,Array.from(text).length,
+      "secondary",false,"NOT_MEASURED","isolated_test"]);
+  checkExact(prefix+"_reference_has_no_text_field", Object.hasOwn(record,"text"), false);
+}
+
 async function freshFixture() {
   if (server && server.exitCode===null) {
     const stopped=new Promise((resolve,reject)=>{
@@ -103,7 +140,7 @@ async function main() {
       if(failure===503) sql("ALTER TABLE retry_marker RENAME TO login_environment");
       else {
         const r=spawnSync("python3",["-c",
-          "import sqlite3,sys,json;d=sqlite3.connect(sys.argv[1]);d.execute(\"INSERT INTO login_environment VALUES(?,?)\",json.loads(sys.argv[2]));d.commit();d.close()",
+          "import sqlite3,sys;d=sqlite3.connect(sys.argv[1]);d.execute(\"INSERT INTO login_environment VALUES(?,?)\",json.loads(sys.argv[2]));d.commit();d.close()",
           path.join(directory,"sessions.db"),JSON.stringify(markerRow)],{encoding:"utf8"});
         assert.equal(r.status,0,r.stderr);
       }
@@ -190,6 +227,25 @@ async function main() {
     await page.locator("#save").isDisabled() && await page.locator("#results button").count()===0);
   await page.setViewportSize({width:390,height:844});
   check("mobile_no_horizontal_overflow",await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  // Regression: a correct first result must not hide a broken selection callback.
+  // Fresh fixture keeps this flow independent of the prior five-login budget.
+  ready=await freshFixture();await page.goto(ready.url);
+  await click(page,"login");await click(page,"search");
+  await verifySelectedReference(page,0,"fixture-a1",
+    "DEMO A: derechos ficticios\r\nArtículo único: Ñ, ⚖, e\u0301 y 😀. Straße.\r\n");
+  await verifySelectedReference(page,1,"fixture-a2",
+    "<img src=x onerror=alert(1)> DEMO A\r\nOtro derecho ficticio, sin valor jurídico.\r\n");
+  await click(page,"logout");
+  checkExact("selection_ana_logout_confirmed",
+    (await page.locator("#status").textContent()).includes("revocación confirmada"),true);
+  await page.locator("#identity").selectOption("ben");
+  await click(page,"login");await click(page,"search");
+  await verifySelectedReference(page,1,"fixture-b2",
+    "DEMO B: registro ficticio\r\nOtro derecho de prueba, no una ley.\r\n");
+  await click(page,"logout");
+  checkExact("selection_ben_logout_confirmed",
+    (await page.locator("#status").textContent()).includes("revocación confirmada"),true);
+
   check("no_browser_errors",failures.length===0);
   console.log(JSON.stringify({browser:browser.version(),checks},null,2));
 }
