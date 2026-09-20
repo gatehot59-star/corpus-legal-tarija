@@ -2,6 +2,8 @@
 
 Fecha: 20-sep-2026, ART. Pedido: «Revisa las auditorias de sol y astra auditor».
 
+> Corrección documental posterior, 20-sep-2026: Astra corrige en §2 `revoked===true` por `logged_out===true`, el campo real del cliente. El resto del informe conserva el snapshot histórico cc2ca307 y su autoría BRAIN; sus menciones de «actual» se refieren al momento de aquella revisión. El head posterior es ca503377760a8dcd7965689a2853420785a83d94, con banco de88 comprobaciones y CI run35515778571/job106091355198. Véase la [contraauditoría11](https://github.com/gatehot59-star/corpus-legal-tarija/blob/29f393570c72cc65dd43747af6ffb18f3745de88/docs/auditorias/2026-09-20-11-audit-astra-brain.md). Esta corrección no reejecuta producto, no altera la evidencia06 ni cierra la revisión externa de logout. La versión original queda preservada en ad2badf1a8dee2d89470f405c0c90593875bad09.
+
 ## Veredicto breve
 
 Astra encontró un fallo real de cierre de sesión: después de un logout rechazado con 403, la interfaz perdía el bearer necesario para reintentar mientras la sesión seguía activa en el servidor. El cambio cc2ca307 lo corrigió. Las verificaciones posteriores publicadas sostienen el arreglo en los escenarios ejecutados, pero no son aprobación externa del autor del fix ni certificación del piloto.
@@ -42,7 +44,7 @@ REFUTADO como descripción de la estructura actual que el marcador solo se compr
 
 CONFIRMADO el hallazgo histórico y su corrección delimitada. El caso original quitaba la marca, provocaba 403 en logout, la restauraba y demostraba que el mismo bearer aún obtenía 200. No era un supuesto ataque remoto; requería intervención en la fixture local.
 
-El diff actual separa logoutToken del token ordinario, limpia inmediatamente resultados/texto/selección y restringe la interfaz a reintentar logout. Las acciones de login/búsqueda/lectura/guardar tienen guards durante ese estado. Confirmar revoked===true borra ambos handles. pagehide/reload olvida la memoria local, pero no revoca por sí mismo en el servidor. El bearer retenido sigue teniendo privilegios del lado servidor: la restricción es del consumidor, no un nuevo tipo de token.
+El diff actual separa logoutToken del token ordinario, limpia inmediatamente resultados/texto/selección y restringe la interfaz a reintentar logout. Las acciones de login/búsqueda/lectura/guardar tienen guards durante ese estado. Confirmar logged_out===true borra ambos handles. pagehide/reload olvida la memoria local, pero no revoca por sí mismo en el servidor. El bearer retenido sigue teniendo privilegios del lado servidor: la restricción es del consumidor, no un nuevo tipo de token.
 
 No confundir el paquete publicado de 34024 bytes de Astra01 con la captura local más extensa. La publicación es enfocada, y sus exclusiones están declaradas. El arreglo02 acredita sus propios reruns; no los cuento como tests nuevos de esta revisión.
 
