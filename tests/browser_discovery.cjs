@@ -140,7 +140,7 @@ async function main() {
       if(failure===503) sql("ALTER TABLE retry_marker RENAME TO login_environment");
       else {
         const r=spawnSync("python3",["-c",
-          "import sqlite3,sys;d=sqlite3.connect(sys.argv[1]);d.execute(\"INSERT INTO login_environment VALUES(?,?)\",json.loads(sys.argv[2]));d.commit();d.close()",
+          "import sqlite3,sys,json;d=sqlite3.connect(sys.argv[1]);d.execute(\"INSERT INTO login_environment VALUES(?,?)\",json.loads(sys.argv[2]));d.commit();d.close()",
           path.join(directory,"sessions.db"),JSON.stringify(markerRow)],{encoding:"utf8"});
         assert.equal(r.status,0,r.stderr);
       }
