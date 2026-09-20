@@ -246,6 +246,107 @@ async function main() {
   checkExact("selection_ben_logout_confirmed",
     (await page.locator("#status").textContent()).includes("revocación confirmada"),true);
 
+  // Regression: an expired session must still be revoked by a pending logout.
+  // Alter only this synthetic store's validity window, not the server clock.
+  ready=await freshFixture();await page.goto(ready.url);
+  const expiryContext=await browser.newContext();
+  const expiryOther=await expiryContext.newPage();
+  let releaseExpiry;
+  let expiryCalls=0, expirySameBearer=true;
+  const expirySql=(statement,parameters=[])=>{
+    const result=spawnSync("python3",["-c",
+      "import sqlite3,sys,json;from contextlib import closing\nwith closing(sqlite3.connect(sys.argv[1],timeout=2)) as db,db:\n print(json.dumps(db.execute(sys.argv[2],json.loads(sys.argv[3])).fetchall()))",
+      path.join(directory,"sessions.db"),statement,JSON.stringify(parameters)],
+      {encoding:"utf8",timeout:5000});
+    assert.equal(result.status,0,result.stderr);
+    return JSON.parse(result.stdout);
+  };
+  const expiryLogin=async target=>{
+    const pending=target.waitForResponse(r=>r.url().endsWith("/api/v2/login"),{timeout:5000})
+      .then(response=>({response}),error=>({error}));
+    await click(target,"login");
+    const result=await pending;
+    if(result.error)throw result.error;
+    const body=await result.response.json();
+    assert.equal(result.response.status(),200,"expiry login must succeed");
+    assert.equal(typeof body.access_token,"string","expiry bearer must exist");
+    return body.access_token;
+  };
+  try {
+    expiryOther.on("pageerror",e=>failures.push(String(e)));
+    const expiryA=await expiryLogin(page);
+    await click(page,"search");
+    await page.locator("#results button").first().click();await click(page,"read");
+    checkExact("expiry_positive_text",await page.locator("#text").textContent(),expected);
+    checkExact("expiry_reference_ready",await page.locator("#save").isEnabled(),true);
+    await expiryOther.goto(ready.url);
+    const expiryB=await expiryLogin(expiryOther); // Same identity, separate real session.
+    checkExact("expiry_distinct_same_user_sessions",expiryA!==expiryB,true);
+    const digest=token=>require("node:crypto").createHash("sha256").update(token).digest("hex");
+    const expiryStatus=async token=>{
+      const response=await page.request.get(ready.url+"/api/v2/buscar?q=derecho",
+        {headers:{Authorization:"Bearer "+token},timeout:5000});
+      try {return response.status();} finally {await response.dispose();}
+    };
+    checkExact("expiry_A_initially_authorized",await expiryStatus(expiryA),200);
+    checkExact("expiry_B_initially_authorized",await expiryStatus(expiryB),200);
+    const gate=new Promise(resolve=>{releaseExpiry=resolve;});
+    await page.route("**/api/v2/logout",async route=>{
+      expiryCalls++;
+      expirySameBearer=expirySameBearer &&
+        route.request().headers().authorization==="Bearer "+expiryA;
+      await gate;await route.continue();
+    });
+    await page.locator("#logout").click();
+    await page.waitForFunction(()=>document.querySelector("#status").textContent.includes("Esperando"));
+    checkExact("expiry_pending_clears_content",
+      [await page.locator("#text").textContent(),await page.locator("#results button").count(),
+        await page.locator("#version-label").textContent()],["",0,"ninguna"]);
+    checkExact("expiry_pending_disables_actions",await page.evaluate(()=>
+      ["login","search","read","save","logout","identity","query"]
+        .every(id=>document.getElementById(id).disabled)),true);
+    const originalWindow=expirySql(
+      "SELECT valid_from,valid_until FROM access_sessions WHERE token_sha256=?",[digest(expiryA)]);
+    checkExact("expiry_one_target_session",originalWindow.length,1);
+    expirySql("UPDATE access_sessions SET valid_from=0,valid_until=1 WHERE token_sha256=?",
+      [digest(expiryA)]);
+    checkExact("expiry_A_denied_before_logout_reaches_server",await expiryStatus(expiryA),403);
+    checkExact("expiry_B_survives_A_expiration",await expiryStatus(expiryB),200);
+    const responsePromise=page.waitForResponse(r=>r.url().endsWith("/api/v2/logout"),{timeout:5000})
+      .then(response=>({response}),error=>({error}));
+    releaseExpiry();
+    const result=await responsePromise;
+    if(result.error)throw result.error;
+    checkExact("expiry_logout_http_success",result.response.status(),200);
+    checkExact("expiry_logout_boolean_confirmation",(await result.response.json()).logged_out,true);
+    await page.waitForFunction(()=>!document.querySelector("#status").textContent.includes("Esperando"));
+    checkExact("expiry_UI_confirms_revocation",
+      (await page.locator("#status").textContent()).includes("revocación confirmada"),true);
+    checkExact("expiry_one_request_with_original_bearer",[expiryCalls,expirySameBearer],[1,true]);
+    // A403 while expired is not evidence of revocation. Restore its exact former
+    // validity window before checking denial and the persisted revocation marker.
+    expirySql("UPDATE access_sessions SET valid_from=?,valid_until=? WHERE token_sha256=?",
+      [...originalWindow[0],digest(expiryA)]);
+    checkExact("expiry_restored_window_does_not_resurrect_A",await expiryStatus(expiryA),403);
+    checkExact("expiry_A_persistently_revoked",expirySql(
+      "SELECT revoked_at IS NOT NULL FROM access_sessions WHERE token_sha256=?",[digest(expiryA)]),[[1]]);
+    checkExact("expiry_same_user_B_not_revoked",expirySql(
+      "SELECT revoked_at IS NULL FROM access_sessions WHERE token_sha256=?",[digest(expiryB)]),[[1]]);
+    checkExact("expiry_B_still_authorized",await expiryStatus(expiryB),200);
+    await click(expiryOther,"search");
+    checkExact("expiry_B_browser_still_usable",await expiryOther.locator("#results button").count(),2);
+    await click(expiryOther,"logout");
+    checkExact("expiry_B_own_logout_confirmed",
+      (await expiryOther.locator("#status").textContent()).includes("revocación confirmada"),true);
+    checkExact("expiry_B_denied_after_own_logout",await expiryStatus(expiryB),403);
+  } finally {
+    if(releaseExpiry)releaseExpiry();
+    await page.unrouteAll({behavior:"wait"});
+    await expiryContext.close();
+    // Cleanup of this fixture only; assertions above precede this forced cleanup.
+    expirySql("UPDATE access_sessions SET revoked_at=COALESCE(revoked_at,1)");
+  }
+
   check("no_browser_errors",failures.length===0);
   console.log(JSON.stringify({browser:browser.version(),checks},null,2));
 }
