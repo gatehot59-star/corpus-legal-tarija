@@ -1,26 +1,66 @@
 <!doctype html>
+<!-- sistema/web/auth_spike.html: synthetic local reader and metadata-only reference. -->
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Corpus · acceso local ficticio</title>
 <style>
 :root{font:17px system-ui,sans-serif;color:#241c2a;background:#f4edf3}*{box-sizing:border-box}main{max-width:760px;margin:8vh auto;padding:28px}.stamp{background:#900c7e;color:white;padding:8px 12px;font-weight:700;display:inline-block}h1{font:clamp(32px,7vw,50px)/1.1 Georgia,serif}p{line-height:1.5}.controls{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0}button{font:inherit;padding:12px 18px;min-height:48px;border:2px solid #680369;background:white;color:#680369;cursor:pointer;border-radius:6px}button:first-child{background:#680369;color:white}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible{outline:3px solid #cd64b5;outline-offset:4px}#status{min-height:3em;font-weight:650}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:white;padding:22px;border-left:6px solid #900c7e;font:18px/1.65 Georgia,serif;min-height:100px}.limits{font-size:15px}.version{font:14px/1.5 monospace;overflow-wrap:anywhere}@media(max-width:480px){main{margin:20px auto;padding:20px}button{width:100%}}
-</style></head><body><main><span class="stamp">DEMO FICTICIA · SOLO LOCAL</span><h1>Entrar. Leer. Salir.</h1><p>Prueba de autenticación de Corpus. El botón usa la identidad ficticia <strong>Ana</strong> y una contraseña pública de prueba. No ingreses datos personales.</p><div class="controls"><button id="login" type="button">Entrar como Ana ficticia</button><button id="read" type="button" disabled>Leer texto ficticio</button><button id="logout" type="button" disabled>Cerrar sesión</button></div><p id="status" role="status" aria-live="polite">Sin sesión.</p><pre id="text" aria-label="Texto ficticio autorizado"></pre><p class="version">Versión fija: __FIXTURE_VERSION__</p><p class="limits">Sin valor jurídico. Sin búsqueda, descarga ni cuentas reales. La sesión queda solo en memoria de esta pestaña. Recargar no equivale a revocar: usá Cerrar sesión y esperá la confirmación.</p></main>
+</style></head><body><main><span class="stamp">DEMO FICTICIA · SOLO LOCAL</span><h1>Leé. Guardá la referencia.</h1><p>Prueba de autenticación de Corpus. El botón usa la identidad ficticia <strong>Ana</strong> y una contraseña pública de prueba. No ingreses datos personales.</p><div class="controls"><button id="login" type="button">Entrar como Ana ficticia</button><button id="read" type="button" disabled>Leer texto ficticio</button><button id="save" type="button" disabled>Guardar referencia</button><button id="logout" type="button" disabled>Cerrar sesión</button></div><p id="status" role="status" aria-live="polite">Sin sesión.</p><pre id="text" aria-label="Texto ficticio autorizado"></pre><p class="version">Versión fija: __FIXTURE_VERSION__</p><p class="limits">Sin valor jurídico. Sin búsqueda ni cuentas reales. La descarga guarda solo identificadores y procedencia, nunca el texto ni la sesión. La URL de fuente describe el documento actual, no acredita la fuente histórica. La sesión queda solo en memoria de esta pestaña. Recargar no equivale a revocar: usá Cerrar sesión y esperá la confirmación.</p></main>
 <script>
 /* Synthetic fixed-identity spike. No credential input. One flexible stamped sheet. */
 (() => {
   "use strict";
-  const ui = Object.fromEntries(["login", "read", "logout", "status", "text"].map(id => [id, document.getElementById(id)]));
+  const ui = Object.fromEntries(["login", "read", "save", "logout", "status", "text"].map(id => [id, document.getElementById(id)]));
   const version = "__FIXTURE_VERSION__";
-  let token = "", busy = false, generation = 0, controller = null;
-  function controls() {ui.login.disabled = busy || Boolean(token); ui.read.disabled = busy || !token; ui.logout.disabled = busy || !token;}
+  let token = "", busy = false, generation = 0, controller = null, reference = null;
+  function controls() {ui.login.disabled = busy || Boolean(token); ui.read.disabled = busy || !token; ui.logout.disabled = busy || !token; ui.save.disabled = busy || !token || !reference;}
   async function request(path, options = {}) {
     const response = await fetch(path, {...options, credentials: "omit", cache: "no-store", redirect: "error", signal: controller.signal});
     if (!response.ok) throw new Error("HTTP " + response.status);
     return response.json();
   }
+  /** Validate provenance without accepting arbitrary export fields or URL credentials. */
+  function metadata(r) {
+    if (r.uid !== "fixture-demo" || r.version !== version || r.text_sha256 !== version ||
+        typeof r.source_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(r.source_sha256) || r.authority !== "secondary" ||
+        r.oficial !== false || r.legal_validity !== "NOT_MEASURED" ||
+        r.source_url_scope !== "current_document" || r.hash_scope !== "text_utf8" ||
+        typeof r.source_url !== "string" || r.source_url.length > 2048 ||
+        !Number.isSafeInteger(r.total_characters) || r.total_characters < 0)
+      throw new Error("Procedencia inválida");
+    const url = new URL(r.source_url);
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password)
+      throw new Error("Fuente inválida");
+    return {uid:r.uid, version:r.version, text_sha256:r.text_sha256,
+      source_sha256:r.source_sha256, source_url:r.source_url,
+      source_url_scope:r.source_url_scope, hash_scope:r.hash_scope,
+      authority:r.authority, oficial:r.oficial, legal_validity:r.legal_validity,
+      total_characters:r.total_characters};
+  }
+  /** Fetch a page through the existing server authorization boundary. */
+  function readPage(start, limit) {
+    return request("/api/v2/documento/fixture-demo/texto?version=" + version +
+      "&start=" + start + "&limit=" + limit, {headers:{Authorization:"Bearer " + token}});
+  }
+  /** Download an allowlisted reference, never the bearer or document body. */
+  function downloadReference(selected, readAt) {
+    const record = {schema:"corpus-reference-v1", environment:"isolated_test",
+      ...selected, retrieved_at:readAt, permission_checked_at:new Date().toISOString(),
+      warnings:["DEMO FICTICIA, SIN VALOR JURIDICO",
+        "URL de fuente del documento actual, no procedencia histórica certificada.",
+        "Esta referencia no concede acceso; volver a leer exige autorización vigente.",
+        "No se pueden retirar copias ya descargadas."]};
+    const url = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2) + String.fromCharCode(10)],
+      {type:"application/json"}));
+    const link = document.createElement("a");
+    link.href = url; link.download = "corpus-fixture-demo-" + version + ".reference.json";
+    document.body.append(link);
+    try {link.click();} finally {link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  }
   async function action(kind) {
-    if (busy) return;
+    if (busy || (kind === "save" && (!token || !reference))) return;
     busy = true; controls(); controller = new AbortController();
     const run = ++generation;
-    ui.text.textContent = ""; ui.status.textContent = "Esperando respuesta...";
+    if (kind !== "save") {reference = null; ui.text.textContent = "";}
+    ui.status.textContent = "Esperando respuesta...";
     try {
       if (kind === "login") {
         const r = await request("/api/v2/login", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({username: "ana", password: "solo-demo-ficticia"})});
@@ -28,20 +68,30 @@
         if (r.environment !== "isolated_test" || r.token_type !== "Bearer" || !/^[A-Za-z0-9_-]{43,128}$/.test(r.access_token)) throw new Error("Respuesta inválida");
         token = r.access_token; ui.status.textContent = "Sesión ficticia iniciada.";
       } else if (kind === "read") {
-        let start = 0, text = "", total = null;
+        let start = 0, text = "", total = null, provenance = null;
         for (let page = 0; page < 100; page++) {
-          const r = await request("/api/v2/documento/fixture-demo/texto?version=" + version + "&start=" + start + "&limit=11", {headers: {Authorization: "Bearer " + token}});
+          const r = await readPage(start, 11);
           if (run !== generation) return;
           if (r.uid !== "fixture-demo" || r.version !== version || r.offset_unit !== "unicode_code_points" || typeof r.text !== "string" || r.start !== start || r.end !== start + Array.from(r.text).length || !Number.isSafeInteger(r.total_characters) || r.total_characters < r.end || (total !== null && total !== r.total_characters)) throw new Error("Respuesta inválida");
-          total = r.total_characters; text += r.text;
+          const current = metadata(r);
+          if (provenance && JSON.stringify(current) !== JSON.stringify(provenance)) throw new Error("Procedencia cambió");
+          provenance = current; total = r.total_characters; text += r.text;
           if (r.next === null) {
             if (r.end !== total) throw new Error("Texto incompleto");
-            ui.text.textContent = text; ui.status.textContent = "Texto ficticio completo. Sin valor jurídico."; return;
+            reference = {metadata:provenance, retrieved_at:new Date().toISOString()};
+            ui.text.textContent = text; ui.status.textContent = "Texto ficticio completo. Podés guardar su referencia, sin valor jurídico."; return;
           }
           if (r.next.uid !== r.uid || r.next.version !== version || r.next.start !== r.end || r.end <= start) throw new Error("Página inválida");
           start = r.next.start;
         }
         throw new Error("Límite de páginas");
+      } else if (kind === "save") {
+        const selected = reference.metadata, readAt = reference.retrieved_at;
+        const checked = metadata(await readPage(0, 1));
+        if (run !== generation) return;
+        if (JSON.stringify(checked) !== JSON.stringify(selected)) throw new Error("Procedencia cambió");
+        downloadReference(selected, readAt);
+        ui.status.textContent = "Referencia descargada. No contiene texto ni concede acceso.";
       } else {
         const r = await request("/api/v2/logout", {method: "POST", headers: {Authorization: "Bearer " + token}});
         if (run !== generation) return;
@@ -50,12 +100,12 @@
       }
     } catch (error) {
       if (run !== generation) return;
-      ui.text.textContent = "";
+      reference = null; ui.text.textContent = "";
       ui.status.textContent = kind === "logout" ? "Cierre NO confirmado. Reintentá Cerrar sesión." : "No se pudo completar la acción. " + error.message;
     } finally {if (run === generation) {busy = false; controls();}}
   }
-  ["login", "read", "logout"].forEach(k => ui[k].addEventListener("click", () => action(k)));
-  function forget() {generation++; if (controller) controller.abort(); token = ""; busy = false; ui.text.textContent = ""; ui.status.textContent = "Sin sesión en esta pestaña."; controls();}
+  ["login", "read", "save", "logout"].forEach(k => ui[k].addEventListener("click", () => action(k)));
+  function forget() {generation++; if (controller) controller.abort(); token = ""; reference = null; busy = false; ui.text.textContent = ""; ui.status.textContent = "Sin sesión en esta pestaña."; controls();}
   window.addEventListener("pagehide", forget);
   window.addEventListener("pageshow", event => {if (event.persisted) forget();});
   controls();
