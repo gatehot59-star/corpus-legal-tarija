@@ -1,0 +1,34 @@
+{
+  "mode": "documentary_handoff_no_new_product_test",
+  "state": {
+    "utc": "2026-09-20T14:39:21.769792+00:00",
+    "head": "ca503377760a8dcd7965689a2853420785a83d94",
+    "base": "31dff1ed1c066d4af8a3c6a1ac45e0e85d21eb05",
+    "state": "open",
+    "merged": false,
+    "reviews": [],
+    "main": "4a30db151e5f367850b2b7627c4d5b487c29eb78"
+  },
+  "report_readback": {
+    "utc": "2026-09-20T14:41:58.470621+00:00",
+    "commit": "92c833d13fe24e7bdb756e4cfc451678c6034e09",
+    "path": "docs/agents/respuestas/2026-09-20-10-logout-review-handoff.md",
+    "bytes": 10408,
+    "sha256": "0a3f3e29de8c7d1896cf3f6548bcefb62eeb1babd164ba5985b2244e226e3389",
+    "byte_equal": true,
+    "main": "92c833d13fe24e7bdb756e4cfc451678c6034e09",
+    "ancestor": true,
+    "delta": "docs/agents/respuestas/2026-09-20-10-logout-review-handoff.md\n",
+    "head": "ca503377760a8dcd7965689a2853420785a83d94",
+    "base": "31dff1ed1c066d4af8a3c6a1ac45e0e85d21eb05",
+    "open": true,
+    "merged": false
+  },
+  "decoded_evidence": [
+    {"path":"docs/agents/evidencia/2026-09-20-02-logout-retry.json","bytes":85540,"sha256":"a5fefda71841dbd3a9cca3c5bfe9124223a3ddc82b2dc934d39db94e59721cd4"},
+    {"path":"docs/agents/evidencia/2026-09-20-03-pr20-logout-fix-audit.json","bytes":110141,"sha256":"b58ea650791e6d9724673123b76c290edba9cbdbb2093a2c3a4d8f61f8d4e045"},
+    {"path":"docs/agents/evidencia/2026-09-20-04-delayed-logout-navigation.json","bytes":126702,"sha256":"30814e05e02e7ac6af5ea4b2432d6e14d87a7776636588d7d39f09429bfc43ef"},
+    {"path":"docs/agents/evidencia/2026-09-20-05-bfcache-pending-logout.json","bytes":178839,"sha256":"d175c44c881fc010ee67a6bf01d18ff54d72b82af311a66c34c152605bdd4fc5"}
+  ],
+  "scope": "Structured documentary observations only; historical product evidence remains in its original published packages. No new browser execution, review request, assignment, merge or deploy. Preparing the handoff does not close G2."
+}
