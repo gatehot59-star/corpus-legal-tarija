@@ -10,8 +10,8 @@
   "use strict";
   const ui = Object.fromEntries(["login", "read", "save", "logout", "search", "identity", "query", "results", "version-label", "status", "text"].map(id => [id, document.getElementById(id)]));
   let uid = "", version = "";
-  let token = "", busy = false, generation = 0, controller = null, reference = null;
-  function controls() {ui.login.disabled = busy || Boolean(token); ui.read.disabled = busy || !token || !uid; ui.search.disabled = busy || !token; ui.identity.disabled = busy || Boolean(token); ui.query.disabled = busy; ui.results.querySelectorAll("button").forEach(b => b.disabled = busy); ui.logout.disabled = busy || !token; ui.save.disabled = busy || !token || !reference;}
+  let token = "", logoutToken = "", busy = false, generation = 0, controller = null, reference = null;
+  function controls() {ui.login.disabled = busy || Boolean(token || logoutToken); ui.read.disabled = busy || !token || !uid; ui.search.disabled = busy || !token; ui.identity.disabled = busy || Boolean(token || logoutToken); ui.query.disabled = busy || Boolean(logoutToken); ui.results.querySelectorAll("button").forEach(b => b.disabled = busy); ui.logout.disabled = busy || !(token || logoutToken); ui.save.disabled = busy || !token || !reference;}
   async function request(path, options = {}) {
     const response = await fetch(path, {...options, credentials: "omit", cache: "no-store", redirect: "error", signal: controller.signal});
     if (!response.ok) {if (response.status === 403) token = ""; throw new Error("HTTP " + response.status + (response.status === 503 ? ": reintentá explícitamente." : ""));}
@@ -56,7 +56,13 @@
     try {link.click();} finally {link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);}
   }
   async function action(kind) {
-    if (busy || (kind === "save" && (!token || !reference))) return;
+    if (busy || (logoutToken && kind !== "logout") || (kind === "save" && (!token || !reference))) return;
+    // Once closing starts, the original bearer is usable only for explicit logout retries.
+    // A rejected request is not proof of revocation; never replace it with a new login.
+    if (kind === "logout") {
+      if (!logoutToken) logoutToken = token;
+      token = ""; clearSelection(); ui.results.replaceChildren();
+    }
     busy = true; controls(); controller = new AbortController();
     const run = ++generation;
     if (kind !== "save") {reference = null; ui.text.textContent = "";}
@@ -122,10 +128,10 @@
         downloadReference(selected, readAt);
         ui.status.textContent = "Referencia descargada. No contiene texto ni concede acceso.";
       } else {
-        const r = await request("/api/v2/logout", {method: "POST", headers: {Authorization: "Bearer " + token}});
+        const r = await request("/api/v2/logout", {method: "POST", headers: {Authorization: "Bearer " + logoutToken}});
         if (run !== generation) return;
         if (r.logged_out !== true) throw new Error("Respuesta inválida");
-        token = ""; clearSelection(); ui.results.replaceChildren(); ui.status.textContent = "Sesión cerrada y revocación confirmada.";
+        token = ""; logoutToken = ""; clearSelection(); ui.results.replaceChildren(); ui.status.textContent = "Sesión cerrada y revocación confirmada.";
       }
     } catch (error) {
       if (run !== generation) return;
@@ -136,7 +142,7 @@
   ["login", "read", "save", "logout", "search"].forEach(k => ui[k].addEventListener("click", () => action(k)));
   function clearSelection() {uid = ""; version = ""; reference = null; ui.text.textContent = ""; ui["version-label"].textContent = "ninguna";}
   ui.identity.addEventListener("change", () => {clearSelection(); ui.results.replaceChildren(); controls();});
-  function forget() {generation++; if (controller) controller.abort(); token = ""; clearSelection(); ui.results.replaceChildren(); busy = false; ui.text.textContent = ""; ui.status.textContent = "Sin sesión en esta pestaña."; controls();}
+  function forget() {generation++; if (controller) controller.abort(); token = ""; logoutToken = ""; clearSelection(); ui.results.replaceChildren(); busy = false; ui.text.textContent = ""; ui.status.textContent = "Sin sesión en esta pestaña."; controls();}
   window.addEventListener("pagehide", forget);
   window.addEventListener("pageshow", event => {if (event.persisted) forget();});
   controls();

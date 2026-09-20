@@ -9,7 +9,7 @@ const assert = require("node:assert/strict");
 const readline = require("node:readline");
 const root = path.resolve(__dirname,"..");
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(),"corpus-discovery-browser-"));
-const directory = path.join(temporary,"fixture");
+let directory, fixtureNumber = 0;
 const cli = path.join(root,"sistema/api/demo_discovery.py");
 const checks = [];
 let server, browser, stderr = "";
@@ -27,7 +27,15 @@ async function click(page,id) {
   await page.locator("#"+id).click();
   await page.waitForFunction(()=>!document.querySelector("#status").textContent.includes("Esperando"));
 }
-async function main() {
+async function freshFixture() {
+  if (server && server.exitCode===null) {
+    const stopped=new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error("fixture server did not stop")),5000);
+      server.once("exit",code=>{clearTimeout(timer);code===0 ? resolve() : reject(new Error("server exit "+code));});
+    });
+    server.kill("SIGTERM");await stopped;
+  }
+  directory=path.join(temporary,"fixture-"+(++fixtureNumber));
   const initialized = spawnSync("python3",[cli,"init","--isolated-demo","--directory",directory],{encoding:"utf8"});
   assert.equal(initialized.status,0,initialized.stderr);
   server = spawn("python3",[cli,"serve","--isolated-demo","--directory",directory],{stdio:["ignore","pipe","pipe"]});
@@ -38,6 +46,10 @@ async function main() {
     lines.once("line",line=>{clearTimeout(timer);lines.close();resolve(JSON.parse(line));});
     server.once("error",reject);
   });
+  return ready;
+}
+async function main() {
+  let ready=await freshFixture();
   browser = await chromium.launch({headless:true,args:["--no-sandbox"]});
   const page = await browser.newPage({acceptDownloads:true});
   const failures=[];
@@ -66,6 +78,83 @@ async function main() {
   await click(page,"logout");
   check("logout_clears_everything",await page.locator("#results button").count()===0 &&
     await page.locator("#text").textContent()==="" && await page.locator("#save").isDisabled());
+
+  // Real pre-revocation failures, not mocked HTTP statuses. Never print the bearer.
+  // Separate fixture budgets: do not weaken the persisted five-login rate limit.
+  ready=await freshFixture();await page.goto(ready.url);
+  for (const failure of [403,503]) {
+    const prefix="logout_"+failure;
+    const loginResponse=page.waitForResponse(r=>r.url().endsWith("/api/v2/login"));
+    await click(page,"login");
+    const original=(await (await loginResponse).json()).access_token;
+    const originalStatus=async()=> (await page.request.get(ready.url+"/api/v2/buscar?q=derecho",
+      {headers:{Authorization:"Bearer "+original}})).status();
+    await click(page,"search");await page.locator("#results button").first().click();await click(page,"read");
+    check(prefix+"_positive_content",await page.locator("#text").textContent()===expected &&
+      await page.locator("#save").isEnabled() && await originalStatus()===200);
+    const marker=spawnSync("python3",["-c",
+      "import sqlite3,sys,json;d=sqlite3.connect(sys.argv[1]);print(json.dumps(d.execute(\"SELECT * FROM login_environment\").fetchone()));d.close()",
+      path.join(directory,"sessions.db")],{encoding:"utf8"});
+    assert.equal(marker.status,0,marker.stderr);
+    const markerRow=JSON.parse(marker.stdout);
+    if(failure===403) sql("DELETE FROM login_environment");
+    else sql("ALTER TABLE login_environment RENAME TO retry_marker");
+    const restore=()=>{
+      if(failure===503) sql("ALTER TABLE retry_marker RENAME TO login_environment");
+      else {
+        const r=spawnSync("python3",["-c",
+          "import sqlite3,sys,json;d=sqlite3.connect(sys.argv[1]);d.execute(\"INSERT INTO login_environment VALUES(?,?)\",json.loads(sys.argv[2]));d.commit();d.close()",
+          path.join(directory,"sessions.db"),JSON.stringify(markerRow)],{encoding:"utf8"});
+        assert.equal(r.status,0,r.stderr);
+      }
+    };
+    try {
+      for(let attempt=1;attempt<=2;attempt++) {
+        const response=page.waitForResponse(r=>r.url().endsWith("/api/v2/logout"));
+        await click(page,"logout");
+        const rejected=await response;
+        check(prefix+"_attempt_"+attempt+"_real_status",rejected.status()===failure);
+        check(prefix+"_attempt_"+attempt+"_same_bearer",
+          (await rejected.request().allHeaders()).authorization==="Bearer "+original);
+        check(prefix+"_attempt_"+attempt+"_unconfirmed",
+          (await page.locator("#status").textContent()).includes("Cierre NO confirmado"));
+        check(prefix+"_attempt_"+attempt+"_retry_enabled",await page.locator("#logout").isEnabled());
+        check(prefix+"_attempt_"+attempt+"_cleared",await page.locator("#text").textContent()==="" &&
+          await page.locator("#results button").count()===0 &&
+          await page.locator("#version-label").textContent()==="ninguna");
+        check(prefix+"_attempt_"+attempt+"_only_logout",
+          await page.locator("#search").isDisabled() && await page.locator("#read").isDisabled() &&
+          await page.locator("#save").isDisabled() && await page.locator("#login").isDisabled() &&
+          await page.locator("#identity").isDisabled());
+      }
+    } finally {restore();}
+    check(prefix+"_original_still_live_before_retry",await originalStatus()===200);
+    let unexpected=0;
+    const watch=()=>unexpected++;
+    page.on("request",watch);
+    await page.evaluate(()=>{
+      for(const id of ["login","search","read","save"])
+        document.getElementById(id).dispatchEvent(new MouseEvent("click",{bubbles:true}));
+    });
+    await page.waitForTimeout(100);
+    page.off("request",watch);
+    check(prefix+"_programmatic_actions_blocked",unexpected===0 &&
+      (await page.locator("#status").textContent()).includes("Cierre NO confirmado"));
+    check(prefix+"_no_dom_url_storage_leak",await page.evaluate(value=>
+      !document.documentElement.outerHTML.includes(value) && !location.href.includes(value) &&
+      !JSON.stringify(localStorage).includes(value) && !JSON.stringify(sessionStorage).includes(value),original));
+    const retryResponse=page.waitForResponse(r=>r.url().endsWith("/api/v2/logout"));
+    await click(page,"logout");
+    const retried=await retryResponse;
+    check(prefix+"_retry_same_original",retried.status()===200 &&
+      (await retried.request().allHeaders()).authorization==="Bearer "+original);
+    check(prefix+"_confirmed_only_after_success",
+      (await page.locator("#status").textContent()).includes("revocación confirmada"));
+    check(prefix+"_original_revoked",await originalStatus()===403);
+    check(prefix+"_login_reenabled",await page.locator("#login").isEnabled() &&
+      await page.locator("#logout").isDisabled() && await page.locator("#search").isDisabled());
+  }
+  ready=await freshFixture();await page.goto(ready.url);
   await page.locator("#identity").selectOption("ben");await click(page,"login");await click(page,"search");
   check("ben_only_own_collection",(await page.locator("#results").textContent()).includes("reservado a Ben") &&
     !(await page.locator("#results").textContent()).includes("DEMO A"));
@@ -75,6 +164,8 @@ async function main() {
   await page.locator("#results button").first().click();await click(page,"read");
   check("revoked_after_results_clears",await page.locator("#text").textContent()==="" &&
     await page.locator("#results button").count()===0 && await page.locator("#save").isDisabled());
+  check("ordinary_read_403_requires_fresh_login",await page.locator("#login").isEnabled() &&
+    await page.locator("#logout").isDisabled() && await page.locator("#search").isDisabled());
   sql("UPDATE access_documents SET withdrawn_at=NULL");
   await click(page,"login");await click(page,"search");
   await page.locator("#results button").first().click();
