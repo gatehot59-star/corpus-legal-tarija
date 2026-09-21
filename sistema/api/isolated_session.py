@@ -44,7 +44,9 @@ class IsolatedSessionApp(IsolatedLoginApp):
         """
         if environ.get("REQUEST_METHOD") != "POST":
             return 405, {"error": "METHOD_NOT_ALLOWED"}
-        if "HTTP_ORIGIN" in environ or "HTTP_TRANSFER_ENCODING" in environ:
+        origin_ok = (self.browser_request_allowed(environ)
+                     if self.browser_origin is not None else "HTTP_ORIGIN" not in environ)
+        if not origin_ok or "HTTP_TRANSFER_ENCODING" in environ:
             return 403, {"error": "REQUEST_REJECTED"}
         if environ.get("QUERY_STRING", "") or environ.get("CONTENT_LENGTH", "") not in ("", "0"):
             return 400, {"error": "EMPTY_REQUEST_REQUIRED"}

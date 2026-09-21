@@ -77,7 +77,13 @@ class IsolatedLoginApp:
 
     def __init__(self, candidate: str | Path, store: str | Path, collection: str,
                  *, enable_test_login: bool = False,
-                 clock: Callable[[], float] = time.time):
+                 clock: Callable[[], float] = time.time,
+                 browser_origin: str | None = None):
+        if browser_origin is not None:
+            match = re.fullmatch(r"http://127\.0\.0\.1:([1-9][0-9]{0,4})", browser_origin)
+            if match is None or int(match[1]) > 65535 or enable_test_login is not True:
+                raise ValueError("INVALID_BROWSER_ORIGIN")
+        self.browser_origin = browser_origin
         self.reader = make_app(candidate, store, collection, clock)
         self.uri = Path(store).resolve(strict=True).as_uri() + "?mode=rw"
         self.read_uri = Path(store).resolve(strict=True).as_uri() + "?mode=ro"
@@ -92,6 +98,8 @@ class IsolatedLoginApp:
                 return self.reply(start_response, 403, {"error": "ISOLATED_LOGIN_DISABLED"})
         except ValueError:
             return self.reply(start_response, 403, {"error": "ISOLATED_LOGIN_DISABLED"})
+        if self.browser_origin is not None and not self.browser_request_allowed(environ):
+            return self.reply(start_response, 403, {"error": "BROWSER_ORIGIN_REJECTED"})
         # The marker is now a dispatch guard for ALL routes, not only issuance.
         # A request already past this check is not recalled if the marker changes.
         try:
@@ -110,6 +118,24 @@ class IsolatedLoginApp:
             status, body = 503, {"error": "LOGIN_UNAVAILABLE"}
         return self.reply(start_response, status, body)
 
+    def browser_request_allowed(self, environ: dict) -> bool:
+        """Validate an exact server-configured origin without forwarded headers.
+
+        State changes require Origin. GET may omit it, as same-origin fetch does.
+        Foreign/opaque origins and conflicting Fetch Metadata fail closed.
+        """
+        expected = self.browser_origin
+        if expected is None:
+            return False
+        if environ.get("HTTP_HOST") != expected[len("http://"):]:
+            return False
+        if environ.get("HTTP_SEC_FETCH_SITE", "same-origin") not in ("same-origin", "none"):
+            return False
+        origin = environ.get("HTTP_ORIGIN")
+        if "HTTP_ORIGIN" in environ and origin != expected:
+            return False
+        return environ.get("REQUEST_METHOD") == "GET" or origin == expected
+
     @staticmethod
     def reply(start_response: Callable, status: int, body: dict) -> list[bytes]:
         """Serialize without cookies, CORS, secrets in errors or cache permission."""
@@ -127,7 +153,9 @@ class IsolatedLoginApp:
         """Bound and validate HTTP input before KDF work or session insertion."""
         if environ.get("REQUEST_METHOD") != "POST":
             return 405, {"error": "METHOD_NOT_ALLOWED"}
-        if environ.get("HTTP_ORIGIN") or environ.get("HTTP_TRANSFER_ENCODING"):
+        origin_ok = (self.browser_request_allowed(environ)
+                     if self.browser_origin is not None else not environ.get("HTTP_ORIGIN"))
+        if not origin_ok or environ.get("HTTP_TRANSFER_ENCODING"):
             return 403, {"error": "REQUEST_REJECTED"}
         if environ.get("CONTENT_TYPE", "").lower() != "application/json":
             return 415, {"error": "JSON_REQUIRED"}
