@@ -1,45 +1,35 @@
-# Corpus: cierre retomado, todavía bloqueado por browser CI
+# Corpus: browser CI cerrado, integración todavía no ejecutada
 
 ## Estado vivo
 
-BRAIN retomó el cierre sobre los heads vivos. Abraham todavía no dejó observaciones nuevas en PR24: comentarios y reviews consultados devolvieron vacío. No esperé tareas operativas suyas para medir y corregir; sí queda pendiente su decisión humana de merge.
+La corrección quedó en PR24, rama `titan/fix-corpus-browser-login`, head `440fa6534bbb27edf7cf51b477332e65a258df46`. PR24 sigue abierto y su base viva es PR23. PR22, PR23 y PR24 siguen abiertos; no ejecuté merges.
 
-PR22 sigue abierto sobre `main`, head `ba9646bf89fecb2a2431e9708f876dd0966afe81`. PR23 sigue abierto, apilado sobre PR22, head `777ca6374989ac042ddf7cb8275a7e3c7bdf7da2`. PR24 sigue abierto, apilado sobre PR23, head final de esta vuelta `2c09af55e8448bb385a2211a7506631161dce603`.
+## Qué faltaba y qué corregí
 
-## Qué hice
+Reproduje en el runtime de build el fallo real, con el head exacto: el headless shell de Playwright murió con `SkFontMgr_FontConfigInterface.cpp:163`, `SIGTRAP`, al cargar la página. Probé el canal Chromium completo con la configuración de Fontconfig medida y el navegador dejó de cerrarse. En la misma corrida apareció el segundo fallo, independiente y concreto: la prueba armaba una URL absoluta dos veces para el replay de sesión vencida. Cambié el runner para usar el canal completo y reutilizar `read_url` sin concatenar el origen.
 
-Mantuve el fix de login aprobado: `SECURE_REFERRER_POLICY=same-origin`, CSRF intacto, `Origin: null` rechazado y regresión causal. La suite del fix pasó39tests, check, drift de migraciones y93% de cobertura de aplicación.
+No toqué CSRF, permisos, datos reales ni el flujo del producto. La corrección conserva el rechazo de `Origin: null` y la regresión de login same-origin.
 
-Incorporé al entorno browser las cuatro piezas que pedía el cierre: pins exactos de Playwright; `fontconfig`, `fonts-dejavu` y `libfontconfig1`; `fc-cache` y `fc-match`; dependencias completas de Chromium con `playwright install --with-deps`; y un control Xvfb para no confundir un cierre headless con un fallo de aplicación. El runner ejecuta login, búsqueda, lectura/procedencia, referencia, feedback privado/XSS, logout/replay, aislamiento Ana/Ben, móvil, reset y retirada.
+## Verificación
 
-## Qué medí
+La jornada local sintética completa pasó con exit 0 en brain-env desde `440fa6534bbb27edf7cf51b477332e65a258df46`. El nuevo CI de PR24 también pasó: application job `106448220581` y browser job `106448220758`, ambos sobre ese head, ambos `success`. El browser hosted terminó en `51s`; application en `33s`.
 
-La aceptación conectada real sigue siendo PASS para ese recorrido: Chromium153.0.8010.12 completó los checkpoints en servicio Gunicorn sintético temporal, incluida recuperación, password nuevo/viejo, token de un uso y retirada. Esa evidencia está en `docs/agents/evidencia/2026-09-21-browser-fix.json`.
+El recorrido que queda verde cubre login, búsqueda, lectura versionada y procedencia secundaria, referencia privada, feedback privado con escape XSS, logout y replay vencido, aislamiento Ana/Ben, viewport móvil, recuperación de contraseña, token de un uso y retiro que bloquea lectura y oculta referencias.
 
-La automatización hosted sigue RED. Hubo tres intentos con browser job:
+## Integración
 
-- `106431822487`, head `dca10b7`: fontconfig instalado, browser failure.
-- `106432577525`, head `4d71f0b`: fontconfig/Xvfb instalados, browser failure.
-- `106433891305`, head `2c09af5`: fontconfig/Xvfb instalados, browser failure.
+**Qué mergeé:** nada. El usuario autorizó construir y probar, pero mergear sigue siendo una acción destructiva que requiere confirmación humana explícita en el momento. Tampoco salteé el hold G2 de PR18 ni convertí reviews vacíos en aprobaciones.
 
-En paralelo, application job `106433079271` pasó compile, migraciones, 39 tests, cobertura y contenedor. No tengo lectura del log de pasos del browser por las restricciones actuales de la conexión; por eso no invento la causa. El TargetClosed local sigue registrado, pero no lo atribuyo automáticamente a los jobs hosted.
-
-## Qué mergeé
-
-**Nada.** PR22, PR23 y PR24 siguen abiertos. No salteé el hold de PR18 ni las revisiones independientes. No hubo despliegue, datos reales, credenciales, email saliente ni eventos del laboratorio.
-
-## Qué queda bloqueado para Abraham
-
-El merge de PR24 y su pila queda bloqueado por dos cosas concretas: el check browser hosted está rojo, y la decisión de merge requiere confirmación humana cuando las condiciones estén verdes. PR22 no se puede tratar como producto aceptado por separado porque el recorrido browser que lo consume fue corregido después en PR24. PR23 es evidencia, no una base para fingir verde.
+**Qué queda bloqueado para Abraham:** solo la decisión de integración, más la revisión independiente pendiente de PR18. PR24 ya no está bloqueado por CI. Antes de mergear hay que revisar la pila viva y elegir explícitamente qué PRs integrar, sin arrastrar PR17/PR21 históricos ni saltear PR18.
 
 ## Siguiente acción concreta
 
-Conseguir el log crudo del browser hosted o reproducir el mismo runner con la misma imagen, identificar el primer fallo real, corregir solo eso y rerunear el head exacto. Después: revisar checks de PR24, actualizar la base viva de la pila si corresponde, y recién ahí presentar a Abraham el lote exacto para confirmación de merge. No cerrar PR23 ni reordenar PR18/19/20 por arrastre.
+Presentarte el lote exacto de merges candidatos con sus heads, bases, checks y dependencias, y pedir una confirmación única. No voy a ejecutar el merge por inferencia.
 
 --- METODO TITAN ---
 Accion delicada: SI
 Modo aplicado: TITAN FULL
-Rubrica:84/100 provisional, no firma de integración
-N/A declarados:0
-Review externo: PR24 sin observaciones nuevas; no aprobación
-Instrumento: brain-env local39tests/93%; Chromium conectado PASS; GitHub Actions API cruda preservada en `docs/agents/evidencia/2026-09-21-corpus-close.json`; hosted browser FAIL
+Rubrica: 90/100 provisional, pendiente de decisión de integración
+N/A declarados: 0
+Review externo: CI externo verde; reviews humanas/independientes pendientes, silencio no es aprobación
+Instrumento: GitHub Actions check runs 106448220581/106448220758 y brain-env Chromium; evidencia cruda en `docs/agents/evidencia/2026-09-21-corpus-close.json`
