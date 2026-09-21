@@ -74,9 +74,10 @@ def main() -> None:
                 wait_live("http://127.0.0.1:8000")
                 with sync_playwright() as playwright:
                     headless = os.environ.get("CORPUS_HEADLESS", "1") != "0"
-                    # CI installs the Playwright-pinned browser with `playwright install chromium`.
-                    # Omitting channel avoids selecting an unrelated system Chromium binary.
-                    browser = playwright.chromium.launch(headless=headless,
+                    # CI installs this pinned browser and runs headed under Xvfb.
+                    # The explicit channel avoids Playwright's headless-shell path,
+                    # which crashed in the measured runner while loading fonts.
+                    browser = playwright.chromium.launch(channel="chromium", headless=headless,
                                                          args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"])
                     desktop = browser.new_context(viewport={"width": 1440, "height": 1000})
                     page = desktop.new_page()
@@ -114,7 +115,7 @@ def main() -> None:
                     assert page.locator('[name="password"]').is_visible()
                     replay = browser.new_context()
                     replay.add_cookies(old_cookies)
-                    stale = replay.new_page().goto("http://127.0.0.1:8000" + read_url)
+                    stale = replay.new_page().goto(read_url)
                     assert stale.status == 403
                     replay.close()
                     login(page, "http://127.0.0.1:8000", "fixture-ben", "Synthetic-Corpus-Only-2026!")
