@@ -1,0 +1,57 @@
+{
+  "subject_commit": "8462b1a63c52dc29465a2ec218ca730f424be0cf",
+  "base_evidence_commit": "777ca6374989ac042ddf7cb8275a7e3c7bdf7da2",
+  "product_change": {
+    "file": "sistema/django_app/config/settings.py",
+    "old": "SECURE_REFERRER_POLICY = no-referrer",
+    "new": "SECURE_REFERRER_POLICY = same-origin",
+    "csrf_middleware": "unchanged",
+    "null_origin": "still rejected",
+    "regression": "sistema/django_app/corpus/tests/test_access.py::test_browser_origin_passes_without_referer_but_null_origin_does_not"
+  },
+  "local_acceptance": {
+    "environment": "brain-env build service",
+    "command": "python manage.py check; python manage.py makemigrations --check --dry-run; python -m coverage run --source=corpus manage.py test corpus.tests --verbosity=2; python -m coverage report --omit='*/tests/*,*/migrations/*' --fail-under=85",
+    "tests": 39,
+    "test_exit": 0,
+    "test_seconds": 5.611,
+    "coverage_application_percent": 93,
+    "regression": "passed",
+    "migration_check": "No changes detected",
+    "system_check": "no issues"
+  },
+  "real_browser": {
+    "service": "connected Playwright browser",
+    "engine": "Chromium 153.0.8010.12",
+    "target": "http://172.17.0.4:37661 and fresh target http://172.17.0.4:37662",
+    "data": "synthetic fixture only",
+    "network": "temporary internal build-container address; no public exposure",
+    "checkpoints": [
+      {"name":"login after fix","observed":{"POST":302,"workspace_GET":200,"heading":"Buscar. Leer. Verificar."}},
+      {"name":"search and read","observed":{"result":true,"heading":"Lectura verificada","text":"Artículo 1. Documento sintético de prueba.","provenance":"secondary; legal validity NOT MEASURED","exact_sha":"visible"}},
+      {"name":"save private reference","observed":{"saved":true,"reference":"fixture-1"}},
+      {"name":"private report and escaping","observed":{"report":"received","report_visible":true,"window_corpusXSS": "undefined"}},
+      {"name":"logout and stale replay","observed":{"login_form":true,"old_session_read_status":403}},
+      {"name":"owner isolation","observed":{"fixture_ben_reference_links":0,"fixture_ben_empty_search":true,"fixture_ben_deep_link":403}},
+      {"name":"mobile viewport","observed":{"viewport":"390x844","read_heading":1,"document_scrollWidth_le_window_innerWidth":true}},
+      {"name":"recovery request","observed":{"uniform_message":true,"email":"synthetic .invalid only"}},
+      {"name":"recovery confirmation","observed":{"new_password_works":1,"old_password_works":0,"reset_redirect":"/corpus/login/"}},
+      {"name":"one-use reset token","observed":{"reuse_status":403,"body":"Solicitud no disponible."}},
+      {"name":"withdrawal after page","observed":{"already_seen_read_status":403,"reference_links_after_withdrawal":0}}
+    ],
+    "screenshots": ["browser_take_screenshot fullPage corpus-fixed-read.png returned by the connected browser service"],
+    "console": "expected 403 console entries from denied anonymous/stale/old-password checks; no uncaught page exception was observed in the completed connected-browser checkpoints"
+  },
+  "local_harness_limit": {
+    "observed": "The local Playwright harness reached POST302 and workspace GET200 after the fix, then Chromium TargetClosed before DOM assertion.",
+    "interpretation": "runtime-specific harness failure, not converted into a product failure or a green result; connected browser service completed the checkpoints above",
+    "details": "full Chromium channel lacked libcups; headless shell used existing sysroot; no apt/system mutation"
+  },
+  "scope": {
+    "no_merge": true,
+    "no_deploy": true,
+    "no_real_data_accounts_credentials_email": true,
+    "no_lab_events": true,
+    "legacy_and_existing_prs_untouched": true
+  }
+}
