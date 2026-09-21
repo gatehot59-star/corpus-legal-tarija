@@ -2,7 +2,7 @@
   "subject": {
     "repository": "gatehot59-star/corpus-legal-tarija",
     "branch": "titan/main-browser-runtime-fix",
-    "head": "4f1e617ec49dad877017baeadf9fd2583380834c",
+    "head_before_receipt_update": "4f1e617ec49dad877017baeadf9fd2583380834c",
     "pull_request": 26,
     "requested_base_claim": "069d61f8ea6ccc3506a2e87fd8a7a173b3efde1c",
     "live_base_resolved_when_branch_created": "01a9756e5fa6cbcd6c80f3b52cc396fdf9a0ff9f",
@@ -41,6 +41,12 @@
       "server_stop": {"exit": 0, "assertion": "server.wait(timeout=20) completed inside acceptance runner"}
     }
   },
+  "hosted_ci": {
+    "run": 35647809196,
+    "application": {"job": 106492463880, "status": "completed", "conclusion": "success"},
+    "browser": {"job": 106492464307, "status": "completed", "conclusion": "success"},
+    "stable_identity": {"job": 106492464197, "status": "completed", "conclusion": "success"}
+  },
   "safety": {
     "synthetic_fixture_only": true,
     "real_data": false,
@@ -50,6 +56,6 @@
     "closed_prs_reopened": false,
     "pr18_hold_changed": false
   },
-  "hosted_ci": {"status_at_receipt_creation": "pending"},
-  "raw_stdout_note": "The VM command output was returned by the build instrument; the exact command strings and every measured exit/result needed to recompute the verdict are preserved here. The full 39-test names and output were observed in the VM run before this receipt was committed."
+  "review": {"copilot_requested": true, "reviews_returned": [], "interpretation": "No review emitted is not approval."},
+  "raw_stdout_note": "The VM command output was returned by the build instrument; exact command strings, measured exits, test count, coverage, and clean-stop assertion are preserved here. The full test names and output were observed in the VM run before this receipt was committed."
 }
