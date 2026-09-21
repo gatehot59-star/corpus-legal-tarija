@@ -1,0 +1,42 @@
+# .github/workflows/corpus-django.yml: synthetic application acceptance on every PR.
+name: Corpus Django acceptance
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  application:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      CORPUS_TEST_PROFILE: synthetic
+      CORPUS_DB: /tmp/corpus-django-ci.sqlite3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install exact dependencies and compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/corpus-venv
+          /tmp/corpus-venv/bin/pip install -r sistema/django_app/requirements.txt
+          /tmp/corpus-venv/bin/pip check
+          /tmp/corpus-venv/bin/python -m compileall -q sistema/django_app contracts/corpus_django.py
+      - name: Migrations, policy, CSRF, private workflow and recovery
+        shell: bash
+        working-directory: sistema/django_app
+        run: |
+          set -euo pipefail
+          /tmp/corpus-venv/bin/python manage.py check
+          /tmp/corpus-venv/bin/python manage.py makemigrations --check --dry-run
+          /tmp/corpus-venv/bin/python -m coverage run --source=corpus manage.py test corpus.tests --verbosity=2
+          /tmp/corpus-venv/bin/python -m coverage report --omit='*/tests/*,*/migrations/*' --fail-under=85
+      - name: Build and test non-root container without network
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build -f sistema/django_app/Dockerfile -t corpus-django:ci .
+          docker image inspect corpus-django:ci --format '{{.Id}} {{.Config.User}}'
+          docker run --rm --network none -e CORPUS_TEST_PROFILE=synthetic -e CORPUS_DB=/tmp/corpus.sqlite3 --entrypoint python corpus-django:ci manage.py test corpus.tests --verbosity=2
