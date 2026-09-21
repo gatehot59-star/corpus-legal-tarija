@@ -1,0 +1,35 @@
+{
+  "subject_branch": "titan/fix-corpus-browser-login",
+  "latest_product_head_before_receipt": "440fa6534bbb27edf7cf51b477332e65a258df46",
+  "pr24": "https://github.com/gatehot59-star/corpus-legal-tarija/pull/24",
+  "hosted_run": {
+    "run_id": 35634424477,
+    "application_job": {"id": 106448220581, "head": "440fa6534bbb27edf7cf51b477332e65a258df46", "status": "completed", "conclusion": "success"},
+    "browser_job": {"id": 106448220758, "head": "440fa6534bbb27edf7cf51b477332e65a258df46", "status": "completed", "conclusion": "success"}
+  },
+  "local_reproduction": {
+    "runtime": "brain-env build service",
+    "checkout": "440fa6534bbb27edf7cf51b477332e65a258df46",
+    "command": "CORPUS_TEST_PROFILE=synthetic CORPUS_DB=/tmp/corpus-browser.sqlite3 CORPUS_PYTHON=/tmp/corpus-browser-venv/bin/python CORPUS_HEADLESS=1 /tmp/corpus-browser-venv/bin/python tests/browser_acceptance.py",
+    "exit_code": 0,
+    "environment": "bundled full Chromium channel, measured Fontconfig configuration and temporary synthetic database"
+  },
+  "causal_fixes": [
+    "Use the explicit bundled full Chromium channel instead of the crashing Playwright headless-shell path; the reproduced crash was SkFontMgr_FontConfigInterface.cpp:163 with SIGTRAP.",
+    "Reuse Playwright's absolute read_url for stale-session replay instead of prefixing the origin twice; the old test produced an invalid URL and failed before the assertion."
+  ],
+  "product_evidence": {
+    "connected_chromium": "PASS for login/search/read/save/private-feedback/logout/stale-replay/owner-isolation/mobile/recovery/withdrawal on temporary internal synthetic service",
+    "hosted_application": "PASS",
+    "hosted_browser": "PASS",
+    "real_data_or_email": false
+  },
+  "merge_state_at_receipt": {
+    "pr22": "open",
+    "pr23": "open",
+    "pr24": "open",
+    "pr18_hold": "preserved",
+    "merge_executed": false
+  },
+  "remaining_decision": "Human confirmation is still required before merging any PR. Independent review silence is not approval."
+}
