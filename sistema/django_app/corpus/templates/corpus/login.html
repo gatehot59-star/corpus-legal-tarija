@@ -1,0 +1,8 @@
+<!-- sistema/django_app/corpus/templates/corpus/login.html: private account flows. -->
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Corpus · Acceso</title>
+<style>body{margin:0;background:#f4f7ef;color:#263721;font:18px/1.6 system-ui,sans-serif}main{max-width:34rem;margin:8vh auto;padding:2rem}h1{font:600 3rem Georgia,serif;margin:0}label{display:block;font-weight:600}input{box-sizing:border-box;width:100%;padding:.8rem;font:inherit;border:1px solid #596c51;border-radius:.25rem}button{background:#345e20;color:#fff;border:0;padding:.8rem 1.4rem;font:inherit;cursor:pointer}a{color:#345e20}.errorlist{color:#842f28}small{font-size:1rem}</style></head>
+<body><main><p>CORPUS / TARIJA</p><h1>Tu mesa de lectura</h1><p>Consulta privada con versión y procedencia verificables.</p>
+{% if mode == "sent" %}<p>Si la cuenta admite recuperación, recibirá instrucciones por el canal configurado.</p>
+{% else %}<h2>{% if mode == "login" %}Ingresá{% elif mode == "reset" %}Recuperá tu cuenta{% else %}Elegí una contraseña nueva{% endif %}</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{% if mode == "login" %}Entrar{% else %}Continuar{% endif %}</button></form>{% endif %}
+<p><a href="{% url 'login' %}">Acceso</a> · <a href="{% url 'reset' %}">Recuperar cuenta</a></p><small>Sin acceso público a documentos. No compartas tu sesión.</small></main></body></html>
