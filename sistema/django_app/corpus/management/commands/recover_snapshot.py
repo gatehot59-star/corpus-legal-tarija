@@ -19,7 +19,7 @@ def verified_bytes(path: Path, expected: str) -> bytes:
     """Read a regular, single-linked, bounded source without following symlinks."""
     if not path.is_absolute() or len(expected) != 64:
         raise CommandError("Absolute path and full digest required")
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     with os.fdopen(fd, "rb") as handle:
         info = os.fstat(handle.fileno())
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > MAX_BACKUP:

@@ -87,3 +87,36 @@ class Application:
         receipt = PrivateFeedback.objects.create(owner_id=principal.user_id, locator=row,
                                                  category=category, description=description.strip())
         return dto.FeedbackReceipt(receipt.id, receipt.created_at, "received")
+
+
+class OfflineRecovery:
+    """Implement RecoveryService using an injected operator-owned backup registry.
+
+    No HTTP route exposes this class. Registry entries bind UUID to absolute
+    backup path, independently recorded digest and new destination. The caller
+    must establish the current revision independently of the backup.
+    """
+    def __init__(self, registry: dict) -> None:
+        self.registry = dict(registry)
+
+    def restore_quarantined(self, backup_id, current_policy_revision: int) -> dto.RecoveryReceipt:
+        """Resolve a registered backup and return the actual quarantined epoch."""
+        import sqlite3
+        from uuid import UUID, uuid4
+        from contextlib import closing
+        from pathlib import Path
+        from django.core.management.base import CommandError
+        from .management.commands.recover_snapshot import recover
+        if not isinstance(backup_id, UUID) or backup_id not in self.registry:
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        source, digest, target = self.registry[backup_id]
+        try:
+            recover(Path(source), digest, Path(target), current_policy_revision)
+            with closing(sqlite3.connect(Path(target).as_uri() + "?mode=ro", uri=True)) as db:
+                revision, epoch, quarantined = db.execute(
+                    "SELECT revision,session_epoch,quarantined FROM corpus_policystate WHERE id=1").fetchone()
+                if not quarantined:
+                    raise access.CorpusError(dto.ErrorCode.INTEGRITY_FAILED)
+            return dto.RecoveryReceipt(uuid4(), digest, revision, epoch, True, False)
+        except (OSError, sqlite3.Error, ValueError, CommandError) as exc:
+            raise access.CorpusError(dto.ErrorCode.RESTORE_QUARANTINED) from exc

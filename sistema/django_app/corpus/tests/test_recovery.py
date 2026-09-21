@@ -78,3 +78,53 @@ class RecoveryTests(FixtureBase):
             db.commit()
         with self.assertRaises(sqlite3.Error):
             recover(foreign, hashlib.sha256(foreign.read_bytes()).hexdigest(), self.target, 2)
+
+    def test_protocol_adapter_resolves_only_registered_backup(self):
+        from uuid import uuid4
+        from corpus.services import OfflineRecovery
+        from corpus.access import CorpusError
+        key = uuid4()
+        service = OfflineRecovery({key: (self.backup, self.digest, self.target)})
+        with self.assertRaises(CorpusError):
+            service.restore_quarantined(uuid4(), 2)
+        receipt = service.restore_quarantined(key, 2)
+        self.assertTrue(receipt.quarantined)
+        self.assertFalse(receipt.serve_authorized)
+        self.assertEqual(receipt.session_epoch, 2)
+        self.assertEqual(receipt.snapshot_sha256, self.digest)
+        with self.assertRaises(CorpusError):
+            service.restore_quarantined(key, 2)
+
+    def test_nonregular_sources_rejected_without_blocking(self):
+        import os
+        from corpus.management.commands.recover_snapshot import verified_bytes
+        fifo = Path(self.temp.name) / "fifo"
+        os.mkfifo(fifo)
+        with self.assertRaises(CommandError):
+            verified_bytes(fifo, self.digest)
+
+    def test_authority_revision_quarantine_and_identity_mismatch(self):
+        authority = Path(self.temp.name) / "current.sqlite3"
+        with closing(database(self.backup.read_bytes())) as db:
+            db.execute("UPDATE corpus_policystate SET revision=3")
+            db.commit()
+            authority.write_bytes(db.serialize())
+        digest = hashlib.sha256(authority.read_bytes()).hexdigest()
+        with self.assertRaises(CommandError):
+            recover(self.backup, self.digest, self.target, 2, authority, digest)
+        with closing(database(authority.read_bytes())) as db:
+            db.execute("UPDATE corpus_policystate SET quarantined=1")
+            db.commit()
+            authority.write_bytes(db.serialize())
+        digest = hashlib.sha256(authority.read_bytes()).hexdigest()
+        with self.assertRaises(CommandError):
+            recover(self.backup, self.digest, self.target, 3, authority, digest)
+        with closing(database(authority.read_bytes())) as db:
+            db.execute("UPDATE corpus_policystate SET quarantined=0")
+            db.execute("DELETE FROM corpus_savedreference")
+            db.execute("UPDATE auth_user SET username='replacement' WHERE username='fixture-ana'")
+            db.commit()
+            authority.write_bytes(db.serialize())
+        receipt = recover(self.backup, self.digest, self.target, 3, authority,
+                          hashlib.sha256(authority.read_bytes()).hexdigest())
+        self.assertEqual(receipt["imported"], 0)
