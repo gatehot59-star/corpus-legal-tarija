@@ -1,4 +1,5 @@
 """HTTP regression tests with real WSGI sockets and a synthetic access policy."""
+from contextlib import closing
 import hashlib
 from http.client import HTTPConnection
 import json
@@ -29,7 +30,7 @@ class HTTPTests(unittest.TestCase):
         self.db = Path(self.tmp.name) / "candidate.db"
         self.text = "Ley 1\n" + "El pago no procede sin autorizacion judicial.\n" * 150
         self.sha = hashlib.sha256(self.text.encode()).hexdigest()
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             c.executescript("CREATE TABLE documentos(uid TEXT,sha256 TEXT,fuente_id TEXT,fuente_url TEXT);"
                             "CREATE TABLE corpus_cleanup_versions(uid TEXT,version_sha256 TEXT,extraction_json TEXT);")
             c.execute("INSERT INTO documentos VALUES(?,?,?,?)",
@@ -127,7 +128,7 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.request("version=" + "b"*64)[0], 409)
 
     def test_historical_exact_version_survives_current_change(self):
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             c.execute("UPDATE documentos SET sha256=?", ("b"*64,))
         status, _, result = self.request()
         self.assertEqual(status, 200)
@@ -156,7 +157,7 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.request("version=" + self.sha + "&start=99999")[0], 416)
 
     def test_tampered_text_never_returned(self):
-        with sqlite3.connect(self.db) as c:
+        with closing(sqlite3.connect(self.db)) as c, c:
             c.execute("UPDATE corpus_cleanup_versions SET extraction_json=?", ('{"text":"tampered"}',))
         status, _, body = self.request()
         self.assertEqual(status, 409)
