@@ -120,7 +120,7 @@ Sobre la misma carpeta sintética inicializada, sin volver a ejecutar init:
 
     python3 sistema/api/demo_aislada.py serve --directory ./corpus-demo-local --isolated-demo --browser-spike --port 8765
 
-Abrí http://127.0.0.1:8765. Entrar como Ana ficticia, Leer texto ficticio, Cerrar sesión. Esperá la confirmación de revocación. La página no recibe credenciales del usuario: usa las constantes públicas del fixture. No hay buscador, exportación, cuentas reales ni despliegue.
+Abrí http://127.0.0.1:8765. Entrar como Ana ficticia, Leer texto ficticio, Guardar referencia, Cerrar sesión. Esperá la confirmación de revocación. La página no recibe credenciales del usuario: usa las constantes públicas del fixture. No hay buscador, exportación del cuerpo del documento, cuentas reales ni despliegue.
 
 Sin --browser-spike se conserva el rechazo de todo Origin y no se sirve la página. Con la opción, la URL exacta se fija desde el puerto realmente enlazado: Host literal y Origin coincidente obligatorio en POST, ausente o coincidente en GET. Se rechazan Origin vacío, null, distinto, duplicados, Host repetido y Fetch Metadata contradictorio. No CORS, cookies, proxies ni eliminación de Origin para eludir controles. Los endpoints siguen bajo marcador aislado y permiso por página.
 
@@ -138,4 +138,26 @@ La prueba Chromium requiere Node y Playwright1.63.0, verificado en npm el19-sep-
 
 El sistema debe tener las bibliotecas compartidas que Chromium requiere. En brain-env se descargaron paquetes Debian y se extrajeron en un sysroot privado; no se ejecutó apt install ni se modificó el sistema. La captura conserva el fallo inicial por libglib y la recuperación. El script abre y cierra un servidor temporal y Chromium, mantiene las capturas PNG y bases sintéticas fuera de Git.
 
-El workflow existente no se modifica: prueba regresión previa, NO ejecuta las dos pruebas nuevas de este spike. La validación de navegador publicada es local; no atribuirla a CI. Aprobar para producción, Firefox/WebKit, TLS, carga, plazo total de2s y validez jurídica siguen fuera del alcance.
+El workflow ejecuta la regresión previa, los tests HTTP del navegador y Chromium real con Playwright1.63.0. Sus paths incluyen esta guía, la página y ambos tests. Se conserva el rechazo por defecto de Origin. Aprobar para producción, Firefox/WebKit, TLS, carga, plazo total de2s y validez jurídica siguen fuera del alcance.
+
+## Guardar una referencia versionada (solo fixture)
+
+Guardar referencia se habilita únicamente tras una lectura completa con versión fija
+ y metadatos consistentes entre páginas. Antes de descargar se consulta nuevamente
+ la misma versión por el endpoint protegido: permiso retirado, fallo de red o cambio
+ de procedencia cancela la descarga y borra texto/referencia de la pestaña.
+
+El JSON `corpus-reference-v1` contiene UID, versión y hash de texto, hash de fuente,
+ URL observada, su alcance `current_document`, unidad del hash `text_utf8`,
+ autoridad secundaria, `oficial:false`, validez `NOT_MEASURED`, longitud y fechas
+ de lectura/comprobación. Nunca contiene cuerpo, contraseña, bearer ni notas privadas.
+ La URL no acredita procedencia histórica ni se visita al guardar. Es una referencia
+ ficticia, no certificado jurídico, permiso de acceso ni bookmark del servidor.
+
+Cambiar la versión actual no reemplaza la versión leída. No se implementa importador:
+ volver a consultar el UID/versión exige una sesión y un permiso vigentes. Retirar
+ acceso no recupera archivos ya descargados. La comprobación cubre el momento de
+ la petición, no una revocación que ocurra después de esa respuesta.
+
+No cambia backend, autenticación, esquema, cuarentena ni políticas. Token y referencia
+ pendiente se olvidan al salir/recargar; recargar NO revoca la sesión del servidor.
