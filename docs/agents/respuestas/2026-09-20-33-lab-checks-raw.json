@@ -1,0 +1,13 @@
+{
+  "instrument": "githubmcp_pull_request_read",
+  "method": "get_check_runs",
+  "owner": "gatehot59-star",
+  "repo": "corpus-docs-trigger-lab",
+  "note": "Complete connector responses; keys are queried PR numbers. Query time not supplied by connector. Saved on brain-env at 1789951002.9184427. No HTTP headers supplied by connector.",
+  "responses": {
+    "1": {"total_count":1,"check_runs":[{"id":106177854186,"name":"stable_identity","status":"completed","conclusion":"success","html_url":"https://github.com/gatehot59-star/corpus-docs-trigger-lab/actions/runs/35548189544/job/106177854186","details_url":"https://github.com/gatehot59-star/corpus-docs-trigger-lab/actions/runs/35548189544/job/106177854186","started_at":"2026-09-21T00:35:36Z","completed_at":"2026-09-21T00:36:19Z"}]},
+    "2": {"total_count":0,"check_runs":[]},
+    "3": {"total_count":1,"check_runs":[{"id":106177856329,"name":"stable_identity","status":"completed","conclusion":"success","html_url":"https://github.com/gatehot59-star/corpus-docs-trigger-lab/actions/runs/35548190401/job/106177856329","details_url":"https://github.com/gatehot59-star/corpus-docs-trigger-lab/actions/runs/35548190401/job/106177856329","started_at":"2026-09-21T00:35:37Z","completed_at":"2026-09-21T00:36:19Z"}]},
+    "4": {"total_count":1,"check_runs":[{"id":106177854805,"name":"stable_identity","status":"completed","conclusion":"success","html_url":"https://github.com/gatehot59-star/corpus-docs-trigger-lab/actions/runs/35548189753/job/106177854805","details_url":"https://github.com/gatehot59-star/corpus-docs-trigger-lab/actions/runs/35548189753/job/106177854805","started_at":"2026-09-21T00:35:36Z","completed_at":"2026-09-21T00:36:13Z"}]}
+  }
+}
