@@ -7,7 +7,7 @@ permissions:
 jobs:
   stable_identity:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -35,3 +35,20 @@ jobs:
           set -euo pipefail
           python3 -m py_compile sistema/api/demo_restore.py tests/test_demo_restore.py
           timeout 120s python3 tests/test_demo_restore.py
+      - name: Test opt-in browser HTTP boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tests/test_browser_auth.py
+          timeout 60s python3 tests/test_browser_auth.py
+      - name: Test real Chromium login, exact reading and logout
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools="$(mktemp -d)"
+          trap 'rm -rf "$tools"' EXIT
+          npm install --prefix "$tools" --no-audit --no-fund --ignore-scripts playwright@1.63.0
+          "$tools/node_modules/.bin/playwright" install --with-deps chromium
+          export NODE_PATH="$tools/node_modules"
+          node --check tests/browser_auth.cjs
+          timeout 120s node tests/browser_auth.cjs
