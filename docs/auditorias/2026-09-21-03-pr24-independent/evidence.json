@@ -1,0 +1,84 @@
+{
+  "scope": "Independent read-only audit of PR24 in a fresh clone; no merge, deploy, real data, or remote events.",
+  "subject": {
+    "pr": 24,
+    "head": "0da5c5f046af88941fe9900829c37d727a8c09ce",
+    "base_pr23": "777ca6374989ac042ddf7cb8275a7e3c7bdf7da2",
+    "main_at_start": "5bb33ffa9d2cb01eada1a6650cc38b6629287d98",
+    "state": "open",
+    "reviews": [],
+    "check": {
+      "name": "application",
+      "status": "completed",
+      "conclusion": "success",
+      "job": "106408948987",
+      "run": "35622561870"
+    }
+  },
+  "fresh_copy": {
+    "source": "fresh clone, detached at PR24 head",
+    "python": "3.12",
+    "requirements": "Django 5.2.17, asgiref 3.12.1, sqlparse 0.6.0, gunicorn 26.2.0, coverage 7.16.1"
+  },
+  "diff_pr23_to_pr24": {
+    "files": [
+      "docs/agents/evidencia/2026-09-21-browser-fix.json",
+      "docs/agents/respuestas/2026-09-21-browser-fix.md",
+      "sistema/django_app/config/settings.py",
+      "sistema/django_app/corpus/tests/test_access.py"
+    ],
+    "product_change": "SECURE_REFERRER_POLICY no-referrer -> same-origin",
+    "csrf_middleware": "unchanged",
+    "null_origin": "explicitly rejected by added regression"
+  },
+  "fresh_suite": {
+    "manage_check": "exit0, no issues",
+    "migration_check": "exit0, No changes detected",
+    "tests": 39,
+    "exit": 0,
+    "seconds": 5.649,
+    "application_coverage_percent": 93,
+    "diff_check": "exit0"
+  },
+  "origin_matrix": {
+    "same_origin": 302,
+    "null_origin": 403,
+    "foreign_origin": 403,
+    "no_origin": 302
+  },
+  "mutants": [
+    {
+      "mutation": "SECURE_REFERRER_POLICY same-origin -> no-referrer",
+      "test": "test_browser_origin_passes_without_referer_but_null_origin_does_not",
+      "result": "rejected",
+      "failure": "assertion: no-referrer != same-origin"
+    },
+    {
+      "mutation": "remove CsrfViewMiddleware",
+      "test": "test_browser_origin_passes_without_referer_but_null_origin_does_not",
+      "result": "rejected",
+      "failure": "CSRF cookie missing before the login post"
+    }
+  ],
+  "browser_attempt": {
+    "tool": "Playwright 1.63.0, Chromium environment",
+    "fresh_source": "PR24 head",
+    "first_check": {
+      "name": "anonymous workspace denied",
+      "actual": 403,
+      "expected": 403
+    },
+    "result": "TargetClosed before login DOM assertion",
+    "classification": "NO MEDIDO independently; not attributed to product without isolation"
+  },
+  "limitations": [
+    "The full browser journey was not independently completed in this fresh copy.",
+    "No production TLS/proxy, load, real accounts, real email, accessibility or human review.",
+    "The connected-browser checkpoints in Brain's PR24 receipt are corroborating evidence, not this audit's own browser run."
+  ],
+  "verdict": {
+    "product_fix_scope": "no new defect found",
+    "acceptance": "partial",
+    "merge": "not performed"
+  }
+}
