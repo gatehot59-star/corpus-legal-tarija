@@ -74,7 +74,9 @@ def main() -> None:
                 wait_live("http://127.0.0.1:8000")
                 with sync_playwright() as playwright:
                     headless = os.environ.get("CORPUS_HEADLESS", "1") != "0"
-                    browser = playwright.chromium.launch(channel="chromium", headless=headless,
+                    # CI installs the Playwright-pinned browser with `playwright install chromium`.
+                    # Omitting channel avoids selecting an unrelated system Chromium binary.
+                    browser = playwright.chromium.launch(headless=headless,
                                                          args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"])
                     desktop = browser.new_context(viewport={"width": 1440, "height": 1000})
                     page = desktop.new_page()
@@ -140,7 +142,7 @@ def main() -> None:
                     expect(recovery.get_by_text("Si la cuenta admite recuperación", exact=False)).to_be_visible()
                     files = list(Path(maildir).glob("*"))
                     assert len(files) == 1
-                    token_url = re.search(r"http://127.0.0.1:8000/corpus/reset/[^\\s]+", files[0].read_text()).group(0)
+                    token_url = re.search(r"http://127.0.0.1:8000/corpus/reset/[^\s]+", files[0].read_text()).group(0)
                     recovery.goto(token_url)
                     recovery.locator('[name="new_password1"]').fill("Browser-Synthetic-New-987!")
                     recovery.locator('[name="new_password2"]').fill("Browser-Synthetic-New-987!")
