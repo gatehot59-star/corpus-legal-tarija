@@ -1,16 +1,10 @@
-# Corpus Django: aplicación privada, ejecución sintética
+# Corpus Django: aplicación privada, validada con datos sintéticos
 
-Decisión: `docs/adr/2026-09-21-corpus-django.md`. Contratos: `contracts/corpus_django.py`. Implementación aprobada en comentario80170047177490. Rama `titan/builder-corpus-django`, sin merge ni despliegue autorizado.
+Arquitectura: `docs/adr/2026-09-21-corpus-django.md`. Contratos: `contracts/corpus_django.py`. Lote32 aprobado en comentario80170047177490. PR22, rama `titan/builder-corpus-django`. No merge ni despliegue.
 
-## Qué existe
+## Arranque reproducible
 
-Mesa HTML bajo `/corpus/`: login con sesión Django y CSRF, búsqueda autorizada, lectura de versión exacta y procedencia, referencias privadas sin copia de texto, reportes privados, logout servidor y restablecimiento de contraseña mediante token Django. Un operador prepara cuentas/grupos/colecciones/grants; no hay autorregistro ni admin público. Nunca se usa el login fixture del sistema anterior.
-
-El lector integrado `sistema/api/version_text.py` se importa sin modificarlo. Soporta versiones HTML LexiVox secundarias, no fuentes arbitrarias ni una declaración de vigencia legal. La adaptación abre el archivo con O_RDONLY/O_NOFOLLOW, verifica SHA y deserializa los mismos bytes en SQLite query_only; evita la carrera entre verificar una ruta y abrir otra vez esa ruta. Esta es una desviación deliberada del `mode=ro` propuesto, no una modificación del lector.
-
-## Arranque local sintético
-
-Desde raíz del repositorio, Bash y Python3.12. No usa datos reales ni envía emails. El directorio temporal debe ser nuevo.
+Desde raíz del repo, Bash/Python3.12. Solo fixtures. No envía emails ni usa bases reales.
 
 ```bash
 set -euo pipefail
@@ -24,11 +18,11 @@ cd sistema/django_app
 /tmp/corpus-django-venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 1 --timeout 30
 ```
 
-Abrir `http://127.0.0.1:8000/corpus/login/`. Cuenta ficticia `fixture-ana`, contraseña pública exclusivamente sintética `Synthetic-Corpus-Only-2026!`. `fixture-ben` tiene la misma contraseña ficticia pero NO grant: sirve para comprobar la denegación. Buscar `Artículo`, abrir el resultado, comprobar versión/procedencia, guardar, reportar y salir. Nunca habilitar el perfil synthetic para usuarios reales. Ctrl+C detiene solo este servidor.
+Abrí `http://127.0.0.1:8000/corpus/login/`. Usuario ficticio `fixture-ana`, contraseña pública de prueba `Synthetic-Corpus-Only-2026!`. `fixture-ben` comparte la contraseña ficticia pero NO tiene grant. Buscar `Artículo`, abrir, verificar SHA/procedencia, guardar referencia, reportar privadamente y salir. Ctrl+C detiene este servidor. Nunca usar perfil synthetic con personas/datos reales.
 
-## Aceptación reproducible
+## Pruebas
 
-Con el entorno anterior, sin necesidad de iniciar servidor:
+Con el mismo entorno y desde sistema/django_app, sin iniciar servidor:
 
 ```bash
 set -euo pipefail
@@ -38,40 +32,44 @@ set -euo pipefail
 /tmp/corpus-django-venv/bin/python -m coverage report --omit='*/tests/*,*/migrations/*' --fail-under=85
 ```
 
-Medición local inicial: 35 tests (19 de acceso, 11 de flujo, 5 de recuperación), cobertura total de aplicación92%, excluyendo tests/migraciones. Recuperación80% individual: no se oculta con el agregado. Tres mutaciones de auth/CSRF/logout hicieron fallar sus tests. Gunicorn real atendió el recorrido HTTP completo en loopback; eso NO equivale a inspección visual o E2E con navegador.
+Última ejecución local:38tests (19acceso,11flujo,8recuperación),93% de líneas de aplicación excluyendo tests/migraciones. Recuperación83% individual. Tres mutantes de auth/CSRF/logout rechazados antes de ampliar recuperación. Gunicorn real recorrió login/búsqueda/lectura/guardado/reporte/logout en loopback. Inspección visual/E2E con navegador NO MEDIDA.
 
-## Configuración
+CI del código2cd4ca7ebe23422d617d3e5c741e084a4cdfeedf: https://github.com/gatehot59-star/corpus-legal-tarija/actions/runs/35594375708/job/106315738125, success, siete pasos, incluyendo construir y probar contenedor no-root sin red. Este README y el reporte son posteriores y documentales; no atribuir automáticamente el resultado anterior a un SHA nuevo.
 
-`CORPUS_DB`: ruta absoluta al SQLite operativo, obligatoria; no el snapshot legal. `CORPUS_SECRET_KEY`: al menos40 caracteres, obligatoria fuera del test, provista por gestor de secretos; nunca enGit. `CORPUS_HOSTS`: hosts concretos separados por coma, sin wildcard; obligatoria fuera del test. `CORPUS_ORIGIN`: origen HTTPS fijo sin barra final para reset, obligatorio fuera del test. `CORPUS_TRUST_PROXY=yes`: solo si un proxy controlado elimina/sobrescribe X-Forwarded-Proto; por defecto no se confía en ese encabezado. `CORPUS_TEST_PROFILE=synthetic`: opt-in explícito para fixtures, HTTP local y correo en memoria; ausencia usa configuración restrictiva.
+## Funciones y política
 
-Sin perfil test: DEBUGFalse, cookies Secure/HttpOnly/SameSite, redirecciónHTTPS excepto liveness, HSTS, CSRF, CSP sin scripts ni conexiones externas, no-store y errores genéricos. El backend de correo real está deshabilitado deliberadamente: configurar proveedor requiere autorización separada. El reset se prueba con correo en memoria, NO se promete entrega real. No hay logging de URL/query/texto/password en Django o access-logGunicorn; métricas operativas y auditoría de cambios de política siguen pendientes de integración antes de producción.
+UI HTML `/corpus/`, sesiones y CSRF Django, logoutPOST, recuperación de contraseña por token Django, búsqueda autorizada, lector exacto existente, referencias propias sin texto y feedback privado. No autorregistro, admin público, JWT/localStorage ni sesión fixture reutilizada. Operadores autorizados administran modelosORM, no existe todavía consola de alta real.
 
-## Política y límites
+Autorización por petición: usuario activo, epoch actual, policy no cuarentena, membership habilitada, grant vigente/no revocado para usuario/grupo/colección, colección habilitada con evidencia, locator no retirado. Staff/superuser no salta controles. Identidad y dueño nunca vienen de X-User/X-Collection. Lectura/snippets ocurren después del filtro, y guardar/reportar reautorizan. Cambios de política deben actualizar revision en la misma transacción; subir session_epoch para invalidación global. No se pueden retirar bytes ya enviados al cliente.
 
-Usuario activo + epoch actual + policy no quarantined + membership habilitada + grant usuario/grupo/colección vigente y no revocado + colección habilitada con evidencia + versión no retirada. Staff/superuser no es bypass. La autorización precede lectura/snippets y se repite al leer/guardar/reportar. No se confía en X-User, X-Collection ni IDs de dueño enviados por el navegador.
+`sistema/api/version_text.py` se importa sin editar. Solo versiones HTML LexiVox secundarias; no se certifica vigencia jurídica ni carácter oficial. El adaptador abre O_RDONLY/O_NOFOLLOW/O_NONBLOCK, verificaSHA y deserializa esos mismos bytes en SQLite query_only/trusted_schemaOFF. Así no reabre una ruta sustituible tras el hash. Este reemplazo del mode=ro propuesto es deliberado y documentado.
 
-Cambios administrativos de política se hacen mediante un operador autorizado y una transacción que actualice revision; para invalidación global también incrementar session_epoch. El lote no expone una consola administrativa ni autoriza alta de personas reales. Los modelos ORM están disponibles para la futura administración aprobada. El contenido ya entregado en una respuesta no puede retirarse retroactivamente del cliente.
+Límites: q1..128caracteres/256bytes, página1..20, offset0..10000; lectura1..10000caracteres y SHA completo; feedback1..2000caracteres, categorías extraction/metadata/access/other, sin adjuntos. Búsqueda máximo200locators,2millones de caracteres,5segundos,snapshot64MiB. Exceso503 sin truncamiento silencioso. Escaneo lineal: capacidadnacional/carga10x no medida. Referencias sin paginación y20reportes recientes son límites actuales, no capacidad ilimitada.
 
-Consulta1..128caracteres/256bytes; página1..20; offset0..10000. Lectura1..10000caracteres con SHA completo. Feedback1..2000caracteres, categorías extraction/metadata/access/other, sin adjuntos. Catálogo de búsqueda máximo200 locators autorizados, presupuesto2millones de caracteres/5segundos, snapshot64MiB. Exceso produce503, nunca resultados truncados fingiendo completitud. Escaneo lineal: no es un buscador nacional escalado ni un benchmark10x. Lista de referencias no paginada y reportes muestran20recientes; ampliar eso requiere prueba de carga y UX, no inventar capacidad.
+## Entorno y seguridad
 
-Login/reset/reportes:10intentos por IP/purpose/minuto persistidos; no se usa X-Forwarded-For. Detrás de un proxy compartido puede convertirse en un límite común y necesita política de rate-limit de staging, no activar confianza implícita. Existe potencial temporal de enumeración en recuperación propio del envío síncrono; respuesta y contenido son uniformes, tiempo no certificado.
+CORPUS_DB: ruta absoluta obligatoria de SQLite operativo, distinta del snapshot. CORPUS_SECRET_KEY: mínimo40caracteres desde gestor de secretos, obligatoria fuera de test, nunca enGit. CORPUS_HOSTS: hosts explícitos separados por coma sin wildcard. CORPUS_ORIGIN: origenHTTPS fijo sin barra final para reset. CORPUS_TEST_PROFILE=synthetic: opt-in local, fixture y correo en memoria; ausencia usa perfil restrictivo. CORPUS_TRUST_PROXY=yes: solo para proxy controlado que elimine/sobrescriba X-Forwarded-Proto; por defecto no se confía en él.
 
-## Recuperación: dos operaciones distintas
+DEBUGFalse, cookiesSecure fuera de test/HttpOnly/SameSite, HTTPS/HSTS, CSRF, no-store, CSP sin scripts/conexiones externas, errores genéricos. Correo real deliberadamente deshabilitado: backenddummy; reset solo probado con correo en memoria. Configurar proveedor requiere autorización. El contenido de respuesta de reset es uniforme, NO se certifica igualdad temporal por el envío síncrono.
 
-Comando `python manage.py recover_snapshot --help` describe todos los parámetros. Requiere backupSQLite consistente, digest completo, destino nuevo absoluto y revisión de política independiente superior al backup. `--backup`, `--sha256`, `--target`, `--current-policy-revision` sin reconciliación genera destino en cuarentena: purga sesiones, invalida grants y memberships, deshabilita colecciones e incrementa epoch. No toca la fuente ni inicia listener.
+Login/reset/feedback:10intentos por IP/purpose/minuto persistidos con digestHMAC, sin confiar en X-Forwarded-For. Proxy compartido requiere política de rate-limit de staging. No se registran URLs/query/texto/password en Django ni access-logGunicorn. Métricas operativas y auditoría de cambios de política siguen pendientes antes de producción.
 
-Reapertura offline requiere además `--reconcile-from` y `--authority-sha256`: snapshot independiente de la autoridad ACTUAL, con revisión exacta y epoch no retrocedido. El resultado parte de esa autoridad actual, NO restaura usuarios, passwords, grants ni retiradas del backup viejo. Solo importa referencias/reportes cuando usuario(id/username/date_joined) y locator(id/colección/UID/versión) son idénticos. Purga sesiones y sube epoch otra vez. Una fuente archivada no se vuelve actual por tenerSHA: el operador debe demostrar procedencia/actualidad por fuera del backup. Se prueban revocación y retirada preservadas.
+## Recuperación y rollback
 
-El CLI es un adaptador explícito por rutas; aún no implementa el lookupUUID del Protocol RecoveryService. Tampoco crea un servicio programado de backup ni una autorización institucional. No ejecutar reconciliación real ni apuntar el servicio a su resultado sin aprobación de reapertura. El campo serve_authorized expresa el estado técnico de política de ese resultado, no concede permiso humano de despliegue.
+`python manage.py recover_snapshot --help` enumera parámetros. FuenteSQLite consistente y digest completo; destino nuevo absoluto nunca sobrescrito. `--backup`, `--sha256`, `--target`, `--current-policy-revision` exige revisión independiente superior a backup y produce cuarentena: purga sesiones, revoca grants, deshabilita memberships/colecciones y sube epoch. No modifica fuente ni inicia listener. FIFO/symlink rechazados sin bloqueo.
 
-Backups consistentes: detener escritores o usar SQLite backup API; copiar un archivo vivo con WAL no es un backup válido. Guardar evidencia actual/revisión por canal independiente, SHA, permisos0600 y verificar foreign_key_check/integrity_check. No colocar snapshot ni backup dentro del repo. No rollback a grants/sesiones viejos: ante incidente cerrar servicio, subir epoch/cuarentena en autoridad actual, investigar y recuperar a destino nuevo; nunca sobrescribir el archivo problemático.
+Reconciliación explícita añade `--reconcile-from` y `--authority-sha256`: autoridad ACTUAL independiente, revisión exacta, epoch no retrocedido, no cuarentena. Resultado parte de autoridad actual; no recupera usuarios/passwords/grants/retiradas viejos. Solo incorpora referencias/reportes con identidad(id/username/date_joined) y locator(id/colección/UID/versión) idénticos, purga sesiones e incrementaepoch. SHA no prueba actualidad: custodio debe acreditarla por otro canal. serve_authorized expresa estado técnico del resultado, no aprobación humana de despliegue. No apuntar servicio real a ese resultado sin gate de reapertura.
 
-## Contenedor y CI
+`corpus.services.OfflineRecovery` implementa restore_quarantined(backupUUID,revision) con registro inyectado por operador: UUID->(ruta,digest,destino). No hay rutaHTTP ni descubrimiento arbitrario. Este adaptador CI-probado cierra la carencia publicada en la primera evidencia histórica.
 
-Desde raíz: `docker build -f sistema/django_app/Dockerfile -t corpus-django:local .`. Multi-stage, imagenPython por digest verificado, usuario10001, no secretos copiados explícitamente. El build debe hacerse desde checkout limpio: el lote no incluye .dockerignore, por lo que no usar un árbol con bases/secretos locales. El Dockerfile copia solo app, contrato y lector, no toda la raíz. CI construye y ejecuta tests sin red en el contenedor, y no despliega. El workflow separado corre en todos los PRs, solo contents:read, checkout porSHA y persist-credentials:false; no cambia el workflow retenido enPR21.
+Backups: SQLite backupAPI o escritores detenidos; nunca copiar archivo vivo ignorandoWAL. Mantener política/revisión por canal independiente, SHA, permisos0600 y comprobacionesdeintegridad. No guardar backups/snapshots enGit. Incidente: cerrarservicio, subir epoch/cuarentena en autoridad actual, conservar archivo problemático y recuperar a destino nuevo. Nunca hacer rollback a sesiones/grants viejos.
 
-`/corpus/live/`: proceso responde sin depender deDB. `/corpus/ready/` y `/corpus/health/`: policyDB presente y no cuarentena; no certifican cada snapshot ni envío de correo. TLS/reverse-proxy, alta de usuarios, muestra autorizada, backup custodiado, carga y ensayo institucional siguen siendo gates de staging/operación, no permisos inferidos delCI.
+## Contenedor y operación
 
-## Custodia y no interferencia
+Desde raíz limpia: `docker build -f sistema/django_app/Dockerfile -t corpus-django:local .`. Multi-stage, Python por digest, usuario10001, HEALTHCHECK. Usar checkout limpio: no hay .dockerignore en el lote y no deben existir bases/secretos en el directorioapp. Solo copia app, contrato y lector. CIcorre en todos losPRs, contents:read, checkoutSHA/persist-credentials:false; construye y prueba sin red, NO despliega ni cambia workflowPR21.
 
-Evidencia cruda: `docs/agents/evidencia/2026-09-21-django-delivery.json`. Reporte: `docs/agents/respuestas/2026-09-21-django-delivery.md`. No se modifica ningún módulo legacy, ni PR1/17/18/19/20/21. No se retoma el laboratorioCI ni se levantan sus holds. Las revisiones independientes existentes siguen pendientes; las pruebas nuevas no las sustituyen.
+`/corpus/live/` mide proceso, `/corpus/ready/` y `/corpus/health/` policyDB no cuarentena; no certifican todos los snapshots ni correo. TLS/proxy, cuentas reales, muestra autorizada, carga, backupcustodiado y ensayo institucional conservan sus gates. No se alteraron legacy niPR1/17/18/19/20/21, no se reanudó laboratorio, no se levantó revisiónindependientePR18/logout.
+
+## Evidencia y deuda
+
+`docs/agents/evidencia/2026-09-21-django-delivery.json`:69.136bytes crudos base64+lzma, SHA verificado desdeGit. `docs/agents/respuestas/2026-09-21-django-delivery.md`: actualización38tests,CI y score84/100,0N/A, no firma deproducción. Los límites anteriores son explícitos; reviewCopilot pedido y reviews vacías no equivalen a aprobación.
