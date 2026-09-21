@@ -1,0 +1,65 @@
+{
+  "scope": "Environment-only investigation of Chromium TargetClosed during PR24 audit; no product change, merge, deploy, or real data.",
+  "initial_head": "0da5c5f046af88941fe9900829c37d727a8c09ce",
+  "causes": [
+    {
+      "phase": "initial headless launch",
+      "browser": "chrome-headless-shell",
+      "result": "exit127",
+      "error": "libglib-2.0.so.0: cannot open shared object file",
+      "classification": "loader failure before browser launch"
+    },
+    {
+      "phase": "full Chromium channel",
+      "browser": "chrome",
+      "result": "exit127",
+      "error": "libcups.so.2: cannot open shared object file",
+      "classification": "loader failure before browser launch"
+    },
+    {
+      "phase": "headless after graphical sysroot",
+      "browser": "chrome-headless-shell",
+      "result": "SIGTRAP",
+      "error": "FATAL third_party/skia/src/ports/SkFontMgr_FontConfigInterface.cpp:163 Not implemented",
+      "preceding_error": "Fontconfig error: Cannot load default config file: File not found",
+      "classification": "renderer/browser abort during page rendering"
+    }
+  ],
+  "dependency_observation": {
+    "effective_initial_ld_library_path": "browser sysroot only",
+    "ldd_missing_examples": ["libglib-2.0.so.0", "libnss3.so", "libgbm.so.1", "libasound.so.2"],
+    "available_outside_path": [
+      "/workspace/ocrenv/lib/libfontconfig.so.1.17.0",
+      "/workspace/ocrenv/lib/libfreetype.so.6.20.6",
+      "/workspace/ocrenv/lib/libglib-2.0.so.0.8800.3"
+    ],
+    "available_font_config": "/workspace/ocrenv/etc/fonts/fonts.conf",
+    "system_etc_fonts": "absent"
+  },
+  "causal_environment": {
+    "LD_LIBRARY_PATH": "/workspace/ocrenv/lib:/workspace/corpus-browser-spike-u6wwk669/.browser-tools/sysroot/usr/lib/x86_64-linux-gnu",
+    "FONTCONFIG_FILE": "/workspace/ocrenv/etc/fonts/fonts.conf"
+  },
+  "minimal_probe": {
+    "without_fontconfig": {
+      "page_close": true,
+      "browser_disconnect": true,
+      "signal": "SIGTRAP"
+    },
+    "with_fontconfig": {
+      "after_login_page_closed": false,
+      "browser_connected": true,
+      "after_wait_page_closed": false
+    }
+  },
+  "full_pr24_journey_with_environment_fix": {
+    "browser": "Chromium 153.0.8010.12",
+    "playwright": "1.63.0",
+    "outcome": "PASS",
+    "checks": 25,
+    "pageerrors": [],
+    "off_loopback_requests": [],
+    "server_stopped": true
+  },
+  "product_conclusion": "TargetClosed was environmental, not caused by PR24 or the Corpus application. PR24 remains open and needs independent human review before merge."
+}
