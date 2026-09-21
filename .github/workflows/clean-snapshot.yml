@@ -1,33 +1,6 @@
 name: Clean snapshot identity
 on:
   pull_request:
-    paths:
-      - 'pipeline/clean_snapshot.py'
-      - 'pipeline/legal_html.py'
-      - 'sistema/api/ingesta.py'
-      - 'sistema/api/esquema.sql'
-      - 'sistema/api/version_text.py'
-      - 'sistema/api/exact_http.py'
-      - 'sistema/api/access_policy.py'
-      - 'sistema/api/isolated_login.py'
-      - 'sistema/api/isolated_session.py'
-      - 'sistema/api/demo_aislada.py'
-      - 'sistema/DEMO-AISLADA.md'
-      - 'sistema/api/demo_restore.py'
-      - 'sistema/RECUPERACION-DEMO.md'
-      - 'tests/test_clean_snapshot.py'
-      - 'tests/test_clean_snapshot_sol.py'
-      - 'tests/test_exact_http.py'
-      - 'tests/test_access_policy.py'
-      - 'tests/test_isolated_login.py'
-      - 'tests/test_login_guards.py'
-      - 'tests/test_isolated_session.py'
-      - 'tests/test_demo_aislada.py'
-      - 'tests/test_demo_restore.py'
-      - 'sistema/web/auth_spike.html'
-      - 'tests/test_browser_auth.py'
-      - 'tests/browser_auth.cjs'
-      - '.github/workflows/clean-snapshot.yml'
   workflow_dispatch:
 permissions:
   contents: read
