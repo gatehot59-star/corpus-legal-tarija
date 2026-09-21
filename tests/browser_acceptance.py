@@ -73,7 +73,7 @@ def main() -> None:
             try:
                 wait_live("http://127.0.0.1:8000")
                 with sync_playwright() as playwright:
-                    browser = playwright.chromium.launch(headless=True,
+                    browser = playwright.chromium.launch(channel="chromium", headless=True,
                                                          args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"])
                     desktop = browser.new_context(viewport={"width": 1440, "height": 1000})
                     page = desktop.new_page()
