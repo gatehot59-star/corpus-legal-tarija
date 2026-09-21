@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 from datetime import timedelta
 from unittest.mock import patch
+from django.conf import settings
 from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -116,6 +117,20 @@ class AccessTests(FixtureBase):
         self.assertEqual(self.client.post("/corpus/login/", {
             "username": "fixture-ana", "password": FIXTURE_PASSWORD}).status_code, 403)
         self.assertEqual(self.client.get("/corpus/", HTTP_X_USER=str(self.ana.pk)).status_code, 403)
+
+    def test_browser_origin_passes_without_referer_but_null_origin_does_not(self):
+        """Keep CSRF on: browser same-origin login passes, literal null remains denied."""
+        self.assertEqual(settings.SECURE_REFERRER_POLICY, "same-origin")
+        self.client.get("/corpus/login/")
+        payload = {"username": "fixture-ana", "password": FIXTURE_PASSWORD,
+                   "csrfmiddlewaretoken": self.client.cookies["csrftoken"].value}
+        self.assertEqual(self.client.post("/corpus/login/", payload, HTTP_ORIGIN="null").status_code, 403)
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.get("/corpus/login/")
+        payload["csrfmiddlewaretoken"] = self.client.cookies["csrftoken"].value
+        response = self.client.post("/corpus/login/", payload, HTTP_ORIGIN="http://testserver")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/corpus/")
 
     def test_write_csrf_required_even_when_authenticated(self):
         self.login()

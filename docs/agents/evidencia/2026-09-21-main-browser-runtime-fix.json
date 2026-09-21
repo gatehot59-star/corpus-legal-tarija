@@ -1,0 +1,61 @@
+{
+  "subject": {
+    "repository": "gatehot59-star/corpus-legal-tarija",
+    "branch": "titan/main-browser-runtime-fix",
+    "head_before_receipt_update": "4f1e617ec49dad877017baeadf9fd2583380834c",
+    "pull_request": 26,
+    "requested_base_claim": "069d61f8ea6ccc3506a2e87fd8a7a173b3efde1c",
+    "live_base_resolved_when_branch_created": "01a9756e5fa6cbcd6c80f3b52cc396fdf9a0ff9f",
+    "base_discrepancy": "The live GitHub main ref resolved to 01a9756e, not the 069d61f8 stated in the request; no claim is made that those refs are equivalent."
+  },
+  "product_change": {
+    "file": "sistema/django_app/config/settings.py",
+    "old": "SECURE_REFERRER_POLICY = no-referrer",
+    "new": "SECURE_REFERRER_POLICY = same-origin",
+    "csrf_middleware": "unchanged",
+    "literal_null_origin": "rejected by causal regression",
+    "external_origin": "not accepted",
+    "regression": "sistema/django_app/corpus/tests/test_access.py::test_browser_origin_passes_without_referer_but_null_origin_does_not"
+  },
+  "vm_run": {
+    "environment": "brain-env build service isolated VM",
+    "checkout": "4f1e617ec49dad877017baeadf9fd2583380834c",
+    "dependency_install": {
+      "requirements": ["sistema/django_app/requirements.txt", "sistema/django_app/browser-requirements.txt"],
+      "pip_check": "No broken requirements found",
+      "browser_pins": {"playwright": "1.63.0", "pyee": "13.0.1", "greenlet": "3.5.6", "typing-extensions": "4.16.0"}
+    },
+    "commands": [
+      "(cd sistema/django_app && /tmp/corpus-main-browser-venv/bin/python manage.py check)",
+      "(cd sistema/django_app && /tmp/corpus-main-browser-venv/bin/python manage.py makemigrations --check --dry-run)",
+      "(cd sistema/django_app && /tmp/corpus-main-browser-venv/bin/python -m coverage run --source=corpus manage.py test corpus.tests --verbosity=2)",
+      "(cd sistema/django_app && /tmp/corpus-main-browser-venv/bin/python -m coverage report --omit='*/tests/*,*/migrations/*' --fail-under=85)",
+      "/tmp/corpus-main-browser-venv/bin/python tests/browser_acceptance.py"
+    ],
+    "results": {
+      "check": {"exit": 0, "output": "System check identified no issues (0 silenced)."},
+      "migrations": {"exit": 0, "output": "No changes detected"},
+      "tests": {"exit": 0, "count": 39, "seconds": 5.409},
+      "coverage": {"exit": 0, "application_percent": 93, "threshold": 85},
+      "browser_journey": {"exit": 0, "scope": ["login", "search", "exact read", "provenance", "private reference", "private feedback with XSS escaping", "logout", "stale replay", "Ana/Ben isolation", "390x844 mobile", "password recovery", "one-use token rejection", "withdrawal revocation"]},
+      "server_stop": {"exit": 0, "assertion": "server.wait(timeout=20) completed inside acceptance runner"}
+    }
+  },
+  "hosted_ci": {
+    "run": 35647809196,
+    "application": {"job": 106492463880, "status": "completed", "conclusion": "success"},
+    "browser": {"job": 106492464307, "status": "completed", "conclusion": "success"},
+    "stable_identity": {"job": 106492464197, "status": "completed", "conclusion": "success"}
+  },
+  "safety": {
+    "synthetic_fixture_only": true,
+    "real_data": false,
+    "real_accounts": false,
+    "real_email": false,
+    "deployment": false,
+    "closed_prs_reopened": false,
+    "pr18_hold_changed": false
+  },
+  "review": {"copilot_requested": true, "reviews_returned": [], "interpretation": "No review emitted is not approval."},
+  "raw_stdout_note": "The VM command output was returned by the build instrument; exact command strings, measured exits, test count, coverage, and clean-stop assertion are preserved here. The full test names and output were observed in the VM run before this receipt was committed."
+}
