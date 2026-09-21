@@ -47,18 +47,19 @@ jobs:
       CORPUS_TEST_PROFILE: synthetic
       CORPUS_DB: /tmp/corpus-browser.sqlite3
       CORPUS_PYTHON: /tmp/corpus-browser-venv/bin/python
+      CORPUS_HEADLESS: "0"
       FONTCONFIG_FILE: /etc/fonts/fonts.conf
       FONTCONFIG_PATH: /etc/fonts
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Install browser runtime including Fontconfig
+      - name: Install browser runtime including Fontconfig and Xvfb
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y fontconfig fonts-dejavu libfontconfig1
+          sudo apt-get install --no-install-recommends -y fontconfig fonts-dejavu libfontconfig1 xvfb
           fc-cache -f -v
           fc-match sans
       - name: Install exact app and browser dependencies
@@ -73,4 +74,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          /tmp/corpus-browser-venv/bin/python tests/browser_acceptance.py
+          xvfb-run --auto-servernum --server-args='-screen 0 1440x1000x24' /tmp/corpus-browser-venv/bin/python tests/browser_acceptance.py
