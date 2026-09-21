@@ -59,7 +59,6 @@ def main() -> None:
     run_manage("migrate", "--noinput")
     fixture = run_manage("provision_fixture", "--snapshot", str(DB.with_name("snapshot.sqlite3")))
     version = re.search(r'"version": "([0-9a-f]{64})"', fixture).group(1)
-    server = None
     with tempfile.TemporaryDirectory(prefix="corpus-browser-mail-") as maildir:
         with subprocess.Popen([
             PYTHON, "-c",
@@ -75,7 +74,7 @@ def main() -> None:
                 wait_live("http://127.0.0.1:8000")
                 with sync_playwright() as playwright:
                     browser = playwright.chromium.launch(headless=True,
-                                                         args=["--no-sandbox", "--disable-dev-shm-usage"])
+                                                         args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"])
                     desktop = browser.new_context(viewport={"width": 1440, "height": 1000})
                     page = desktop.new_page()
                     response = page.goto("http://127.0.0.1:8000/corpus/")
@@ -156,7 +155,6 @@ def main() -> None:
                     assert response.status == 403
                     recovery.goto("http://127.0.0.1:8000/corpus/")
                     assert recovery.get_by_role("link", name="fixture-1", exact=True).count() == 0
-                    assert not page.request if False else True
                     browser.close()
             finally:
                 server.terminate()
