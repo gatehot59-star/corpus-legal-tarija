@@ -28,6 +28,13 @@ on:
       - 'tests/test_browser_auth.py'
       - 'tests/browser_auth.cjs'
       - '.github/workflows/clean-snapshot.yml'
+      - 'sistema/api/protected_search.py'
+      - 'sistema/api/demo_discovery.py'
+      - 'sistema/web/discovery_spike.html'
+      - 'tests/test_protected_search.py'
+      - 'tests/test_demo_discovery.py'
+      - 'tests/browser_discovery.cjs'
+      - 'sistema/DEMO-DISCOVERY.md'
   workflow_dispatch:
 permissions:
   contents: read
@@ -68,6 +75,13 @@ jobs:
           set -euo pipefail
           python3 -m py_compile tests/test_browser_auth.py
           timeout 60s python3 tests/test_browser_auth.py
+      - name: Test protected synthetic discovery and raw HTTP
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile sistema/api/protected_search.py sistema/api/demo_discovery.py tests/test_protected_search.py tests/test_demo_discovery.py
+          timeout 120s python3 tests/test_protected_search.py
+          timeout 120s python3 tests/test_demo_discovery.py
       - name: Test real Chromium login, exact reading and logout
         shell: bash
         run: |
@@ -79,3 +93,5 @@ jobs:
           export NODE_PATH="$tools/node_modules"
           node --check tests/browser_auth.cjs
           timeout 120s node tests/browser_auth.cjs
+          node --check tests/browser_discovery.cjs
+          timeout 120s node tests/browser_discovery.cjs
