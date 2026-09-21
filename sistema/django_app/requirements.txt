@@ -1,0 +1,6 @@
+# sistema/django_app/requirements.txt; verified registry pins, 2026-09-21.
+Django==5.2.17
+asgiref==3.12.1
+sqlparse==0.6.0
+gunicorn==26.2.0
+coverage==7.16.1
