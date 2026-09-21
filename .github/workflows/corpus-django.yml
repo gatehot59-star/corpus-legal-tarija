@@ -40,3 +40,36 @@ jobs:
           docker build -f sistema/django_app/Dockerfile -t corpus-django:ci .
           docker image inspect corpus-django:ci --format '{{.Id}} {{.Config.User}}'
           docker run --rm --network none -e CORPUS_TEST_PROFILE=synthetic -e CORPUS_DB=/tmp/corpus.sqlite3 --entrypoint python corpus-django:ci manage.py test corpus.tests --verbosity=2
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CORPUS_TEST_PROFILE: synthetic
+      CORPUS_DB: /tmp/corpus-browser.sqlite3
+      CORPUS_PYTHON: /tmp/corpus-browser-venv/bin/python
+      FONTCONFIG_FILE: /etc/fonts/fonts.conf
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install browser fonts and fontconfig
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y fontconfig fonts-dejavu
+          fc-cache -f -v
+          fc-match sans
+      - name: Install exact app and browser dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/corpus-browser-venv
+          /tmp/corpus-browser-venv/bin/pip install -r sistema/django_app/requirements.txt -r sistema/django_app/browser-requirements.txt
+          /tmp/corpus-browser-venv/bin/pip check
+          /tmp/corpus-browser-venv/bin/python -m playwright install chromium
+      - name: Run full synthetic browser journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/corpus-browser-venv/bin/python tests/browser_acceptance.py
