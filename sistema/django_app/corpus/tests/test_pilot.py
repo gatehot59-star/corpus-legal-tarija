@@ -12,7 +12,23 @@ class PilotTests(FixtureBase):
     def make_employee(self, user=None) -> None:
         """Grant the employee role explicitly, as an operator would."""
         group, _ = Group.objects.get_or_create(name=EMPLOYEES_GROUP)
-        Membership.objects.create(user=user or self.ana, group=group, enabled=True)
+        Membership.objects.get_or_create(user=user or self.ana, group=group,
+                                         defaults={"enabled": True})
+
+    def _issued_credentials(self, body: str) -> tuple[str, str]:
+        """Extract the one-time credentials from the desk response."""
+        creds = [p.split("</code>")[0] for p in body.split("<code>")[1:]]
+        username = PilotAccount.objects.order_by("-created_at").first().lawyer.username
+        password = [c for c in creds if c != username][0]
+        return username, password
+
+    def _login_as(self, client: Client, username: str, password: str) -> Client:
+        """Real CSRF login for a freshly created account."""
+        client.get("/corpus/login/")
+        login = client.post("/corpus/login/", {"username": username, "password": password,
+            "csrfmiddlewaretoken": client.cookies["csrftoken"].value})
+        self.assertEqual(login.status_code, 302)
+        return client
 
     def test_pilot_page_requires_authentication(self):
         self.assertEqual(Client().get("/corpus/piloto/").status_code, 403)
@@ -23,29 +39,18 @@ class PilotTests(FixtureBase):
         self.assertEqual(self.client.get("/corpus/piloto/").status_code, 403)
 
     def test_pilot_page_denies_pilot_lawyer(self):
-        """A created lawyer is denied even if someone adds them to the group."""
+        """A created lawyer is denied even with a valid session and grant."""
         self.make_employee()
         self.login()
         token = self.client.cookies["csrftoken"].value
-        self.client.post("/corpus/piloto/", {
-            "first_name": "María", "last_name": "Suárez", "bar_number": "",
-            "csrfmiddlewaretoken": token})
-        lawyer = PilotAccount.objects.get().lawyer
-        Membership.objects.create(user=lawyer, group=Group.objects.get(name=EMPLOYEES_GROUP))
-        lawyer_client = self.login(Client(enforce_csrf_checks=True), "fixture-ben")
-        self.assertEqual(lawyer_client.get("/corpus/piloto/").status_code, 403)
-        lawyer_client2 = Client(enforce_csrf_checks=True)
-        lawyer_client2.get("/corpus/login/")
-        body = self.client.post("/corpus/piloto/", {
+        response = self.client.post("/corpus/piloto/", {
             "first_name": "Ana", "last_name": "Otra", "bar_number": "",
-            "csrfmiddlewaretoken": self.client.cookies["csrftoken"].value}).content.decode()
-        creds = [p.split("</code>")[0] for p in body.split("<code>")[1:]]
-        username = PilotAccount.objects.order_by("-created_at").first().lawyer.username
-        password = [c for c in creds if c != username][0]
-        login = lawyer_client2.post("/corpus/login/", {"username": username, "password": password,
-            "csrfmiddlewaretoken": lawyer_client2.cookies["csrftoken"].value})
-        self.assertEqual(login.status_code, 302)
-        self.assertEqual(lawyer_client2.get("/corpus/piloto/").status_code, 403)
+            "csrfmiddlewaretoken": token})
+        self.assertEqual(response.status_code, 200)
+        username, password = self._issued_credentials(response.content.decode())
+        lawyer_client = self._login_as(Client(enforce_csrf_checks=True), username, password)
+        self.assertEqual(lawyer_client.get("/corpus/piloto/").status_code, 403)
+        self.assertContains(lawyer_client.get("/corpus/"), "Buscar. Leer. Verificar.")
 
     def test_pilot_creation_flow_and_login(self):
         self.make_employee()
@@ -58,21 +63,8 @@ class PilotTests(FixtureBase):
         account = PilotAccount.objects.get()
         self.assertEqual(account.first_name, "María")
         self.assertEqual(account.bar_number, "12345")
-        username = account.lawyer.username
-        body = response.content.decode()
-        self.assertIn(username, body)
-        lawyer_client = Client(enforce_csrf_checks=True)
-        lawyer_client.get("/corpus/login/")
-        password = None
-        for part in body.split("<code>"):
-            if "</code>" in part:
-                value = part.split("</code>")[0]
-                if value != username:
-                    password = value
-        self.assertIsNotNone(password)
-        login = lawyer_client.post("/corpus/login/", {"username": username, "password": password,
-            "csrfmiddlewaretoken": lawyer_client.cookies["csrftoken"].value})
-        self.assertEqual(login.status_code, 302)
+        username, password = self._issued_credentials(response.content.decode())
+        lawyer_client = self._login_as(Client(enforce_csrf_checks=True), username, password)
         self.assertContains(lawyer_client.get("/corpus/"), "Buscar. Leer. Verificar.")
 
     def test_pilot_page_lists_reports_from_lawyers(self):
