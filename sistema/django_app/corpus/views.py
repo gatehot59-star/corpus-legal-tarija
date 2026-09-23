@@ -18,7 +18,7 @@ from django.views.decorators.http import require_http_methods
 from contracts.corpus_django import Principal, DocumentLocator, ErrorCode
 from .access import CorpusError, state_for
 from .forms import BrowseForm, QueryForm, PrivateResetForm, strict
-from .models import PolicyState, AttemptBudget, PrivateFeedback
+from .models import PolicyState, AttemptBudget, PrivateFeedback, Locator
 from .services import Application
 
 app = Application()
@@ -104,6 +104,24 @@ def logout_view(request):
     strict(request.POST, {"csrfmiddlewaretoken"})
     logout(request)
     return redirect("login")
+
+
+@require_http_methods(["POST"])
+@guarded
+def theme_view(request):
+    """Persist the reading theme in a first-party cookie; pages run script-free."""
+    strict(request.GET, set())
+    strict(request.POST, {"csrfmiddlewaretoken", "theme", "next"})
+    theme = request.POST.get("theme", "")
+    if theme not in {"light", "dark", "auto"}:
+        raise CorpusError(ErrorCode.INVALID_INPUT)
+    target = request.POST.get("next", "/corpus/")
+    if not target.startswith("/") or target.startswith("//"):
+        target = "/corpus/"
+    response = redirect(target)
+    response.set_cookie("corpus_theme", theme, max_age=365 * 24 * 3600,
+                        samesite="Lax", secure=not settings.TESTING, httponly=True)
+    return response
 
 
 @require_http_methods(["GET", "POST"])
@@ -199,10 +217,14 @@ def read_view(request):
             raise ValueError
         if not limit_text.isascii() or not limit_text.isdecimal() or str(int(limit_text)) != limit_text:
             raise ValueError
-        result = app.read(p, locator_from(request.GET), int(start_text), int(limit_text))
+        locator = locator_from(request.GET)
+        result = app.read(p, locator, int(start_text), int(limit_text))
     except ValueError:
         raise CorpusError(ErrorCode.INVALID_INPUT)
-    return render(request, "corpus/workspace.html", {"text": result})
+    row = Locator.objects.filter(collection_id=locator.collection_id, uid=locator.uid,
+                                 version_sha256=locator.version_sha256).first()
+    title = row.title if row and row.title else locator.uid
+    return render(request, "corpus/workspace.html", {"text": result, "doc_title": title})
 
 
 @require_http_methods(["POST"])
