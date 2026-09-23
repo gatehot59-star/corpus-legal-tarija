@@ -2,6 +2,7 @@
 import re
 import secrets
 import time
+from collections import Counter
 from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -10,12 +11,34 @@ from django.utils import timezone
 from contracts import corpus_django as dto
 from . import access
 from .reader import read_exact, search_snapshot, browse_snapshot
-from .models import SavedReference, PrivateFeedback, Collection, AccessGrant, Membership, PilotAccount
+from .models import (SavedReference, PrivateFeedback, Collection, AccessGrant, Membership,
+                     PilotAccount, PilotEvent)
 
 
 def locator_of(row) -> dto.DocumentLocator:
     """Convert a server catalog row into the public exact-version locator."""
     return dto.DocumentLocator(row.collection_id, row.uid, row.version_sha256)
+
+
+SESSION_GAP = timedelta(minutes=30)
+
+
+def usage_for(lawyer) -> dict:
+    """Estimate usage from recorded events: visits, minutes, sections and last visit."""
+    events = list(PilotEvent.objects.filter(lawyer=lawyer).order_by("at"))
+    minutes = 0.0
+    sessions = 0
+    last = None
+    for event in events:
+        if last is None or event.at - last > SESSION_GAP:
+            sessions += 1
+            minutes += 1.0
+        else:
+            minutes += (event.at - last).total_seconds() / 60
+        last = event.at
+    sections = Counter(event.section for event in events).most_common(3)
+    return {"pages": len(events), "sessions": sessions, "minutes": int(round(minutes)),
+            "last_at": last, "sections": sections}
 
 
 class Application:
@@ -165,6 +188,35 @@ class Application:
                                     last_name=last_name.strip(), bar_number=bar_number.strip(),
                                     created_by=operator_user)
         return {"username": username, "password": password}
+
+    @transaction.atomic
+    def reissue_pilot_password(self, operator: dto.Principal, account_id) -> dict:
+        """Re-issue a lawyer's password: shown once to the employee, stored hashed."""
+        access.require_employee(operator)
+        account = PilotAccount.objects.select_related("lawyer").filter(pk=account_id).first()
+        if account is None or account.status != "activa":
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        password = secrets.token_urlsafe(9)
+        account.lawyer.set_password(password)
+        account.lawyer.save(update_fields=["password"])
+        return {"username": account.lawyer.username, "password": password}
+
+    @transaction.atomic
+    def deactivate_pilot(self, operator: dto.Principal, account_id) -> str:
+        """Remove a lawyer's access: account off, grants revoked, history preserved."""
+        access.require_employee(operator)
+        account = PilotAccount.objects.select_related("lawyer").filter(pk=account_id).first()
+        if account is None or account.status != "activa":
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        now = timezone.now()
+        account.status = "eliminada"
+        account.save(update_fields=["status"])
+        lawyer = account.lawyer
+        lawyer.is_active = False
+        lawyer.save(update_fields=["is_active"])
+        AccessGrant.objects.filter(user=lawyer, revoked_at__isnull=True).update(revoked_at=now)
+        Membership.objects.filter(user=lawyer, enabled=True).update(enabled=False)
+        return lawyer.username
 
 
 class OfflineRecovery:
