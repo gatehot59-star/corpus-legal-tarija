@@ -1,5 +1,7 @@
 """sistema/django_app/corpus/tracking.py: server-side pilot usage telemetry."""
-from .models import PilotAccount, PilotEvent
+from .models import PilotAccount, PilotEvent, Membership
+from .access import EMPLOYEES_GROUP
+from contracts.corpus_django import Principal
 
 IGNORED_PREFIXES = ("/corpus/live/", "/corpus/ready/", "/corpus/health/", "/corpus/theme/",
                     "/corpus/logout/", "/corpus/reset", "/corpus/piloto/")
@@ -31,7 +33,7 @@ def classify(request):
 
 
 class PilotTrackingMiddleware:
-    """Record pilot usage and keep the employee portal unadvertised inside Corpus."""
+    """Record pilot usage and route the shared login by the authenticated role."""
 
     def __init__(self, get_response) -> None:
         self.get_response = get_response
@@ -39,11 +41,22 @@ class PilotTrackingMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         try:
+            self._route_shared_login(request, response)
             self._hide_employee_portal_link(response)
             self._record(request, response)
         except Exception:
             pass  # Telemetry and presentation cleanup never break the product.
         return response
+
+    @staticmethod
+    def _route_shared_login(request, response) -> None:
+        """Send authenticated employees to the panel while lawyers go to Corpus."""
+        if (request.path == "/corpus/login/" and request.method == "POST"
+                and response.status_code == 302 and getattr(request.user, "is_authenticated", False)):
+            enabled = Membership.objects.filter(
+                user_id=request.user.pk, enabled=True, group__name=EMPLOYEES_GROUP).exists()
+            if enabled and not PilotAccount.objects.filter(lawyer_id=request.user.pk).exists():
+                response["Location"] = "/empleados/"
 
     @staticmethod
     def _hide_employee_portal_link(response) -> None:
