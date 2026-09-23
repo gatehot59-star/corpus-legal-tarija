@@ -6,6 +6,7 @@ urlpatterns = [
     path("", views.workspace, name="workspace"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
+    path("theme/", views.theme_view, name="theme"),
     path("reset/", views.reset_request, name="reset"),
     path("reset/<str:uid>/<str:token>/", views.reset_confirm, name="reset-confirm"),
     path("read/", views.read_view, name="read"),
