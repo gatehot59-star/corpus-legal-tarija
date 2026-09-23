@@ -69,14 +69,16 @@ def read_exact(row: Locator, start: int, limit: int) -> dict:
             os.close(fd)
 
 
-def search_snapshot(row: Locator, query: str, allowed_uids: set[str]) -> dict[str, str]:
-    """Search the adapted FTS index, returning only already-authorized UIDs."""
+def search_snapshot(row: Locator, query: str, allowed_uids: set[str]) -> dict[str, str] | None:
+    """Search the adapted FTS index, or signal that the fixture has no FTS table."""
     fd = -1
     try:
         fd = _open_verified(row)
         with closing(sqlite3.connect(f"/proc/self/fd/{fd}")) as db:
             db.execute("PRAGMA query_only=ON")
             db.execute("PRAGMA trusted_schema=OFF")
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='chunks'").fetchone() is None:
+                return None
             phrase = '"' + query.replace('"', '""') + '"'
             found: dict[str, str] = {}
             for uid, snippet in db.execute(
