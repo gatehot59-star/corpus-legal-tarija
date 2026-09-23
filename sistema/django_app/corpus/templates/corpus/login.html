@@ -101,9 +101,11 @@ small,.muted{color:var(--muted)}
 <body>
 <main>
   <section class="hero">
+    {% if mode != "sent" %}
     <div class="topline">
       <form method="post" action="{% url 'theme' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="theme" value="{% if request.COOKIES.corpus_theme == 'dark' %}light{% else %}dark{% endif %}"><button type="submit" class="theme-toggle" data-theme-toggle aria-pressed="{% if request.COOKIES.corpus_theme == 'dark' %}true{% else %}false{% endif %}">{% if request.COOKIES.corpus_theme == 'dark' %}Modo claro{% else %}Modo noche{% endif %}</button></form>
     </div>
+    {% endif %}
     <div class="brand" aria-label="Corpus Tarija">
       <span class="brand-mark">CT</span>
       <span class="brand-text"><strong>Corpus Tarija</strong><span>Acceso privado</span></span>
@@ -113,10 +115,12 @@ small,.muted{color:var(--muted)}
       <h1>Tu mesa de lectura</h1>
       <p>Consulta privada con versión y procedencia verificables. La interfaz queda más clara para trabajar con el catálogo, la lectura exacta y las referencias sin ruido.</p>
     </div>
+    {% if mode != "sent" %}
     <div class="notice">
       <strong>Modo noche</strong>
       <div>Se adapta solo a la preferencia de tu dispositivo, y podés fijarlo con el botón de arriba.</div>
     </div>
+    {% endif %}
   </section>
   <section class="panel">
     {% if mode == "sent" %}
