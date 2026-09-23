@@ -188,11 +188,11 @@ def portal(request):
     p = principal(request)
     require_employee(p)
     created = None
-    form = PilotForm(request.POST if request.method == "POST" and request.POST.get("account_type") == "lawyer" else None)
+    role = request.POST.get("account_type", "lawyer") if request.method == "POST" else "lawyer"
+    form = PilotForm(request.POST if request.method == "POST" and role == "lawyer" else None)
     if request.method == "POST":
         strict(request.POST, {"account_type", "first_name", "last_name", "bar_number", "csrfmiddlewaretoken"})
         consume_budget(request, "portal-account")
-        role = request.POST.get("account_type")
         first = request.POST.get("first_name", "").strip()
         last = request.POST.get("last_name", "").strip()
         if role == "employee":
