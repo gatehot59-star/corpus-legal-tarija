@@ -37,6 +37,21 @@ class BrowseForm(forms.Form):
     limit = forms.RegexField(r"^([1-9]|[1-4][0-9]|50)$", initial="20", required=False)
 
 
+class PilotForm(forms.Form):
+    """Employee-facing pilot signup: name, surname and optional bar number."""
+    first_name = forms.CharField(min_length=2, max_length=80)
+    last_name = forms.CharField(min_length=2, max_length=80)
+    bar_number = forms.CharField(max_length=40, required=False)
+
+    def clean_first_name(self) -> str:
+        value = self.cleaned_data["first_name"].strip()
+        return " ".join(value.split())
+
+    def clean_last_name(self) -> str:
+        value = self.cleaned_data["last_name"].strip()
+        return " ".join(value.split())
+
+
 class PrivateResetForm(PasswordResetForm):
     """Use Django tokens; fixed origin, no external templates or real email here."""
     def send_mail(self, subject_template_name, email_template_name, context,
