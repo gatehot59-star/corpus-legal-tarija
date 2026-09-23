@@ -1,0 +1,100 @@
+<!-- sistema/django_app/corpus/templates/corpus/portal_login.html: independent employee entrance. -->
+<!doctype html>
+<html lang="es" data-theme="{{ request.COOKIES.corpus_theme|default:'auto' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Corpus Tarija · Panel de empleados</title>
+<style>
+:root{
+  --bg:#f6f1e8; --bg-elev:#fbf8f1; --card:#fffdf8; --card-soft:#f3ecdf;
+  --text:#251c15; --muted:#6f665b; --line:#d9cfc0;
+  --accent:#173f5f; --accent-2:#7a1f1f; --accent-soft:#dce7ee;
+  --shadow:0 14px 34px rgba(44,30,18,.09); --radius:16px;
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color-scheme:light;
+}
+html[data-theme="dark"]{
+  --bg:#0f1217; --bg-elev:#151a21; --card:#1a2029; --card-soft:#121820;
+  --text:#f4ede1; --muted:#b8ad9e; --line:#334050;
+  --accent:#8ec6ff; --accent-2:#e5b567; --accent-soft:#1d2a38;
+  --shadow:0 14px 34px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: dark){
+  html[data-theme="auto"]{
+    --bg:#0f1217; --bg-elev:#151a21; --card:#1a2029; --card-soft:#121820;
+    --text:#f4ede1; --muted:#b8ad9e; --line:#334050;
+    --accent:#8ec6ff; --accent-2:#e5b567; --accent-soft:#1d2a38;
+    --shadow:0 14px 34px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;
+  background:linear-gradient(180deg, var(--bg) 0%, var(--bg-elev) 100%);
+  color:var(--text);font:15px/1.55 var(--sans);
+  display:grid;place-items:center;padding:1rem;
+}
+a{color:var(--accent)}
+button,input{font:inherit}
+button{
+  border:0;border-radius:12px;background:var(--accent);color:#fff;
+  padding:.7rem 1rem;cursor:pointer;font-weight:600;
+}
+html[data-theme="dark"] button{color:#10151c}
+input{
+  width:100%;border:1px solid var(--line);border-radius:12px;
+  background:var(--card);color:var(--text);padding:.7rem .85rem;outline:none;
+}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(23,63,95,.18)}
+label{display:block;font-weight:600;margin-bottom:.3rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.gate-card{max-width:420px;width:100%;padding:1.4rem;display:grid;gap:.9rem}
+.brand{display:flex;align-items:center;gap:.6rem}
+.brand-mark{
+  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none;
+  background:var(--accent);color:#fff;font-family:var(--serif);font-weight:700;
+}
+html[data-theme="dark"] .brand-mark{color:#10151c}
+.brand-text strong{display:block;font-family:var(--serif);font-size:1.05rem}
+.brand-text span{display:block;color:var(--muted);font-size:.85rem}
+h1{font-family:var(--serif);font-size:1.6rem;margin:.2rem 0 0}
+p{margin:0;color:var(--muted);font-size:.95rem}
+form{display:grid;gap:.75rem;margin-top:.2rem}
+.errorlist{
+  margin:0;padding:.7rem .9rem;list-style:none;border-radius:10px;
+  background:var(--accent-soft);border:1px solid var(--line);color:var(--text);font-size:.9rem;
+}
+.note{font-size:.88rem}
+</style>
+</head>
+<body>
+<main class="card gate-card">
+  <div class="brand">
+    <span class="brand-mark">CT</span>
+    <span class="brand-text"><strong>Corpus Tarija</strong><span>Panel de empleados</span></span>
+  </div>
+  <div>
+    <h1>Entrada del equipo</h1>
+    <p>Ventana independiente del Corpus. Acá se crean las cuentas de la prueba piloto y se releva el uso y los informes.</p>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="field">
+      <label for="id_username">Usuario</label>
+      {{ form.username }}
+    </div>
+    <div class="field">
+      <label for="id_password">Contraseña</label>
+      {{ form.password }}
+    </div>
+    <button type="submit">Entrar al panel</button>
+  </form>
+  <p class="note">¿Sos abogado? Tu entrada es la <a href="/corpus/login/">página principal de Corpus Tarija</a>.</p>
+</main>
+</body>
+</html>
