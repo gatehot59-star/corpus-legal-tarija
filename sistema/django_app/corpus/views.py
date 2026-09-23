@@ -17,7 +17,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.http import require_http_methods
 from contracts.corpus_django import Principal, DocumentLocator, ErrorCode
 from .access import CorpusError, state_for
-from .forms import QueryForm, PrivateResetForm, strict
+from .forms import BrowseForm, QueryForm, PrivateResetForm, strict
 from .models import PolicyState, AttemptBudget, PrivateFeedback
 from .services import Application
 
@@ -155,20 +155,34 @@ def locator_from(data) -> DocumentLocator:
 @require_http_methods(["GET"])
 @guarded
 def workspace(request):
-    """Render search, private references and owned report receipts."""
+    """Render search, authorized catalog navigation, private references and reports."""
     p = principal(request)
-    strict(request.GET, {"q", "offset", "limit"})
-    page = None
-    form = QueryForm(request.GET or None)
-    if request.GET:
-        if not form.is_valid():
+    if "browse" in request.GET:
+        strict(request.GET, {"browse", "source", "rubro", "tipo", "offset", "limit"})
+        browse_form = BrowseForm(request.GET or None)
+        if not browse_form.is_valid():
             raise CorpusError(ErrorCode.INVALID_INPUT)
-        page = app.search(p, form.cleaned_data["q"],
-                          int(form.cleaned_data["offset"] or 0), int(form.cleaned_data["limit"] or 10))
+        data = browse_form.cleaned_data
+        catalog = app.browse(p, data.get("source", ""), data.get("rubro", ""), data.get("tipo", ""),
+                              int(data.get("offset") or 0), int(data.get("limit") or 20))
+        form = QueryForm(None)
+        page = None
+    else:
+        strict(request.GET, {"q", "offset", "limit"})
+        form = QueryForm(request.GET or None)
+        page = None
+        catalog = None
+        if request.GET:
+            if not form.is_valid():
+                raise CorpusError(ErrorCode.INVALID_INPUT)
+            page = app.search(p, form.cleaned_data["q"],
+                              int(form.cleaned_data["offset"] or 0), int(form.cleaned_data["limit"] or 10))
+        browse_form = BrowseForm(initial={"browse": "1", "limit": "20"})
     refs = app.list_references(p)
     feedback = PrivateFeedback.objects.filter(owner_id=p.user_id).order_by("-created_at")[:20]
-    return render(request, "corpus/workspace.html", {"form": form, "page": page,
-                  "references": refs, "feedback": feedback, "query": request.GET.get("q", "")})
+    return render(request, "corpus/workspace.html", {"form": form, "page": page, "catalog": catalog,
+                  "browse_form": browse_form, "references": refs, "feedback": feedback,
+                  "query": request.GET.get("q", "")})
 
 
 @require_http_methods(["GET"])
