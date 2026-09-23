@@ -84,7 +84,8 @@ class Application:
             "collection_id", "uid", "version_sha256"))
         if not rows:
             return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
-        return browse_snapshot(rows[0], {row.uid for row in rows}, source, rubro, tipo, offset, limit)
+        versions = {row.uid: row.version_sha256 for row in rows}
+        return browse_snapshot(rows[0], versions, source, rubro, tipo, offset, limit)
 
     @transaction.atomic
     def save_reference(self, principal, locator) -> dto.SavedReference:
