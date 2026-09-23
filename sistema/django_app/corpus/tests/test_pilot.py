@@ -103,9 +103,9 @@ class PilotTests(FixtureBase):
         self.assertNotEqual(stored, "")
         self.assertFalse(stored.isalnum())
 
-    def test_workspace_shows_pilot_link_only_to_employees(self):
-        """The portal link appears for employees and stays hidden for readers."""
+    def test_workspace_hides_employee_portal_from_everyone(self):
+        """Corpus never advertises the separate employee portal, including to employees."""
         self.login()
         self.assertNotContains(self.client.get("/corpus/"), "Panel de empleados")
         self.make_employee()
-        self.assertContains(self.client.get("/corpus/"), "Panel de empleados")
+        self.assertNotContains(self.client.get("/corpus/"), "Panel de empleados")
