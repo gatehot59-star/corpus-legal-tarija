@@ -1,15 +1,581 @@
 <!-- sistema/django_app/corpus/templates/corpus/workspace.html: authorized reading desk. -->
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Corpus · Mesa de lectura</title>
-<style>body{margin:0;background:#f4f7ef;color:#263721;font:18px/1.65 system-ui,sans-serif}header,main{max-width:72rem;margin:auto;padding:1.5rem}header{display:flex;justify-content:space-between;align-items:center;background:#e4ecd8}h1,h2{font-family:Georgia,serif}h1{font-size:2.5rem}a{color:#345e20;overflow-wrap:anywhere}button{background:#345e20;color:white;padding:.65rem 1rem;border:0;font:inherit;cursor:pointer}input,textarea,select{padding:.6rem;font:inherit;max-width:100%;box-sizing:border-box}label{display:block}article{margin:1.5rem 0;max-width:58rem;border-bottom:1px solid #c7d4bb;padding-bottom:1rem}pre{font:1.1rem/1.8 Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere;max-width:52rem}.provenance{background:#e4ecd8;padding:1rem;overflow-wrap:anywhere;font-size:1rem}code{overflow-wrap:anywhere}textarea{width:100%;min-height:8rem}details{max-width:62rem;margin:1.5rem 0}small{font-size:1rem}.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:end}.meta{color:#52624d;font-size:1rem}@media(max-width:600px){header{display:block}main{padding:1rem}.filters{display:block}.filters>*{margin-bottom:1rem}}</style></head>
-<body><header><strong>CORPUS / TARIJA</strong><a href="{% url 'workspace' %}">Mesa de lectura</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>Salir</button></form></header><main>
-{% if text %}<h1>Lectura verificada</h1><div class="provenance"><strong>Fuente secundaria. Vigencia jurídica no medida.</strong><br>Fuente: {{ text.source_url }}<br>Versión exacta: <code>{{ text.locator.version_sha256 }}</code><br>SHA de fuente: <code>{{ text.source_sha256 }}</code><br>Caracteres {{ text.start }} a {{ text.end }} de {{ text.total_characters }}</div><pre>{{ text.text }}</pre>
-{% if text.next_start != None %}<a href="?collection={{ text.locator.collection_id }}&amp;uid={{ text.locator.uid|urlencode }}&amp;version={{ text.locator.version_sha256 }}&amp;start={{ text.next_start }}">Seguir leyendo</a>{% endif %}
-<form method="post" action="{% url 'save' %}">{% csrf_token %}<input type="hidden" name="collection" value="{{ text.locator.collection_id }}"><input type="hidden" name="uid" value="{{ text.locator.uid }}"><input type="hidden" name="version" value="{{ text.locator.version_sha256 }}"><button>Guardar referencia privada</button></form>
-<details><summary>Reportar un problema en privado</summary><form method="post" action="{% url 'feedback' %}">{% csrf_token %}<input type="hidden" name="collection" value="{{ text.locator.collection_id }}"><input type="hidden" name="uid" value="{{ text.locator.uid }}"><input type="hidden" name="version" value="{{ text.locator.version_sha256 }}"><label>Categoría<select name="category"><option value="extraction">Extracción</option><option value="metadata">Metadatos</option><option value="access">Acceso</option><option value="other">Otro</option></select></label><label>Descripción, sin datos personales<textarea name="description" required maxlength="2000"></textarea></label><button>Enviar reporte privado</button></form></details>
-{% else %}<h1>Buscar. Leer. Verificar.</h1><form method="get"><label for="q">Buscá en tus colecciones autorizadas</label><input id="q" name="q" value="{{ query }}" required maxlength="128"><button>Buscar</button></form>
-<details open><summary><strong>Explorar por fuente y rubro</strong></summary><p class="meta">Navegá el catálogo real sin conocer el texto exacto. Los resultados siguen filtrados por tu autorización.</p><form method="get"><input type="hidden" name="browse" value="1"><div class="filters"><label>Fuente<select name="source"><option value="">Todas las fuentes</option>{% for value,label in catalog_facets.sources %}<option value="{{ value }}"{% if request.GET.source == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><label>Rubro / materia<select name="rubro"><option value="">Todos los rubros</option>{% for value in catalog_facets.rubros %}<option value="{{ value }}"{% if request.GET.rubro == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label><label>Tipo de norma<select name="tipo"><option value="">Todos los tipos</option>{% for value in catalog_facets.tipos %}<option value="{{ value }}"{% if request.GET.tipo == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label></div><p><button>Explorar catálogo</button></p></form>
-{% if catalog %}<section aria-label="Catálogo por fuente y rubro">{% for item in catalog.items %}<article><h2><a href="{% url 'read' %}?collection={{ item.collection_id }}&amp;uid={{ item.uid|urlencode }}&amp;version={{ item.version_sha256 }}">{{ item.title }}</a></h2><p class="meta">{{ item.source_name }} · {{ item.matter|default:"Rubro no informado" }} · {{ item.type|default:"Tipo no informado" }}{% if item.department %} · {{ item.department }}{% endif %}</p><p>{{ item.jurisdiction }}{% if item.organ %} · {{ item.organ }}{% endif %}</p></article>{% empty %}<p>No hay documentos autorizados con esos filtros.</p>{% endfor %}{% if catalog.next_offset != None %}<a href="?browse=1&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ catalog.next_offset }}">Más documentos</a>{% endif %}</section>{% endif %}</details>
-{% if page %}<section aria-label="Resultados">{% for hit in page.results %}<article><h2><a href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">{{ hit.title }}</a></h2><p>{{ hit.snippet }}</p><small>Fuente secundaria · Vigencia no medida</small></article>{% empty %}<p>Sin resultados autorizados para esta consulta.</p>{% endfor %}{% if page.next_offset != None %}<a href="?q={{ query|urlencode }}&amp;offset={{ page.next_offset }}">Más resultados</a>{% endif %}</section>{% endif %}
-<h2>Tus referencias</h2>{% for ref in references %}<p><a href="{% url 'read' %}?collection={{ ref.locator.collection_id }}&amp;uid={{ ref.locator.uid|urlencode }}&amp;version={{ ref.locator.version_sha256 }}">{{ ref.locator.uid }}</a> · <code>{{ ref.locator.version_sha256 }}</code></p>{% empty %}<p>Todavía no hay referencias disponibles.</p>{% endfor %}
-<h2>Tus reportes privados</h2>{% for report in feedback %}<p>{{ report.created_at }} · {{ report.category }} · {{ report.status }}</p><blockquote>{{ report.description }}</blockquote>{% empty %}<p>No enviaste reportes.</p>{% endfor %}{% endif %}
-</main></body></html>
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Corpus · Mesa de lectura</title>
+<style>
+:root{
+  --bg:#f6f1e8;
+  --bg-elev:#fbf8f1;
+  --card:#fffdf8;
+  --card-soft:#f3ecdf;
+  --text:#251c15;
+  --muted:#6f665b;
+  --line:#d9cfc0;
+  --accent:#7a1f1f;
+  --accent-2:#173f5f;
+  --accent-soft:#ead7c2;
+  --shadow:0 18px 45px rgba(44,30,18,.10);
+  --radius:18px;
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color-scheme:light;
+}
+html[data-theme="dark"]{
+  --bg:#0f1217;
+  --bg-elev:#151a21;
+  --card:#1a2029;
+  --card-soft:#121820;
+  --text:#f4ede1;
+  --muted:#b8ad9e;
+  --line:#334050;
+  --accent:#e5b567;
+  --accent-2:#8ec6ff;
+  --accent-soft:#3a2d1a;
+  --shadow:0 18px 45px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at top left, rgba(122,31,31,.10), transparent 28%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-elev) 100%);
+  color:var(--text);
+  font:16px/1.55 var(--sans);
+  min-height:100vh;
+}
+a{color:var(--accent-2);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input,select,textarea{font:inherit}
+button,.button{
+  border:0;
+  border-radius:999px;
+  background:var(--accent);
+  color:#fff;
+  padding:.75rem 1rem;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  justify-content:center;
+}
+button.secondary,.button.secondary{
+  background:transparent;
+  color:var(--accent);
+  border:1px solid var(--line);
+}
+input,select,textarea{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--card);
+  color:var(--text);
+  padding:.85rem 1rem;
+  outline:none;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent-2);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-2) 18%, transparent);
+}
+textarea{min-height:9rem;resize:vertical}
+label{display:block;font-weight:600;margin-bottom:.35rem}
+small,.muted{color:var(--muted)}
+code{overflow-wrap:anywhere}
+
+.topbar{
+  position:sticky;top:0;z-index:20;
+  backdrop-filter: blur(12px);
+  background:color-mix(in srgb, var(--bg) 78%, transparent);
+  border-bottom:1px solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+.topbar-inner{
+  max-width:1280px;margin:0 auto;padding:1rem 1.25rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+}
+.brand{display:flex;align-items:center;gap:.75rem}
+.brand-mark{
+  width:40px;height:40px;border-radius:14px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  color:#fff;font-family:var(--serif);font-size:1.05rem;font-weight:700;
+  box-shadow:var(--shadow);
+}
+.brand-text strong{display:block;font-family:var(--serif);letter-spacing:.02em}
+.brand-text span{display:block;color:var(--muted);font-size:.92rem}
+.top-actions{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.theme-toggle{
+  border:1px solid var(--line);background:var(--card);color:var(--text);
+  padding:.65rem .9rem;border-radius:999px;
+}
+.logout-form{display:inline}
+.logout-form button{background:transparent;border:1px solid var(--line);color:var(--text)}
+
+.shell{
+  max-width:1280px;margin:0 auto;padding:1.5rem;
+  display:grid;grid-template-columns:320px minmax(0,1fr);gap:1.5rem;
+}
+.sidebar{
+  position:sticky;top:92px;align-self:start;
+  display:flex;flex-direction:column;gap:1rem;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+.panel{padding:1.1rem}
+.panel h2,.panel h3{margin:.2rem 0 .8rem;font-family:var(--serif)}
+.panel p{margin:.25rem 0 .8rem;color:var(--muted)}
+.panel form{display:grid;gap:.9rem}
+.field small{display:block;margin-top:.3rem}
+.filters-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+.link-list{display:grid;gap:.6rem}
+.link-item{
+  display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+  padding:.7rem .8rem;border:1px solid var(--line);border-radius:14px;background:var(--card-soft);
+}
+.link-item span{overflow-wrap:anywhere}
+
+.hero{padding:1.4rem;margin-bottom:1.25rem}
+.hero-grid{
+  display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.8fr);gap:1rem;align-items:stretch;
+}
+.kicker{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.35rem .7rem;border-radius:999px;background:var(--accent-soft);color:var(--text);
+  font-size:.88rem;font-weight:600;letter-spacing:.02em;text-transform:uppercase;
+}
+.hero h1{
+  font-family:var(--serif);
+  font-size:clamp(2.2rem, 5vw, 4rem);
+  line-height:.96;
+  margin:.55rem 0 .7rem;
+  max-width:12ch;
+}
+.hero p{max-width:62ch;color:var(--muted);font-size:1.02rem}
+.hero-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.75rem;margin-top:1rem}
+.hero-side{
+  display:grid;gap:.9rem;grid-template-rows:repeat(2,minmax(0,1fr));
+}
+.stat{
+  padding:1rem;display:flex;flex-direction:column;justify-content:space-between;
+  background:linear-gradient(180deg, var(--card) 0%, var(--card-soft) 100%);
+}
+.stat strong{font-size:1.8rem;font-family:var(--serif)}
+.stat span{color:var(--muted)}
+.notice{
+  margin-top:1rem;padding:1rem 1.1rem;border-radius:16px;
+  border:1px solid var(--line);background:var(--card-soft);
+}
+.notice strong{display:block;margin-bottom:.35rem}
+
+.grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem}
+.section-head{
+  display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:.8rem;
+}
+.section-head h2{font-family:var(--serif);font-size:1.6rem;margin:0}
+.section-head p{margin:0;color:var(--muted)}
+.cards{display:grid;gap:1rem}
+.doc-card{
+  padding:1rem 1.05rem;display:grid;gap:.65rem;
+}
+.doc-card h3{
+  margin:0;font-family:var(--serif);font-size:1.3rem;line-height:1.2;
+}
+.badges{display:flex;gap:.5rem;flex-wrap:wrap}
+.badge{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.3rem .65rem;border-radius:999px;background:var(--card-soft);
+  border:1px solid var(--line);color:var(--muted);font-size:.88rem;
+}
+.badge.strong{background:var(--accent-soft);color:var(--text)}
+.doc-meta{display:grid;gap:.35rem;color:var(--muted);font-size:.95rem}
+.doc-meta span{overflow-wrap:anywhere}
+.doc-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+.doc-actions .button.secondary{padding:.65rem .9rem}
+.empty{
+  padding:1.2rem;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted);
+  background:color-mix(in srgb, var(--card) 80%, transparent);
+}
+.pager{display:flex;justify-content:flex-start;margin-top:.5rem}
+.pager .button.secondary{min-width:9rem}
+
+.reader-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:1.25rem;align-items:start}
+.reader-card{padding:1.25rem}
+.reader-head{
+  display:flex;justify-content:space-between;gap:1rem;align-items:start;margin-bottom:1rem;
+}
+.reader-head h1{font-family:var(--serif);font-size:clamp(2rem,4vw,3.1rem);line-height:1;margin:0}
+.reader-text{
+  font-family:var(--serif);
+  font-size:1.08rem;
+  line-height:1.8;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  background:color-mix(in srgb, var(--card) 88%, var(--bg-elev));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:1.1rem;
+}
+.provenance{
+  padding:1rem;border-radius:var(--radius);border:1px solid var(--line);background:var(--card-soft);
+  display:grid;gap:.45rem;color:var(--muted);font-size:.95rem;
+}
+.provenance strong{color:var(--text)}
+.provenance .mono{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:.92rem}
+.action-stack{display:grid;gap:.75rem}
+.action-stack form{display:grid;gap:.7rem}
+details.card{padding:1rem}
+details summary{cursor:pointer;font-weight:600}
+
+@media (max-width: 1080px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:static;order:2}
+  .hero-grid,.grid-two,.reader-grid{grid-template-columns:1fr}
+  .hero-side{grid-template-rows:none;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 720px){
+  .topbar-inner{padding:.9rem 1rem}
+  .shell{padding:1rem}
+  .hero{padding:1rem}
+  .hero-search{grid-template-columns:1fr}
+  .hero-side{grid-template-columns:1fr}
+  .reader-head{flex-direction:column}
+  .top-actions{width:100%;justify-content:flex-start}
+}
+</style>
+<script>
+(function(){
+  var root = document.documentElement;
+  var toggle = document.querySelector('[data-theme-toggle]');
+  var stored = null;
+  try {
+    stored = window.localStorage ? window.localStorage.getItem('corpus-theme') : null;
+  } catch (error) {
+    stored = null;
+  }
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var theme = stored || (prefersDark ? 'dark' : 'light');
+  function apply(next){
+    root.setAttribute('data-theme', next);
+    if (toggle) {
+      toggle.textContent = next === 'dark' ? 'Modo claro' : 'Modo noche';
+      toggle.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
+    }
+  }
+  apply(theme);
+  if (toggle) {
+    toggle.addEventListener('click', function(){
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      apply(next);
+      try {
+        if (window.localStorage) {
+          window.localStorage.setItem('corpus-theme', next);
+        }
+      } catch (error) {
+        // keep theme only for the current view
+      }
+    });
+  }
+})();
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="{% url 'workspace' %}" aria-label="Ir a la mesa de lectura">
+      <span class="brand-mark">CT</span>
+      <span class="brand-text"><strong>Corpus Tarija</strong><span>Mesa profesional de lectura</span></span>
+    </a>
+    <div class="top-actions">
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar entre modo claro y modo noche">Modo noche</button>
+      <a class="button secondary" href="{% url 'workspace' %}">Volver al inicio</a>
+      <form class="logout-form" method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Salir</button></form>
+    </div>
+  </div>
+</header>
+
+{% if text %}
+<main class="shell">
+  <aside class="sidebar">
+    <section class="card panel">
+      <h2>Procedencia verificada</h2>
+      <p>La lectura se abre con la versión exacta y la fuente registradas en el snapshot.</p>
+      <div class="provenance">
+        <strong>Fuente secundaria. Vigencia jurídica no medida.</strong>
+        <span>Fuente: <a href="{{ text.source_url }}">{{ text.source_url }}</a></span>
+        <span class="mono">Versión exacta: {{ text.locator.version_sha256 }}</span>
+        <span class="mono">SHA de fuente: {{ text.source_sha256 }}</span>
+        <span>Caracteres {{ text.start }} a {{ text.end }} de {{ text.total_characters }}</span>
+      </div>
+    </section>
+
+    <section class="card panel">
+      <h3>Acciones privadas</h3>
+      <div class="action-stack">
+        {% if text.next_start != None %}
+          <a class="button secondary" href="?collection={{ text.locator.collection_id }}&amp;uid={{ text.locator.uid|urlencode }}&amp;version={{ text.locator.version_sha256 }}&amp;start={{ text.next_start }}">Seguir leyendo</a>
+        {% endif %}
+        <form method="post" action="{% url 'save' %}">
+          {% csrf_token %}
+          <input type="hidden" name="collection" value="{{ text.locator.collection_id }}">
+          <input type="hidden" name="uid" value="{{ text.locator.uid }}">
+          <input type="hidden" name="version" value="{{ text.locator.version_sha256 }}">
+          <button type="submit">Guardar referencia privada</button>
+        </form>
+        <details class="card">
+          <summary>Reportar un problema en privado</summary>
+          <form method="post" action="{% url 'feedback' %}">
+            {% csrf_token %}
+            <input type="hidden" name="collection" value="{{ text.locator.collection_id }}">
+            <input type="hidden" name="uid" value="{{ text.locator.uid }}">
+            <input type="hidden" name="version" value="{{ text.locator.version_sha256 }}">
+            <div class="field">
+              <label for="feedback-category">Categoría</label>
+              <select id="feedback-category" name="category">
+                <option value="extraction">Extracción</option>
+                <option value="metadata">Metadatos</option>
+                <option value="access">Acceso</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="feedback-description">Descripción, sin datos personales</label>
+              <textarea id="feedback-description" name="description" required maxlength="2000"></textarea>
+            </div>
+            <button type="submit">Enviar reporte privado</button>
+          </form>
+        </details>
+      </div>
+    </section>
+  </aside>
+
+  <section class="card reader-card">
+    <div class="reader-head">
+      <div>
+        <span class="kicker">Lectura verificada</span>
+        <h1>{{ text.locator.uid }}</h1>
+      </div>
+      <small>Documento legal protegido por autorización de usuario</small>
+    </div>
+    <div class="reader-text">{{ text.text }}</div>
+  </section>
+</main>
+{% else %}
+<main class="shell">
+  <aside class="sidebar">
+    <section class="card panel">
+      <h2>Explorar el catálogo</h2>
+      <p>Buscar por texto o navegar por fuente, rubro y tipo de norma. Todo sigue pasando por autorización.</p>
+      <form method="get">
+        <input type="hidden" name="browse" value="1">
+        <div class="field">
+          <label for="source">Fuente</label>
+          <select id="source" name="source">
+            <option value="">Todas las fuentes</option>
+            {% for value,label in catalog_facets.sources %}
+              <option value="{{ value }}"{% if request.GET.source == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="rubro">Rubro / materia</label>
+          <select id="rubro" name="rubro">
+            <option value="">Todos los rubros</option>
+            {% for value in catalog_facets.rubros %}
+              <option value="{{ value }}"{% if request.GET.rubro == value %} selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="tipo">Tipo de norma</label>
+          <select id="tipo" name="tipo">
+            <option value="">Todos los tipos</option>
+            {% for value in catalog_facets.tipos %}
+              <option value="{{ value }}"{% if request.GET.tipo == value %} selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filters-actions">
+          <button type="submit">Explorar catálogo</button>
+          <a class="button secondary" href="{% url 'workspace' %}">Limpiar</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="card panel">
+      <h3>Atajos útiles</h3>
+      <div class="link-list">
+        <a class="link-item" href="?browse=1"><span>Ver catálogo completo</span><span aria-hidden="true">→</span></a>
+        <a class="link-item" href="?q=ley"><span>Buscar “ley”</span><span aria-hidden="true">→</span></a>
+        <a class="link-item" href="?q=código"><span>Buscar “código”</span><span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section class="card panel">
+      <h3>Referencias y reportes</h3>
+      <div class="link-list">
+        <div class="link-item"><span>Referencias guardadas</span><strong>{{ references|length }}</strong></div>
+        <div class="link-item"><span>Reportes privados</span><strong>{{ feedback|length }}</strong></div>
+      </div>
+    </section>
+  </aside>
+
+  <section>
+    <div class="card hero">
+      <div class="hero-grid">
+        <div>
+          <span class="kicker">Corpus legal privado</span>
+          <h1>Buscar. Leer. Verificar.</h1>
+          <p>La mesa queda ordenada para investigar con más contexto: fuente, rubro, tipo de norma y versión exacta, sin saltarse permisos ni mezclar resultados de usuarios.</p>
+          <form class="hero-search" method="get">
+            <div class="field">
+              <label for="q">Buscar en tus colecciones autorizadas</label>
+              <input id="q" name="q" value="{{ query }}" required maxlength="128" placeholder="Ej.: propiedad, familia, sentencia, ley...">
+              <small>Podés buscar por texto completo o abrir el catálogo y entrar por metadata.</small>
+            </div>
+            <button type="submit">Buscar</button>
+          </form>
+        </div>
+        <div class="hero-side">
+          <div class="stat card">
+            <span>Fuentes disponibles</span>
+            <strong>{{ catalog_facets.sources|length }}</strong>
+          </div>
+          <div class="stat card">
+            <span>Rubros detectados</span>
+            <strong>{{ catalog_facets.rubros|length }}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="notice">
+        <strong>Qué cambió respecto del corpus anterior</strong>
+        <div>Se vuelve a ver el catálogo con contexto jurídico: fuente, rubro, tipo de norma, jurisdicción, órgano y enlace exacto a la lectura verificada. Además queda modo noche, mejor lectura en pantallas chicas y una jerarquía más clara para trabajar desde escritorio o celular.</div>
+      </div>
+    </div>
+
+    {% if catalog %}
+    <section class="grid-two" aria-label="Catálogo por fuente y rubro">
+      <div class="section-head" style="grid-column:1 / -1;">
+        <div>
+          <h2>Catálogo navegable</h2>
+          <p>Documentos autorizados, ordenados para entrar por contexto y no solo por término exacto.</p>
+        </div>
+      </div>
+      {% for item in catalog.items %}
+      <article class="card doc-card">
+        <div class="badges">
+          <span class="badge strong">{{ item.source_name }}</span>
+          {% if item.matter %}<span class="badge">{{ item.matter }}</span>{% endif %}
+          {% if item.type %}<span class="badge">{{ item.type }}</span>{% endif %}
+        </div>
+        <h3><a href="{% url 'read' %}?collection={{ item.collection_id }}&amp;uid={{ item.uid|urlencode }}&amp;version={{ item.version_sha256 }}">{{ item.title }}</a></h3>
+        <div class="doc-meta">
+          {% if item.jurisdiction %}<span><strong>Jurisdicción:</strong> {{ item.jurisdiction }}</span>{% endif %}
+          {% if item.organ %}<span><strong>Órgano:</strong> {{ item.organ }}</span>{% endif %}
+          {% if item.department %}<span><strong>Departamento:</strong> {{ item.department }}</span>{% endif %}
+        </div>
+        <div class="doc-actions">
+          <a class="button secondary" href="{% url 'read' %}?collection={{ item.collection_id }}&amp;uid={{ item.uid|urlencode }}&amp;version={{ item.version_sha256 }}">Abrir lectura verificada</a>
+        </div>
+      </article>
+      {% empty %}
+      <div class="empty">No hay documentos autorizados con esos filtros.</div>
+      {% endfor %}
+      {% if catalog.next_offset != None %}
+      <div class="pager" style="grid-column:1 / -1;">
+        <a class="button secondary" href="?browse=1&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ catalog.next_offset }}">Más documentos</a>
+      </div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if page %}
+    <section class="grid-two" aria-label="Resultados de búsqueda" style="margin-top:1.25rem;">
+      <div class="section-head" style="grid-column:1 / -1;">
+        <div>
+          <h2>Resultados de búsqueda</h2>
+          <p>Textos encontrados en las colecciones autorizadas, con acceso directo a la versión exacta.</p>
+        </div>
+      </div>
+      {% for hit in page.results %}
+      <article class="card doc-card">
+        <div class="badges">
+          <span class="badge strong">Resultado</span>
+          <span class="badge">Versión verificada</span>
+        </div>
+        <h3><a href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">{{ hit.title }}</a></h3>
+        <div class="doc-meta">
+          <span>{{ hit.snippet }}</span>
+          <span><strong>Fuente secundaria</strong> · Vigencia no medida</span>
+        </div>
+        <div class="doc-actions">
+          <a class="button secondary" href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">Abrir documento</a>
+        </div>
+      </article>
+      {% empty %}
+      <div class="empty">Sin resultados autorizados para esta consulta.</div>
+      {% endfor %}
+      {% if page.next_offset != None %}
+      <div class="pager" style="grid-column:1 / -1;">
+        <a class="button secondary" href="?q={{ query|urlencode }}&amp;offset={{ page.next_offset }}">Más resultados</a>
+      </div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="grid-two" style="margin-top:1.25rem;">
+      <div class="card panel">
+        <div class="section-head">
+          <div>
+            <h2>Tus referencias</h2>
+            <p>Accesos guardados para volver a la versión exacta sin copiar contenido.</p>
+          </div>
+        </div>
+        <div class="cards">
+          {% for ref in references %}
+          <div class="link-item">
+            <a href="{% url 'read' %}?collection={{ ref.locator.collection_id }}&amp;uid={{ ref.locator.uid|urlencode }}&amp;version={{ ref.locator.version_sha256 }}">{{ ref.locator.uid }}</a>
+            <code>{{ ref.locator.version_sha256 }}</code>
+          </div>
+          {% empty %}
+          <div class="empty">Todavía no hay referencias disponibles.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card panel">
+        <div class="section-head">
+          <div>
+            <h2>Tus reportes privados</h2>
+            <p>Estado de lo que reportaste sin exponerlo fuera de tu cuenta.</p>
+          </div>
+        </div>
+        <div class="cards">
+          {% for report in feedback %}
+          <div class="card doc-card" style="box-shadow:none;">
+            <div class="badges">
+              <span class="badge strong">{{ report.category }}</span>
+              <span class="badge">{{ report.status }}</span>
+            </div>
+            <div class="doc-meta">
+              <span>{{ report.created_at }}</span>
+              <span>{{ report.description }}</span>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty">No enviaste reportes.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </section>
+</main>
+{% endif %}
+</body>
+</html>
