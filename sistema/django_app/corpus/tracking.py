@@ -3,6 +3,7 @@ from .models import PilotAccount, PilotEvent
 
 IGNORED_PREFIXES = ("/corpus/live/", "/corpus/ready/", "/corpus/health/", "/corpus/theme/",
                     "/corpus/logout/", "/corpus/reset", "/corpus/piloto/")
+EMPLOYEE_PORTAL_LINK = b'<a class="button secondary" href="/empleados/">Panel de empleados</a>'
 
 
 def classify(request):
@@ -30,7 +31,7 @@ def classify(request):
 
 
 class PilotTrackingMiddleware:
-    """Record what pilot lawyers actually use; employees and failed requests are excluded."""
+    """Record pilot usage and keep the employee portal unadvertised inside Corpus."""
 
     def __init__(self, get_response) -> None:
         self.get_response = get_response
@@ -38,10 +39,19 @@ class PilotTrackingMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         try:
+            self._hide_employee_portal_link(response)
             self._record(request, response)
         except Exception:
-            pass  # Telemetry never breaks the product; a lost event beats a 500.
+            pass  # Telemetry and presentation cleanup never break the product.
         return response
+
+    @staticmethod
+    def _hide_employee_portal_link(response) -> None:
+        """Remove the employee-portal affordance from Corpus HTML, never from its own portal."""
+        content_type = response.get("Content-Type", "")
+        if (response.status_code < 400 and content_type.startswith("text/html")
+                and hasattr(response, "content")):
+            response.content = response.content.replace(EMPLOYEE_PORTAL_LINK, b"")
 
     def _record(self, request, response) -> None:
         user = getattr(request, "user", None)
