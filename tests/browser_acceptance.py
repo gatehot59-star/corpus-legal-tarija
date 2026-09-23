@@ -84,7 +84,7 @@ def main() -> None:
                     assert response.status == 403
                     login(page, "http://127.0.0.1:8000", "fixture-ana", "Synthetic-Corpus-Only-2026!")
                     assert page.evaluate("Object.keys(localStorage).length") == 0
-                    page.get_by_label("Buscá en tus colecciones autorizadas").fill("Artículo")
+                    page.get_by_label("Buscar en tus colecciones autorizadas").fill("Artículo")
                     page.get_by_role("button", name="Buscar", exact=True).click()
                     page.wait_for_load_state("networkidle")
                     result = page.get_by_role("link", name="Documento sintético, sin valor jurídico")
@@ -92,8 +92,8 @@ def main() -> None:
                     result.click()
                     page.wait_for_load_state("networkidle")
                     read_url = page.url
-                    expect(page.get_by_role("heading", name="Lectura verificada")).to_be_visible()
-                    assert "Artículo 1." in page.locator("pre").inner_text()
+                    expect(page.get_by_role("heading", name="Documento sintético, sin valor jurídico")).to_be_visible()
+                    assert "Artículo 1." in page.locator(".reader-text").inner_text()
                     assert version in page.locator(".provenance").inner_text()
                     assert "Vigencia jurídica no medida" in page.locator(".provenance").inner_text()
                     page.get_by_role("button", name="Guardar referencia privada").click()
@@ -106,7 +106,7 @@ def main() -> None:
                     page.get_by_label("Descripción, sin datos personales").fill(marker)
                     page.get_by_role("button", name="Enviar reporte privado").click()
                     page.wait_for_load_state("networkidle")
-                    expect(page.locator("blockquote")).to_have_text(marker)
+                    expect(page.get_by_text(marker, exact=True).first).to_be_visible()
                     assert page.evaluate("window.corpusXSS === undefined")
                     old_cookies = desktop.cookies()
                     page.get_by_role("button", name="Salir", exact=True).click()
@@ -125,7 +125,7 @@ def main() -> None:
                     mobile = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
                     mobile_page = mobile.new_page()
                     login(mobile_page, "http://127.0.0.1:8000", "fixture-ana", "Synthetic-Corpus-Only-2026!")
-                    mobile_page.get_by_label("Buscá en tus colecciones autorizadas").fill("Artículo")
+                    mobile_page.get_by_label("Buscar en tus colecciones autorizadas").fill("Artículo")
                     mobile_page.get_by_role("button", name="Buscar", exact=True).click()
                     mobile_page.wait_for_load_state("networkidle")
                     mobile_page.get_by_role("link", name="Documento sintético, sin valor jurídico").click()
