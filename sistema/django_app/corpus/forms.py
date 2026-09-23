@@ -27,6 +27,16 @@ class QueryForm(forms.Form):
         return q
 
 
+class BrowseForm(forms.Form):
+    """Bound source, matter and norm-type filters for catalog navigation."""
+    browse = forms.CharField(max_length=1, initial="1")
+    source = forms.CharField(max_length=80, required=False)
+    rubro = forms.CharField(max_length=120, required=False)
+    tipo = forms.CharField(max_length=120, required=False)
+    offset = forms.RegexField(r"^(0|[1-9][0-9]{0,4})$", initial="0", required=False)
+    limit = forms.RegexField(r"^([1-9]|[1-4][0-9]|50)$", initial="20", required=False)
+
+
 class PrivateResetForm(PasswordResetForm):
     """Use Django tokens; fixed origin, no external templates or real email here."""
     def send_mail(self, subject_template_name, email_template_name, context,
