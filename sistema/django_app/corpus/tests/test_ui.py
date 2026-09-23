@@ -64,3 +64,29 @@ class UiTests(FixtureBase):
         for url in ["/corpus/", "/corpus/login/", "/corpus/read/"]:
             target = self.client.get(url, self.fields if url.endswith("read/") else None)
             self.assertNotIn(b"<script", target.content, url)
+
+    def test_search_results_have_no_redundant_badges(self):
+        """Result cards show title, snippet and provenance note, not empty badges."""
+        self.login()
+        response = self.client.get("/corpus/", {"q": "Artículo"})
+        self.assertNotContains(response, '>Resultado<')
+        self.assertNotContains(response, '>Versión verificada<')
+
+    def test_workspace_report_form_has_glossary_and_target_after_read(self):
+        """Reporting is possible from the workspace too, with plain-language categories."""
+        self.login()
+        self.client.get("/corpus/read/", self.fields)
+        self.app.save_reference(self.p, self.locator)
+        response = self.client.get("/corpus/")
+        self.assertContains(response, 'Reportar un problema')
+        self.assertContains(response, 'Metadatos')
+        self.assertContains(response, 'Datos del documento mal puestos')
+        self.assertContains(response, 'Extracción')
+        self.assertContains(response, 'El texto se ve cortado')
+        self.assertContains(response, self.locator.uid)
+
+    def test_workspace_report_form_without_target_is_guided(self):
+        """Without any seen document, the report card explains how to start."""
+        self.login()
+        response = self.client.get("/corpus/")
+        self.assertContains(response, 'Abrí cualquier documento una vez')
