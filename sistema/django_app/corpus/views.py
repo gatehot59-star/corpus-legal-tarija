@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.http import require_http_methods
 from contracts.corpus_django import Principal, DocumentLocator, ErrorCode
-from .access import CorpusError, state_for
+from .access import CorpusError, state_for, require_employee, is_employee
 from .forms import BrowseForm, PilotForm, QueryForm, PrivateResetForm, strict
 from .models import PolicyState, AttemptBudget, PrivateFeedback, Locator, PilotAccount
 from .services import Application
@@ -216,7 +216,8 @@ def workspace(request):
     return render(request, "corpus/workspace.html", {"form": form, "page": page, "catalog": catalog,
                   "catalog_facets": catalog_facets, "browse_form": browse_form,
                   "references": refs, "feedback": feedback, "query": request.GET.get("q", ""),
-                  "feedback_target": _feedback_target(refs, page, catalog)})
+                  "feedback_target": _feedback_target(refs, page, catalog),
+                  "is_employee": is_employee(p)})
 
 
 @require_http_methods(["GET"])
@@ -238,7 +239,8 @@ def read_view(request):
     row = Locator.objects.filter(collection_id=locator.collection_id, uid=locator.uid,
                                  version_sha256=locator.version_sha256).first()
     title = row.title if row and row.title else locator.uid
-    return render(request, "corpus/workspace.html", {"text": result, "doc_title": title})
+    return render(request, "corpus/workspace.html", {"text": result, "doc_title": title,
+                                                     "is_employee": is_employee(p)})
 
 
 @require_http_methods(["POST"])
@@ -270,8 +272,9 @@ def feedback_view(request):
 @require_http_methods(["GET", "POST"])
 @guarded
 def pilot_view(request):
-    """Employee desk: create pilot accounts and review all private reports."""
+    """Employee-only desk: create pilot accounts and review all private reports."""
     p = principal(request)
+    require_employee(p)
     created = None
     form = PilotForm(request.POST if request.method == "POST" else None)
     if request.method == "POST":
