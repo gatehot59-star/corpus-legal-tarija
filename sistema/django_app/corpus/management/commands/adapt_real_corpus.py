@@ -28,48 +28,52 @@ class Command(BaseCommand):
         self._validate_paths(source, target)
         documents = 0
         total_characters = 0
-        with sqlite3.connect(source) as source_db:
-            source_db.execute("PRAGMA query_only=ON")
-            with sqlite3.connect(target) as target_db:
-                source_db.backup(target_db)
-                target_db.execute(
-                    "CREATE TABLE corpus_cleanup_versions ("
-                    "uid TEXT NOT NULL, version_sha256 TEXT NOT NULL, "
-                    "extraction_json TEXT NOT NULL, "
-                    "PRIMARY KEY(uid, version_sha256))")
-                target_db.execute(
-                    "CREATE INDEX corpus_cleanup_versions_uid_idx "
-                    "ON corpus_cleanup_versions(uid)")
-                document_rows = source_db.execute(
-                    "SELECT doc_id,uid,fuente_id,fuente_url,sha256 "
-                    "FROM documentos ORDER BY doc_id")
-                for doc_id, uid, source_id, source_url, source_sha256 in document_rows:
-                    self._validate_document(uid, source_id, source_url, source_sha256)
-                    pieces = [row[0] or "" for row in source_db.execute(
-                        "SELECT cuerpo FROM chunks WHERE doc_id=? ORDER BY nro", (doc_id,))]
-                    text = "".join(pieces)
-                    version_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
-                    extraction = {
-                        "text": text,
-                        "text_sha256": version_sha256,
-                        "source_sha256": source_sha256,
-                        "source_url": source_url,
-                        "authority": "secondary",
-                        "extraction_method": "real-corpus-adapter",
-                    }
+        try:
+            with sqlite3.connect(source) as source_db:
+                source_db.execute("PRAGMA query_only=ON")
+                with sqlite3.connect(target) as target_db:
+                    source_db.backup(target_db)
                     target_db.execute(
-                        "INSERT INTO corpus_cleanup_versions "
-                        "(uid,version_sha256,extraction_json) VALUES(?,?,?)",
-                        (uid, version_sha256, json.dumps(extraction, ensure_ascii=False,
-                                                         separators=(",", ":"))))
-                    documents += 1
-                    total_characters += len(text)
-                target_db.commit()
-                integrity = target_db.execute("PRAGMA integrity_check").fetchone()[0]
-                if integrity != "ok":
-                    raise CommandError(f"adapted snapshot integrity failed: {integrity}")
-        os.chmod(target, 0o400)
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+                        "CREATE TABLE corpus_cleanup_versions ("
+                        "uid TEXT NOT NULL, version_sha256 TEXT NOT NULL, "
+                        "extraction_json TEXT NOT NULL, "
+                        "PRIMARY KEY(uid, version_sha256))")
+                    target_db.execute(
+                        "CREATE INDEX corpus_cleanup_versions_uid_idx "
+                        "ON corpus_cleanup_versions(uid)")
+                    document_rows = source_db.execute(
+                        "SELECT doc_id,uid,fuente_id,fuente_url,sha256 "
+                        "FROM documentos ORDER BY doc_id")
+                    for doc_id, uid, source_id, source_url, source_sha256 in document_rows:
+                        self._validate_document(uid, source_id, source_url, source_sha256)
+                        pieces = [row[0] or "" for row in source_db.execute(
+                            "SELECT cuerpo FROM chunks WHERE doc_id=? ORDER BY nro", (doc_id,))]
+                        text = "".join(pieces)
+                        version_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+                        extraction = {
+                            "text": text,
+                            "text_sha256": version_sha256,
+                            "source_sha256": source_sha256,
+                            "source_url": source_url,
+                            "authority": "secondary",
+                            "extraction_method": "real-corpus-adapter",
+                        }
+                        target_db.execute(
+                            "INSERT INTO corpus_cleanup_versions "
+                            "(uid,version_sha256,extraction_json) VALUES(?,?,?)",
+                            (uid, version_sha256, json.dumps(extraction, ensure_ascii=False,
+                                                             separators=(",", ":"))))
+                        documents += 1
+                        total_characters += len(text)
+                    target_db.commit()
+                    integrity = target_db.execute("PRAGMA integrity_check").fetchone()[0]
+                    if integrity != "ok":
+                        raise CommandError(f"adapted snapshot integrity failed: {integrity}")
+            os.chmod(target, 0o400)
+            digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        except Exception:
+            target.unlink(missing_ok=True)
+            raise
         self.stdout.write(json.dumps({
             "source": str(source),
             "target": str(target),
