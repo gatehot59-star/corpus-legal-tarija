@@ -101,6 +101,25 @@ class PrivateFeedback(models.Model):
         ]
 
 
+class EmployeeAccount(models.Model):
+    """Employee operator account; password is always stored only as a hash."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                    related_name="employee_account")
+    first_name = models.CharField(max_length=80)
+    last_name = models.CharField(max_length=80, blank=True)
+    status = models.CharField(max_length=16, default="activa")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+                                   null=True, blank=True, related_name="created_employee_accounts")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(status__in=["activa", "eliminada"]),
+                                   name="employee_account_status"),
+        ]
+
+
 class PilotAccount(models.Model):
     """A pilot lawyer account created by an employee; password never stored here."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
