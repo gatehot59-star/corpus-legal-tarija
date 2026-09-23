@@ -101,6 +101,19 @@ class PrivateFeedback(models.Model):
         ]
 
 
+class PilotAccount(models.Model):
+    """A pilot lawyer account created by an employee; password never stored here."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lawyer = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                  related_name="pilot_account")
+    first_name = models.CharField(max_length=80)
+    last_name = models.CharField(max_length=80)
+    bar_number = models.CharField(max_length=40, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+                                   related_name="created_pilot_accounts")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class AttemptBudget(models.Model):
     """Persistent per-IP/purpose/window budget, stored as keyed digest."""
     key = models.CharField(primary_key=True, max_length=64)
