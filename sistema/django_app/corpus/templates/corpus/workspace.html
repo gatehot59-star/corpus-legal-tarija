@@ -213,7 +213,7 @@ details summary{cursor:pointer;font-weight:600}
     </a>
     <div class="top-actions">
       <form method="post" action="{% url 'theme' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><input type="hidden" name="theme" value="{% if request.COOKIES.corpus_theme == 'dark' %}light{% else %}dark{% endif %}"><button type="submit" class="theme-toggle" data-theme-toggle aria-pressed="{% if request.COOKIES.corpus_theme == 'dark' %}true{% else %}false{% endif %}">{% if request.COOKIES.corpus_theme == 'dark' %}Modo claro{% else %}Modo noche{% endif %}</button></form>
-      {% if is_employee %}<a class="button secondary" href="{% url 'pilot' %}">Prueba piloto</a>{% endif %}
+      {% if is_employee %}<a class="button secondary" href="{% url 'portal' %}">Panel de empleados</a>{% endif %}
       <a class="button secondary" href="{% url 'workspace' %}">Inicio</a>
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="logout-btn">Salir</button></form>
     </div>
