@@ -74,6 +74,7 @@ PASSWORD_RESET_TIMEOUT = 900
 CORPUS_ORIGIN = os.environ.get("CORPUS_ORIGIN", "http://testserver" if TESTING else "")
 if not TESTING and (not CORPUS_ORIGIN.startswith("https://") or CORPUS_ORIGIN.endswith("/")):
     raise ImproperlyConfigured("Explicit HTTPS CORPUS_ORIGIN required, without trailing slash")
+CSRF_TRUSTED_ORIGINS = [CORPUS_ORIGIN] if CORPUS_ORIGIN.startswith("https://") else []
 LOGGING = {"version": 1, "disable_existing_loggers": False,
            "handlers": {"discard": {"class": "logging.NullHandler"}},
            "loggers": {"django.request": {"handlers": ["discard"], "propagate": False},
