@@ -1,14 +1,14 @@
 """sistema/django_app/config/urls.py: no legacy routes or admin exposure."""
 from django.urls import include, path
-from corpus import views as corpus_views
+from corpus import employee_portal
 
 urlpatterns = [
     path("corpus/", include("corpus.urls")),
-    path("empleados/", corpus_views.portal, name="portal"),
-    path("empleados/login/", corpus_views.portal_login, name="portal-login"),
-    path("empleados/salir/", corpus_views.portal_logout, name="portal-logout"),
-    path("empleados/cuentas/<uuid:account_id>/clave/", corpus_views.portal_reissue,
+    path("empleados/", employee_portal.portal, name="portal"),
+    path("empleados/login/", employee_portal.portal_login, name="portal-login"),
+    path("empleados/salir/", employee_portal.portal_logout, name="portal-logout"),
+    path("empleados/cuentas/<str:role>/<uuid:account_id>/clave/", employee_portal.portal_reissue,
          name="portal-reissue"),
-    path("empleados/cuentas/<uuid:account_id>/eliminar/", corpus_views.portal_delete,
+    path("empleados/cuentas/<str:role>/<uuid:account_id>/eliminar/", employee_portal.portal_delete,
          name="portal-delete"),
 ]
