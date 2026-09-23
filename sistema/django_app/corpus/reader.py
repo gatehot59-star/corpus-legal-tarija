@@ -112,8 +112,7 @@ def browse_snapshot(row: Locator, allowed_uids: set[str], source: str = "",
         with closing(sqlite3.connect(f"/proc/self/fd/{fd}")) as db:
             db.execute("PRAGMA query_only=ON")
             db.execute("PRAGMA trusted_schema=OFF")
-            tables = {r[0] for r in db.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'")}
+            tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if "fuentes" not in tables:
                 return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
             rows = db.execute(
@@ -143,10 +142,11 @@ def browse_snapshot(row: Locator, allowed_uids: set[str], source: str = "",
                     continue
                 if tipo_key and (not norm_type or norm_type.casefold() != tipo_key):
                     continue
-                matches.append({"uid": uid, "title": title or uid, "source_id": source_id,
-                                "source_name": source_label, "jurisdiction": jurisdiction or "",
-                                "department": department or "", "organ": organ or "",
-                                "type": norm_type or "", "matter": matter or "",
+                matches.append({"uid": uid, "collection_id": str(row.collection_id),
+                                "version_sha256": row.version_sha256, "title": title or uid,
+                                "source_id": source_id, "source_name": source_label,
+                                "jurisdiction": jurisdiction or "", "department": department or "",
+                                "organ": organ or "", "type": norm_type or "", "matter": matter or "",
                                 "source_url": url or ""})
             page = matches[offset:offset + limit]
             next_offset = offset + limit if offset + limit < len(matches) else None
