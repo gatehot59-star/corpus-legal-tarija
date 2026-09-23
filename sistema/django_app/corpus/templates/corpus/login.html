@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Corpus · Acceso</title>
+<title>Corpus Tarija · Acceso</title>
 <style>
 :root{
   --bg:#f6f1e8; --bg-elev:#fbf8f1; --card:#fffdf8; --card-soft:#f3ecdf;
@@ -42,14 +42,14 @@ a:hover{text-decoration:underline}
 button,input,select,textarea{font:inherit}
 main{
   max-width:1000px;margin:0 auto;padding:1.5rem 1rem;
-  display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:1.25rem;align-items:stretch;
+  display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:1.25rem;align-items:stretch;
 }
 main>*{min-width:0}
 .hero,.panel{
   background:var(--card);border:1px solid var(--line);
   border-radius:var(--radius);box-shadow:var(--shadow);
 }
-.hero{padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;gap:1rem}
+.hero{padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;gap:1.1rem}
 .brand{display:flex;align-items:center;gap:.6rem;min-width:0}
 .brand-mark{
   width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;
@@ -66,6 +66,13 @@ h1{
   line-height:1.02;margin:.5rem 0 .6rem;max-width:12ch;overflow-wrap:anywhere;
 }
 .hero p{max-width:58ch;color:var(--muted);font-size:.98rem;margin:.2rem 0}
+.points{list-style:none;margin:.6rem 0 0;padding:0;display:grid;gap:.55rem}
+.points li{
+  margin:0;padding:.65rem .8rem;border:1px solid var(--line);border-radius:12px;
+  background:var(--card-soft);font-size:.92rem;
+}
+.points li strong{display:block;color:var(--text)}
+.points li span{color:var(--muted)}
 .panel{padding:1.25rem}
 .panel h2{font-family:var(--serif);font-size:1.5rem;margin:.1rem 0 .6rem}
 .panel p{color:var(--muted);font-size:.95rem}
@@ -108,19 +115,18 @@ small,.muted{color:var(--muted)}
     {% endif %}
     <div class="brand" aria-label="Corpus Tarija">
       <span class="brand-mark">CT</span>
-      <span class="brand-text"><strong>Corpus Tarija</strong><span>Acceso privado</span></span>
+      <span class="brand-text"><strong>Corpus Tarija</strong><span>Legislación y jurisprudencia verificable</span></span>
     </div>
     <div>
-      <span class="kicker">Mesa profesional de lectura</span>
-      <h1>Tu mesa de lectura</h1>
-      <p>Consulta privada con versión y procedencia verificables. La interfaz queda más clara para trabajar con el catálogo, la lectura exacta y las referencias sin ruido.</p>
+      <span class="kicker">Prueba piloto para estudios jurídicos</span>
+      <h1>La ley, lista para citar.</h1>
+      <p>Corpus Tarija reúne la legislación nacional y departamental y la jurisprudencia del Tribunal Supremo de Justicia en una sola mesa de trabajo. Buscás por texto o por rubro, leés el documento completo y cada pieza muestra su fuente y su versión exacta.</p>
     </div>
-    {% if mode != "sent" %}
-    <div class="notice">
-      <strong>Modo noche</strong>
-      <div>Se adapta solo a la preferencia de tu dispositivo, y podés fijarlo con el botón de arriba.</div>
-    </div>
-    {% endif %}
+    <ul class="points">
+      <li><strong>Todo el corpus en un solo lugar</strong><span>Gaceta de Tarija, LexiVox nacional y GENESIS del TSJ, sin saltar de sitio en sitio.</span></li>
+      <li><strong>Fuentes y versiones a la vista</strong><span>Cada documento declara de dónde salió y qué versión estás leyendo.</span></li>
+      <li><strong>Hecho para el trabajo diario</strong><span>Búsqueda por texto, navegación por rubro y referencias guardadas para retomar.</span></li>
+    </ul>
   </section>
   <section class="panel">
     {% if mode == "sent" %}
@@ -131,6 +137,7 @@ small,.muted{color:var(--muted)}
       </div>
     {% else %}
       <h2>{% if mode == "login" %}Ingresá{% elif mode == "reset" %}Recuperá tu cuenta{% else %}Elegí una contraseña nueva{% endif %}</h2>
+      <p>{% if mode == "login" %}Acceso exclusivo para participantes de la prueba piloto.{% endif %}</p>
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
@@ -141,8 +148,8 @@ small,.muted{color:var(--muted)}
         <a href="{% url 'reset' %}">Recuperar cuenta</a>
       </div>
       <div class="notice">
-        <strong>Sin acceso público a documentos</strong>
-        <div>No compartas tu sesión. La recuperación usa el canal configurado, sin exponer texto legal.</div>
+        <strong>Acceso por invitación</strong>
+        <div>Las cuentas de la prueba piloto se entregan en persona. Si todavía no tenés la tuya, hablá con quien te presentó Corpus Tarija.</div>
       </div>
     {% endif %}
   </section>
