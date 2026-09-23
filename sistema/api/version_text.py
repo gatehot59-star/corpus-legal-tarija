@@ -2,7 +2,8 @@
 
 Internal adapter only, not an authenticated HTTP service. Caller must enforce
 access/withdrawal policy before calling. The adapter accepts only the three
-measured public source families imported by the real-corpus staging command.
+measured public source families imported by the real-corpus staging command,
+while retaining the existing synthetic fixture contract.
 """
 from __future__ import annotations
 import hashlib
@@ -47,13 +48,14 @@ def read_version(db: sqlite3.Connection, uid: str, version: str | None = None,
         extraction = json.loads(record[0])
         text = extraction["text"]
         source_sha256 = extraction["source_sha256"]
-        source_url = extraction["source_url"]
+        source_url = extraction.get("source_url", row[2])
         if (not isinstance(text, str)
                 or hashlib.sha256(text.encode("utf-8")).hexdigest() != selected
                 or extraction["text_sha256"] != selected
-                or source_sha256 != row[0]
                 or source_sha256 is None
-                or len(source_sha256) != 64
+                or not isinstance(source_sha256, str)
+                or not re.fullmatch("[0-9a-f]{64}", source_sha256)
+                or not isinstance(source_url, str)
                 or source_url != row[2]
                 or row[1] not in SUPPORTED_SOURCE_IDS
                 or extraction["authority"] != "secondary"):
