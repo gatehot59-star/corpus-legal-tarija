@@ -43,6 +43,9 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = not TESTING
 CSRF_COOKIE_SECURE = not TESTING
+SESSION_COOKIE_AGE = 1800
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = False
 SECURE_SSL_REDIRECT = not TESTING
 SECURE_REDIRECT_EXEMPT = [r"^corpus/live/$"]
 SECURE_PROXY_SSL_HEADER = (("HTTP_X_FORWARDED_PROTO", "https")
@@ -65,6 +68,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 EMAIL_BACKEND = ("django.core.mail.backends.locmem.EmailBackend" if TESTING
                  else "django.core.mail.backends.dummy.EmailBackend")
+# Real email remains explicitly disabled until separately configured/approved.
 DEFAULT_FROM_EMAIL = "corpus@example.invalid"
 PASSWORD_RESET_TIMEOUT = 900
 CORPUS_ORIGIN = os.environ.get("CORPUS_ORIGIN", "http://testserver" if TESTING else "")
