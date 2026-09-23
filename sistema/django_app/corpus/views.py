@@ -17,8 +17,8 @@ from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.http import require_http_methods
 from contracts.corpus_django import Principal, DocumentLocator, ErrorCode
 from .access import CorpusError, state_for
-from .forms import BrowseForm, QueryForm, PrivateResetForm, strict
-from .models import PolicyState, AttemptBudget, PrivateFeedback, Locator
+from .forms import BrowseForm, PilotForm, QueryForm, PrivateResetForm, strict
+from .models import PolicyState, AttemptBudget, PrivateFeedback, Locator, PilotAccount
 from .services import Application
 
 app = Application()
@@ -265,6 +265,28 @@ def feedback_view(request):
         return JsonResponse({"id": str(receipt.id), "created_at": receipt.created_at.isoformat(),
                              "status": receipt.status}, status=201)
     return redirect("workspace")
+
+
+@require_http_methods(["GET", "POST"])
+@guarded
+def pilot_view(request):
+    """Employee desk: create pilot accounts and review all private reports."""
+    p = principal(request)
+    created = None
+    form = PilotForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST":
+        strict(request.POST, {"first_name", "last_name", "bar_number", "csrfmiddlewaretoken"})
+        consume_budget(request, "pilot")
+        if form.is_valid():
+            created = app.create_pilot(p, form.cleaned_data["first_name"],
+                                       form.cleaned_data["last_name"],
+                                       form.cleaned_data.get("bar_number", ""))
+            form = PilotForm(None)
+    pilots = PilotAccount.objects.select_related("lawyer", "created_by").order_by("-created_at")[:50]
+    reports = (PrivateFeedback.objects.select_related("owner", "locator")
+               .order_by("-created_at")[:100])
+    return render(request, "corpus/pilot.html", {"form": form, "created": created,
+                                                 "pilots": pilots, "reports": reports})
 
 
 @require_http_methods(["GET"])
