@@ -3,7 +3,7 @@ import time
 from django.db import transaction
 from contracts import corpus_django as dto
 from . import access
-from .reader import read_exact, search_snapshot
+from .reader import read_exact, search_snapshot, browse_snapshot
 from .models import SavedReference, PrivateFeedback
 
 
@@ -71,6 +71,20 @@ class Application:
         end = offset + limit
         return dto.SearchPage(tuple(hits[offset:end]), offset,
                               end if end < len(hits) else None)
+
+    @transaction.atomic
+    def browse(self, principal, source: str = "", rubro: str = "", tipo: str = "",
+               offset: int = 0, limit: int = 20) -> dict:
+        """Browse authorized metadata by source, matter and norm type."""
+        if any(not isinstance(value, str) or len(value) > 120 for value in (source, rubro, tipo)):
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        if type(offset) is not int or not 0 <= offset <= 10000 or type(limit) is not int or not 1 <= limit <= 50:
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        rows = list(access.eligible(principal).select_related("collection").order_by(
+            "collection_id", "uid", "version_sha256"))
+        if not rows:
+            return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
+        return browse_snapshot(rows[0], {row.uid for row in rows}, source, rubro, tipo, offset, limit)
 
     @transaction.atomic
     def save_reference(self, principal, locator) -> dto.SavedReference:
