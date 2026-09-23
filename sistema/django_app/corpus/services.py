@@ -1,9 +1,8 @@
 """sistema/django_app/corpus/services.py: authorized application operations."""
-import time
 from django.db import transaction
 from contracts import corpus_django as dto
 from . import access
-from .reader import read_exact
+from .reader import read_exact, search_snapshot
 from .models import SavedReference, PrivateFeedback
 
 
@@ -33,34 +32,24 @@ class Application:
 
     @transaction.atomic
     def search(self, principal, query: str, offset: int, limit: int) -> dto.SearchPage:
-        """Scan authorized versions within explicit budgets; never silently truncate."""
+        """Search all authorized versions through the verified adapted FTS index."""
         if (not isinstance(query, str) or not query.strip() or len(query) > 128
                 or len(query.encode()) > 256 or type(offset) is not int
                 or not 0 <= offset <= 10000 or type(limit) is not int or not 1 <= limit <= 20):
             raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
-        rows = list(access.eligible(principal).order_by("collection_id", "uid", "version_sha256")[:201])
-        if len(rows) > 200:
-            raise access.CorpusError(dto.ErrorCode.SERVICE_UNAVAILABLE)
-        deadline, consumed, hits = time.monotonic() + 5, 0, []
-        for row in rows:
-            pieces, start = [], 0
-            while True:
-                result = read_exact(row, start, 10000)
-                pieces.append(result["text"])
-                consumed += len(result["text"])
-                if consumed > 2_000_000 or time.monotonic() > deadline:
-                    raise access.CorpusError(dto.ErrorCode.SERVICE_UNAVAILABLE)
-                if result["next"] is None:
-                    break
-                start = result["next"]["start"]
-            text = "".join(pieces)
-            position = text.casefold().find(query.casefold())
-            if position >= 0 or query.casefold() in row.title.casefold():
-                # Matching via casefold can expand characters; snippet is indicative, not a locator.
-                snippet = text[max(0, position - 60):max(0, position - 60) + 240]
-                hits.append(dto.SearchHit(locator_of(row), row.title, snippet, "secondary", "NOT_MEASURED"))
+        rows = list(access.eligible(principal).select_related("collection").order_by(
+            "collection_id", "uid", "version_sha256"))
+        if not rows:
+            end = offset + limit
+            return dto.SearchPage((), offset, None)
+        allowed = {row.uid for row in rows}
+        snippets = search_snapshot(rows[0], query.strip(), allowed)
+        hits = [dto.SearchHit(locator_of(row), row.title, snippets[row.uid],
+                              "secondary", "NOT_MEASURED")
+                for row in rows if row.uid in snippets]
         end = offset + limit
-        return dto.SearchPage(tuple(hits[offset:end]), offset, end if end < len(hits) else None)
+        return dto.SearchPage(tuple(hits[offset:end]), offset,
+                              end if end < len(hits) else None)
 
     @transaction.atomic
     def save_reference(self, principal, locator) -> dto.SavedReference:
@@ -90,12 +79,7 @@ class Application:
 
 
 class OfflineRecovery:
-    """Implement RecoveryService using an injected operator-owned backup registry.
-
-    No HTTP route exposes this class. Registry entries bind UUID to absolute
-    backup path, independently recorded digest and new destination. The caller
-    must establish the current revision independently of the backup.
-    """
+    """Implement RecoveryService using an injected operator-owned backup registry."""
     def __init__(self, registry: dict) -> None:
         self.registry = dict(registry)
 
