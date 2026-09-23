@@ -98,3 +98,63 @@ def search_snapshot(row: Locator, query: str, allowed_uids: set[str]) -> dict[st
     finally:
         if fd >= 0:
             os.close(fd)
+
+
+def browse_snapshot(row: Locator, allowed_uids: set[str], source: str = "",
+                    rubro: str = "", tipo: str = "", offset: int = 0,
+                    limit: int = 20) -> dict:
+    """Return authorized document metadata and facets for source/rubro navigation."""
+    if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 50:
+        raise CorpusError(ErrorCode.INVALID_INPUT)
+    fd = -1
+    try:
+        fd = _open_verified(row)
+        with closing(sqlite3.connect(f"/proc/self/fd/{fd}")) as db:
+            db.execute("PRAGMA query_only=ON")
+            db.execute("PRAGMA trusted_schema=OFF")
+            tables = {r[0] for r in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'")}
+            if "fuentes" not in tables:
+                return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
+            rows = db.execute(
+                "SELECT d.uid, d.titulo, d.fuente_id, f.nombre, d.jurisdiccion, "
+                "d.departamento, d.organo, d.tipo_norma, d.materia, d.fuente_url "
+                "FROM documentos d JOIN fuentes f ON f.fuente_id=d.fuente_id "
+                "ORDER BY d.fuente_id, COALESCE(d.materia,''), COALESCE(d.tipo_norma,''), d.titulo, d.uid"
+            ).fetchall()
+            allowed = set(allowed_uids)
+            source_key, rubro_key, tipo_key = source.casefold(), rubro.casefold(), tipo.casefold()
+            sources, rubros, tipos = {}, set(), set()
+            matches = []
+            for values in rows:
+                uid, title, source_id, source_name, jurisdiction, department, organ, norm_type, matter, url = values
+                if uid not in allowed:
+                    continue
+                source_label = source_name or source_id
+                if source_id:
+                    sources[source_id] = source_label
+                if matter:
+                    rubros.add(matter)
+                if norm_type:
+                    tipos.add(norm_type)
+                if source_key and source_id.casefold() != source_key:
+                    continue
+                if rubro_key and (not matter or matter.casefold() != rubro_key):
+                    continue
+                if tipo_key and (not norm_type or norm_type.casefold() != tipo_key):
+                    continue
+                matches.append({"uid": uid, "title": title or uid, "source_id": source_id,
+                                "source_name": source_label, "jurisdiction": jurisdiction or "",
+                                "department": department or "", "organ": organ or "",
+                                "type": norm_type or "", "matter": matter or "",
+                                "source_url": url or ""})
+            page = matches[offset:offset + limit]
+            next_offset = offset + limit if offset + limit < len(matches) else None
+            return {"items": tuple(page), "sources": tuple(sorted(sources.items(), key=lambda x: x[1].casefold())),
+                    "rubros": tuple(sorted(rubros, key=str.casefold)),
+                    "tipos": tuple(sorted(tipos, key=str.casefold)), "next_offset": next_offset}
+    except (OSError, sqlite3.Error, ValueError, TypeError) as exc:
+        raise CorpusError(ErrorCode.INTEGRITY_FAILED) from exc
+    finally:
+        if fd >= 0:
+            os.close(fd)
