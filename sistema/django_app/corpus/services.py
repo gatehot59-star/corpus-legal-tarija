@@ -1,4 +1,5 @@
 """sistema/django_app/corpus/services.py: authorized application operations."""
+import time
 from django.db import transaction
 from contracts import corpus_django as dto
 from . import access
@@ -32,7 +33,7 @@ class Application:
 
     @transaction.atomic
     def search(self, principal, query: str, offset: int, limit: int) -> dto.SearchPage:
-        """Search all authorized versions through the verified adapted FTS index."""
+        """Search all authorized versions using verified FTS or exact fixture reads."""
         if (not isinstance(query, str) or not query.strip() or len(query) > 128
                 or len(query.encode()) > 256 or type(offset) is not int
                 or not 0 <= offset <= 10000 or type(limit) is not int or not 1 <= limit <= 20):
@@ -40,13 +41,33 @@ class Application:
         rows = list(access.eligible(principal).select_related("collection").order_by(
             "collection_id", "uid", "version_sha256"))
         if not rows:
-            end = offset + limit
             return dto.SearchPage((), offset, None)
         allowed = {row.uid for row in rows}
         snippets = search_snapshot(rows[0], query.strip(), allowed)
-        hits = [dto.SearchHit(locator_of(row), row.title, snippets[row.uid],
-                              "secondary", "NOT_MEASURED")
-                for row in rows if row.uid in snippets]
+        if snippets is None:
+            deadline, consumed, hits = time.monotonic() + 5, 0, []
+            needle = query.casefold()
+            for row in rows[:201]:
+                pieces, start = [], 0
+                while True:
+                    result = read_exact(row, start, 10000)
+                    pieces.append(result["text"])
+                    consumed += len(result["text"])
+                    if consumed > 2_000_000 or time.monotonic() > deadline:
+                        raise access.CorpusError(dto.ErrorCode.SERVICE_UNAVAILABLE)
+                    if result["next"] is None:
+                        break
+                    start = result["next"]["start"]
+                text = "".join(pieces)
+                position = text.casefold().find(needle)
+                if position >= 0 or needle in row.title.casefold():
+                    snippet = text[max(0, position - 60):max(0, position - 60) + 240]
+                    hits.append(dto.SearchHit(locator_of(row), row.title, snippet,
+                                              "secondary", "NOT_MEASURED"))
+        else:
+            hits = [dto.SearchHit(locator_of(row), row.title, snippets[row.uid],
+                                  "secondary", "NOT_MEASURED")
+                    for row in rows if row.uid in snippets]
         end = offset + limit
         return dto.SearchPage(tuple(hits[offset:end]), offset,
                               end if end < len(hits) else None)
