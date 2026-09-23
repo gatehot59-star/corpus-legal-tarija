@@ -12,6 +12,7 @@ urlpatterns = [
     path("read/", views.read_view, name="read"),
     path("save/", views.save_view, name="save"),
     path("feedback/", views.feedback_view, name="feedback"),
+    path("piloto/", views.pilot_view, name="pilot"),
     path("live/", views.health, {"kind": "live"}),
     path("ready/", views.health, {"kind": "ready"}),
     path("health/", views.health, {"kind": "health"}),
