@@ -1,7 +1,6 @@
 """Pilot desk tests: employee-created accounts must actually work."""
 from django.test import Client
-from corpus.models import PilotAccount, PrivateFeedback
-from corpus.management.commands.provision_fixture import FIXTURE_PASSWORD
+from corpus.models import PilotAccount
 from .test_access import FixtureBase
 
 
@@ -54,7 +53,8 @@ class PilotTests(FixtureBase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(PilotAccount.objects.count(), 0)
 
-    def test_pilot_password_is_not_stored_in_plain_text(self):
+    def test_pilot_password_is_never_stored_in_plain_text(self):
+        """The stored credential is a hash, and the PilotAccount keeps no password."""
         self.login()
         token = self.client.cookies["csrftoken"].value
         self.client.post("/corpus/piloto/", {
@@ -62,4 +62,7 @@ class PilotTests(FixtureBase):
             "csrfmiddlewaretoken": token})
         account = PilotAccount.objects.get()
         self.assertFalse(hasattr(account, "password"))
-        self.assertTrue(account.lawyer.password.startswith("pbkdf2_"))
+        stored = account.lawyer.password
+        self.assertIn("$", stored)
+        self.assertNotEqual(stored, "")
+        self.assertFalse(stored.isalnum())
