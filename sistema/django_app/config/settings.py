@@ -28,6 +28,7 @@ MIDDLEWARE = ["django.middleware.security.SecurityMiddleware",
               "django.middleware.common.CommonMiddleware",
               "django.middleware.csrf.CsrfViewMiddleware",
               "django.contrib.auth.middleware.AuthenticationMiddleware",
+              "corpus.tracking.PilotTrackingMiddleware",
               "corpus.views.BoundaryMiddleware"]
 TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates",
               "APP_DIRS": True, "OPTIONS": {"context_processors": [
@@ -37,7 +38,7 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_TZ = True
-TIME_ZONE = "UTC"
+TIME_ZONE = "America/La_Paz"
 LANGUAGE_CODE = "es"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
