@@ -65,8 +65,7 @@ class Command(BaseCommand):
                     documents += 1
                     total_characters += len(text)
                 target_db.commit()
-                target_db.execute("PRAGMA integrity_check")
-                integrity = target_db.fetchone()[0]
+                integrity = target_db.execute("PRAGMA integrity_check").fetchone()[0]
                 if integrity != "ok":
                     raise CommandError(f"adapted snapshot integrity failed: {integrity}")
         os.chmod(target, 0o400)
