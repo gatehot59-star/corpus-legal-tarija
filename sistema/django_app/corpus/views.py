@@ -170,6 +170,19 @@ def locator_from(data) -> DocumentLocator:
         raise CorpusError(ErrorCode.INVALID_INPUT)
 
 
+def _feedback_target(refs, page, catalog):
+    """Pick a sane locator for the workspace report form: last reference, else first visible hit."""
+    if refs:
+        return refs[-1].locator
+    if page is not None and page.results:
+        return page.results[0].locator
+    if catalog is not None and catalog["items"]:
+        item = catalog["items"][0]
+        return {"collection_id": item["collection_id"], "uid": item["uid"],
+                "version_sha256": item["version_sha256"]}
+    return None
+
+
 @require_http_methods(["GET"])
 @guarded
 def workspace(request):
@@ -202,7 +215,8 @@ def workspace(request):
     feedback = PrivateFeedback.objects.filter(owner_id=p.user_id).order_by("-created_at")[:20]
     return render(request, "corpus/workspace.html", {"form": form, "page": page, "catalog": catalog,
                   "catalog_facets": catalog_facets, "browse_form": browse_form,
-                  "references": refs, "feedback": feedback, "query": request.GET.get("q", "")})
+                  "references": refs, "feedback": feedback, "query": request.GET.get("q", ""),
+                  "feedback_target": _feedback_target(refs, page, catalog)})
 
 
 @require_http_methods(["GET"])
