@@ -165,6 +165,7 @@ def workspace(request):
         data = browse_form.cleaned_data
         catalog = app.browse(p, data.get("source", ""), data.get("rubro", ""), data.get("tipo", ""),
                               int(data.get("offset") or 0), int(data.get("limit") or 20))
+        catalog_facets = catalog
         form = QueryForm(None)
         page = None
     else:
@@ -178,11 +179,12 @@ def workspace(request):
             page = app.search(p, form.cleaned_data["q"],
                               int(form.cleaned_data["offset"] or 0), int(form.cleaned_data["limit"] or 10))
         browse_form = BrowseForm(initial={"browse": "1", "limit": "20"})
+        catalog_facets = app.browse(p, offset=0, limit=1)
     refs = app.list_references(p)
     feedback = PrivateFeedback.objects.filter(owner_id=p.user_id).order_by("-created_at")[:20]
     return render(request, "corpus/workspace.html", {"form": form, "page": page, "catalog": catalog,
-                  "browse_form": browse_form, "references": refs, "feedback": feedback,
-                  "query": request.GET.get("q", "")})
+                  "catalog_facets": catalog_facets, "browse_form": browse_form,
+                  "references": refs, "feedback": feedback, "query": request.GET.get("q", "")})
 
 
 @require_http_methods(["GET"])
