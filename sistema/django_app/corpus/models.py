@@ -109,9 +109,27 @@ class PilotAccount(models.Model):
     first_name = models.CharField(max_length=80)
     last_name = models.CharField(max_length=80)
     bar_number = models.CharField(max_length=40, blank=True)
+    status = models.CharField(max_length=16, default="activa")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
                                    related_name="created_pilot_accounts")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(status__in=["activa", "eliminada"]),
+                                   name="pilot_account_status"),
+        ]
+
+
+class PilotEvent(models.Model):
+    """Server-side pilot usage event: section and moment, never content nor passwords."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lawyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                               related_name="pilot_events")
+    at = models.DateTimeField(auto_now_add=True, db_index=True)
+    section = models.CharField(max_length=40)
+    detail = models.CharField(max_length=240, blank=True)
+    path = models.CharField(max_length=240, blank=True)
 
 
 class AttemptBudget(models.Model):
