@@ -67,7 +67,8 @@ def read_version(db: sqlite3.Connection, uid: str, version: str | None = None,
     end = min(len(text), start + limit)
     version_count = db.execute(
         "SELECT count(*) FROM corpus_cleanup_versions WHERE uid=?", (uid,)).fetchone()[0]
-    is_current = selected == row[0] or (row[1] in SUPPORTED_SOURCE_IDS and version_count == 1)
+    is_current = selected == row[0] or (
+        extraction.get("extraction_method") == "real-corpus-adapter" and version_count == 1)
     return {"uid": uid, "version": selected, "is_current": is_current,
             "text": text[start:end], "start": start, "end": end,
             "total_characters": len(text), "text_sha256": selected,
