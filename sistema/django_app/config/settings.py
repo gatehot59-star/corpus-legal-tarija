@@ -75,6 +75,14 @@ CORPUS_ORIGIN = os.environ.get("CORPUS_ORIGIN", "http://testserver" if TESTING e
 if not TESTING and (not CORPUS_ORIGIN.startswith("https://") or CORPUS_ORIGIN.endswith("/")):
     raise ImproperlyConfigured("Explicit HTTPS CORPUS_ORIGIN required, without trailing slash")
 CSRF_TRUSTED_ORIGINS = [CORPUS_ORIGIN] if CORPUS_ORIGIN.startswith("https://") else []
+_extra = [origin.strip() for origin in os.environ.get("CORPUS_EXTRA_ORIGINS", "").split(",")]
+for origin in _extra:
+    if not origin:
+        continue
+    if not origin.startswith("https://") or origin.endswith("/"):
+        raise ImproperlyConfigured("CORPUS_EXTRA_ORIGINS must be HTTPS origins without trailing slash")
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 LOGGING = {"version": 1, "disable_existing_loggers": False,
            "handlers": {"discard": {"class": "logging.NullHandler"}},
            "loggers": {"django.request": {"handlers": ["discard"], "propagate": False},
