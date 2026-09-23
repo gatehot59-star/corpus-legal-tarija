@@ -27,11 +27,12 @@ class UiTests(FixtureBase):
         self.assertContains(response, 'Documento sintético')
 
     def test_login_shell_exposes_theme_toggle_and_access_links(self):
-        """The login page keeps the same design system and recovery links."""
+        """The login page presents the product and keeps the recovery link."""
         response = Client(enforce_csrf_checks=True).get("/corpus/login/")
         self.assertContains(response, 'data-theme-toggle')
         self.assertContains(response, 'Recuperar cuenta')
-        self.assertContains(response, 'Sin acceso público a documentos')
+        self.assertContains(response, 'La ley, lista para citar.')
+        self.assertContains(response, 'Acceso por invitación')
 
     def test_theme_toggle_sets_cookie_and_renders_dark(self):
         """Theme switching is a plain POST: no scripts, CSP stays scriptless."""
