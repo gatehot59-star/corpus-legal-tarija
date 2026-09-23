@@ -7,7 +7,7 @@ from .test_access import FixtureBase
 
 
 class PilotTests(FixtureBase):
-    """The pilot desk is for employees; pilot lawyers can only read the corpus."""
+    """The employee portal is for employees; pilot lawyers can only read the corpus."""
 
     def make_employee(self, user=None) -> None:
         """Grant the employee role explicitly, as an operator would."""
@@ -16,7 +16,7 @@ class PilotTests(FixtureBase):
                                          defaults={"enabled": True})
 
     def _issued_credentials(self, body: str) -> tuple[str, str]:
-        """Extract the one-time credentials from the desk response."""
+        """Extract the one-time credentials from the portal response."""
         creds = [p.split("</code>")[0] for p in body.split("<code>")[1:]]
         username = PilotAccount.objects.order_by("-created_at").first().lawyer.username
         password = [c for c in creds if c != username][0]
@@ -31,32 +31,35 @@ class PilotTests(FixtureBase):
         return client
 
     def test_pilot_page_requires_authentication(self):
-        self.assertEqual(Client().get("/corpus/piloto/").status_code, 403)
+        """Anonymous visitors are sent to the independent employee entrance."""
+        response = Client().get("/empleados/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/empleados/login/")
 
     def test_pilot_page_denies_non_employee(self):
-        """A reader without the employee group cannot open the desk."""
+        """A reader without the employee group cannot open the portal."""
         self.login()
-        self.assertEqual(self.client.get("/corpus/piloto/").status_code, 403)
+        self.assertEqual(self.client.get("/empleados/").status_code, 403)
 
     def test_pilot_page_denies_pilot_lawyer(self):
         """A created lawyer is denied even with a valid session and grant."""
         self.make_employee()
         self.login()
         token = self.client.cookies["csrftoken"].value
-        response = self.client.post("/corpus/piloto/", {
+        response = self.client.post("/empleados/", {
             "first_name": "Ana", "last_name": "Otra", "bar_number": "",
             "csrfmiddlewaretoken": token})
         self.assertEqual(response.status_code, 200)
         username, password = self._issued_credentials(response.content.decode())
         lawyer_client = self._login_as(Client(enforce_csrf_checks=True), username, password)
-        self.assertEqual(lawyer_client.get("/corpus/piloto/").status_code, 403)
+        self.assertEqual(lawyer_client.get("/empleados/").status_code, 403)
         self.assertContains(lawyer_client.get("/corpus/"), "Buscar. Leer. Verificar.")
 
     def test_pilot_creation_flow_and_login(self):
         self.make_employee()
         self.login()
         token = self.client.cookies["csrftoken"].value
-        response = self.client.post("/corpus/piloto/", {
+        response = self.client.post("/empleados/", {
             "first_name": "María", "last_name": "Suárez", "bar_number": "12345",
             "csrfmiddlewaretoken": token})
         self.assertEqual(response.status_code, 200)
@@ -71,7 +74,7 @@ class PilotTests(FixtureBase):
         self.make_employee()
         self.login()
         self.app.report_error(self.p, self.locator, "metadata", "El título no coincide con la fuente.")
-        response = self.client.get("/corpus/piloto/")
+        response = self.client.get("/empleados/")
         self.assertContains(response, "fixture-ana")
         self.assertContains(response, "El título no coincide")
 
@@ -79,7 +82,7 @@ class PilotTests(FixtureBase):
         self.make_employee()
         self.login()
         token = self.client.cookies["csrftoken"].value
-        response = self.client.post("/corpus/piloto/", {
+        response = self.client.post("/empleados/", {
             "first_name": "", "last_name": "", "bar_number": "",
             "csrfmiddlewaretoken": token})
         self.assertEqual(response.status_code, 200)
@@ -90,7 +93,7 @@ class PilotTests(FixtureBase):
         self.make_employee()
         self.login()
         token = self.client.cookies["csrftoken"].value
-        self.client.post("/corpus/piloto/", {
+        self.client.post("/empleados/", {
             "first_name": "Juan", "last_name": "Pérez", "bar_number": "",
             "csrfmiddlewaretoken": token})
         account = PilotAccount.objects.get()
@@ -101,8 +104,8 @@ class PilotTests(FixtureBase):
         self.assertFalse(stored.isalnum())
 
     def test_workspace_shows_pilot_link_only_to_employees(self):
-        """The desk link appears for employees and stays hidden for readers."""
+        """The portal link appears for employees and stays hidden for readers."""
         self.login()
-        self.assertNotContains(self.client.get("/corpus/"), "Prueba piloto")
+        self.assertNotContains(self.client.get("/corpus/"), "Panel de empleados")
         self.make_employee()
-        self.assertContains(self.client.get("/corpus/"), "Prueba piloto")
+        self.assertContains(self.client.get("/corpus/"), "Panel de empleados")
