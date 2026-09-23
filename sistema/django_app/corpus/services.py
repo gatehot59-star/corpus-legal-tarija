@@ -1,10 +1,16 @@
 """sistema/django_app/corpus/services.py: authorized application operations."""
+import re
+import secrets
 import time
+from datetime import timedelta
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import transaction
+from django.utils import timezone
 from contracts import corpus_django as dto
 from . import access
 from .reader import read_exact, search_snapshot, browse_snapshot
-from .models import SavedReference, PrivateFeedback
+from .models import SavedReference, PrivateFeedback, Collection, AccessGrant, Membership, PilotAccount
 
 
 def locator_of(row) -> dto.DocumentLocator:
@@ -112,6 +118,53 @@ class Application:
         receipt = PrivateFeedback.objects.create(owner_id=principal.user_id, locator=row,
                                                  category=category, description=description.strip())
         return dto.FeedbackReceipt(receipt.id, receipt.created_at, "received")
+
+    @staticmethod
+    def _pilot_username(first: str, last: str) -> str:
+        """Build a readable unique pilot username from the lawyer's name."""
+        base = re.sub(r"[^a-z0-9]", "", f"{first}.{last}".lower())
+        if len(base) < 3:
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        candidate = base
+        suffix = 2
+        users = get_user_model()
+        while users.objects.filter(username=candidate).exists():
+            candidate = f"{base}{suffix}"
+            suffix += 1
+            if suffix > 200:
+                raise access.CorpusError(dto.ErrorCode.SERVICE_UNAVAILABLE)
+        return candidate
+
+    @transaction.atomic
+    def create_pilot(self, operator: dto.Principal, first_name: str, last_name: str,
+                     bar_number: str = "") -> dict:
+        """Create a working pilot account: user, membership, grant and receipt."""
+        state_for = access.state_for(operator)
+        if not (first_name.strip() and last_name.strip()) or len(bar_number) > 40:
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        users = get_user_model()
+        operator_user = users.objects.filter(pk=operator.user_id, is_active=True).first()
+        if operator_user is None:
+            raise access.CorpusError(dto.ErrorCode.ACCESS_DENIED)
+        group = Group.objects.filter(membership__user_id=operator.user_id,
+                                     membership__enabled=True).first()
+        collection = Collection.objects.filter(enabled=True).order_by("name").first()
+        if group is None or collection is None:
+            raise access.CorpusError(dto.ErrorCode.SERVICE_UNAVAILABLE)
+        now = timezone.now()
+        username = self._pilot_username(first_name, last_name)
+        password = secrets.token_urlsafe(9)
+        lawyer = users.objects.create_user(username=username, password=password,
+                                           first_name=first_name.strip(), last_name=last_name.strip())
+        Membership.objects.create(user=lawyer, group=group, enabled=True)
+        AccessGrant.objects.create(
+            user=lawyer, group=group, collection=collection, origin="pilot",
+            valid_from=now, valid_until=now + timedelta(days=30),
+            issued_by=operator_user, evidence_id=f"pilot:{state_for.revision}")
+        PilotAccount.objects.create(lawyer=lawyer, first_name=first_name.strip(),
+                                    last_name=last_name.strip(), bar_number=bar_number.strip(),
+                                    created_by=operator_user)
+        return {"username": username, "password": password}
 
 
 class OfflineRecovery:
