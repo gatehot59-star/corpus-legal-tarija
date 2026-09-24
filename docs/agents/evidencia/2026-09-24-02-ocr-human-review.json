@@ -1,0 +1,37 @@
+{
+  "scope": {
+    "document": "dep-tar-compilado-de-sin-numero-2013-6b9dcffa",
+    "source_pdf": "/tmp/juan-source.pdf",
+    "source_sha256": "6b9dcffaffdfb997dc4227dea2d89d0a01b4474d6c00abfa4bb4152ca4750784",
+    "pages_reviewed": [1, 2, 5, 10, 15, 20, 25, 30, 40, 44],
+    "review_type": "human adjudication of substantive legal text against the rendered page and three OCR outputs",
+    "gold_status": "partial: field-level adjudication, not a full character-perfect transcription"
+  },
+  "engines": ["tesseract_fast_psm3", "tesseract_best_psm3", "paddleocr_ppocrv5_mobile_latin_cpu"],
+  "page_reviews": [
+    {"page": 1, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 161/2013-2014", "Art. 61 numeral 2", "PREAMBULO", "tarijeños", "Autonomía"], "paddle_corrections": ["normalize heading case", "remove underscores and stray seal tokens"], "tesseract_failures": ["multiple word substitutions throughout legal body", "pario for PREAMBULO", "torieños for tarijeños", "severe header noise"], "confidence": "high"},
+    {"page": 2, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["habitantes", "autonomía Departamental de Tarija", "Referéndum Constitucional del 2 de julio de 2006", "Los suscribientes", "date line"], "paddle_corrections": ["normalize cabildos multitudinarios", "remove seal/signature tokens", "verify date visually before legal publication"], "tesseract_failures": ["many substitutions in body", "date disagreement (24/15 versus Paddle 26)", "broken final quotation and signatures"], "confidence": "medium on date, high on body"},
+    {"page": 5, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 164/2013-2014", "Arts. 94 y 105", "Resolución 102/2013-2014", "primer día de octubre de dos mil trece"], "paddle_corrections": ["normalize Departamental and punctuation"], "tesseract_failures": ["94 read as 74", "102/2013-2014 corrupted in fast output", "body and footer heavily noisy"], "confidence": "high"},
+    {"page": 10, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 169/2013-2014", "Artículos 94 y 105", "DECLARAR DESIERTA", "SETAR", "3 días de octubre"], "paddle_corrections": ["normalize DeSiERTA and one article line", "remove signature noise"], "tesseract_failures": ["Convocatoria and Hidrocarburos repeatedly corrupted", "Tarija and legal nouns misspelled", "signature block unreadable"], "confidence": "high"},
+    {"page": 15, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 174/2013-2014", "Artículos 64 y 105", "Acta de la Sesión Ordinaria N° 38/2013-2014", "8 de Octubre de 2013", "date line"], "paddle_corrections": ["correct Departamental spelling", "remove signature artifacts", "date line adjudicated as 9 de octubre from page sequence"], "tesseract_failures": ["large header loss", "Ordinaria and approval sentence corrupted", "date disagreement 2/7 versus Paddle 9"], "confidence": "medium on date, high on body"},
+    {"page": 20, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 179/2013-2014", "Resolución de Asamblea N° 109/2013-2014", "art. 300", "artículos 272 y 277", "27 de agosto de 2013"], "paddle_corrections": ["restore legal accents", "normalize obligatoria, exigible y ejecutable"], "tesseract_failures": ["fast output reads R.A. 177 and 102", "best output corrupts administrative-law vocabulary", "header and footer noise"], "confidence": "high"},
+    {"page": 25, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 183/2013-2014", "Artículos 94, 105 y 117", "Proyecto de Ley Departamental", "Construcción del Estadio Olímpico", "23 de octubre de 2013"], "paddle_corrections": ["restore title casing in project name", "remove tracking-stamp text"], "tesseract_failures": ["94 read as 74", "project title and Art. 118 repeatedly damaged", "date disagreement 24 versus 23"], "confidence": "high"},
+    {"page": 30, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 188/2013-2014", "Convenio Interinstitucional N° 39/2011", "Universidad Autónoma Juan Misael Saracho", "Planetario GOTO 65", "30 días", "65 butacas"], "paddle_corrections": ["GOTO 65 is a human correction of Paddle's COTO GS", "restore numbered items 1 to 4", "normalize Tesoro Departamental"], "tesseract_failures": ["fast reads Convenio 32 and 20 días", "best reads GOTO as SOTO 5 and 85 butacas", "proper names and quantities unstable"], "confidence": "high except instrument name"},
+    {"page": 40, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 196/2013-2014", "Artículos 64 y 105", "Acta de la Sesión Ordinaria N° 45/2013-2014", "30 de octubre de 2013", "31 días"], "paddle_corrections": ["normalize departamental and footer"], "tesseract_failures": ["best reads Art. 44 and numeral 37", "Acta and Ordinaria corrupted", "footer URL damaged"], "confidence": "high"},
+    {"page": 44, "preferred": "paddleocr_ppocrv5_mobile_latin_cpu", "critical_fields": ["R.A. N° 200/2013-2014", "Artículos 88, 94 y 105", "Equipamiento a la Planta Procesadora de cítricos y frutas diversas APROCA", "aplazar el tratamiento", "7 de noviembre de 2013"], "paddle_corrections": ["restore accents and quotes around APROCA", "normalize signature names"], "tesseract_failures": ["best reads 86 and 74 instead of 88 and 94", "treatment sentence corrupted", "header and signatures noisy"], "confidence": "high"}
+  ],
+  "human_verdict": {
+    "preferred_engine_by_substantive_body": "paddleocr_ppocrv5_mobile_latin_cpu on 10/10 pages",
+    "tesseract_best_preferred": "0/10 pages",
+    "critical_legal_fields": "Paddle preserved the resolution identifiers and principal legal sentences more reliably; Tesseract produced repeated numeral, proper-name, and legal-noun substitutions.",
+    "layout": "Paddle retained paragraph order and line grouping better, but all engines need a cleanup pass for seals, signatures, headers, and stamps.",
+    "runtime": "Paddle 407.82 seconds for 10 pages versus Tesseract fast 91.33 seconds and best 98.26 seconds, approximately 4.5x slower than Tesseract.",
+    "decision": "Do not replace production OCR yet. Promote Paddle only as a candidate engine for a 120-200 page representative gold set, with the original OCR preserved and page-level provenance recorded."
+  },
+  "not_measured": [
+    "full gold transcription for all 10 pages",
+    "true CER and WER against independently transcribed source text",
+    "visual verification of every numeral and date in the scanned image",
+    "performance on the remaining 2,614 scanned pages"
+  ]
+}
