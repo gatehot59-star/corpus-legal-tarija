@@ -1,0 +1,44 @@
+{
+  "scope": {
+    "document": "dep-tar-compilado-de-sin-numero-2013-6b9dcffa",
+    "source_pdf": "RPA_161_200_2013_2014.pdf",
+    "source_sha256": "6b9dcffaffdfb997dc4227dea2d89d0a01b4474d6c00abfa4bb4152ca4750784",
+    "pages_reviewed": 44,
+    "review_type": "human comparative adjudication of legal text, identifiers, dates, names, quantities, paragraph order and seal/signature noise",
+    "gold_status": "comparative QA complete; not a character-perfect publication transcription"
+  },
+  "benchmark": {
+    "dpi": 300,
+    "tesseract_fast_psm3": {"pages": 44, "characters": 68808, "seconds": 341.18, "structural_gate": "44/44"},
+    "tesseract_best_psm3": {"pages": 44, "characters": 69303, "seconds": 341.01, "structural_gate": "44/44"},
+    "paddleocr_ppocrv5_mobile_latin_cpu": {"pages": 44, "characters": 69565, "seconds": 1658.26, "structural_gate": "44/44"}
+  },
+  "page_adjudication": [
+    {"pages":[1,2,3,4],"preferred":"paddleocr_ppocrv5_mobile_latin_cpu","finding":"Paddle preserves the preamble, resolution identifiers, article references and paragraph order better; Tesseract has heavy header noise and substitutions such as pario and torieños.","risk":"dates and seals on page 2 require visual confirmation"},
+    {"pages":[5,6,7,8,9,10],"preferred":"paddleocr_ppocrv5_mobile_latin_cpu","finding":"Paddle preserves R.A. 164-169, Arts. 94/105/117, Acta references and DECLARAR DESIERTA; Tesseract repeatedly changes 94 to 74 and corrupts legal nouns and signatures.","risk":"signature blocks remain noisy"},
+    {"pages":[11,12,13,14,15,16,17,18,19],"preferred":"paddleocr_ppocrv5_mobile_latin_cpu","finding":"Paddle preserves R.A. 170-178, article lists, dates and the substantive decisions; Tesseract loses or corrupts headings, article lists and date lines.","risk":"page 15 date line needs visual confirmation"},
+    {"pages":[20,21],"preferred":"paddleocr_ppocrv5_mobile_latin_cpu","finding":"Paddle preserves the administrative-law body and R.A. 179 / R.A. 109 references; Tesseract fast/best misread resolution references and legal vocabulary.","risk":"continuation/reference numbering must be checked against the scan"},
+    {"pages":[22,23,24,25,26,27,28,29],"preferred":"paddleocr_ppocrv5_mobile_latin_cpu","finding":"Paddle preserves R.A. 180-187, Acta 39/41/42, Arts. 64/94/105/117 and the law-project text; Tesseract confuses article 94 with 74/44 and damages titles.","risk":"page 28 has engine disagreement on the R.A. identifier; Paddle agrees with the page sequence"},
+    {"pages":[30,31,32,33,34,35,36,37,38],"preferred":"paddleocr_ppocrv5_mobile_latin_cpu","finding":"Paddle preserves R.A. 188-194, the Planetario decision, Actas 43/44 and the cultural-honours body better than Tesseract; Tesseract alters numbers, proper names and paragraph content.","risk":"page 30 GOTO 65 and pages 37-38 names/continuation require final visual check before publication"},
+    {"pages":[39,40,41,42,43,44],"preferred":"paddleocr_ppocrv5_mobile_latin_cpu","finding":"Paddle preserves R.A. 195-200, Arts. 64/88/94/105, Acta 45, the PROSOL decision and APROCA; Tesseract best changes article numbers and damages the operative sentences.","risk":"page 44 quotes and signatures need cleanup, not silent correction"}
+  ],
+  "human_verdict": {
+    "preferred_engine": "paddleocr_ppocrv5_mobile_latin_cpu",
+    "preferred_pages": "44/44 for substantive legal text in this document",
+    "tesseract_best_preferred": "0/44",
+    "layout": "Paddle retains order and paragraph grouping better, but all engines emit seal, stamp, header and signature noise.",
+    "runtime_tradeoff": "Paddle is 4.86x slower than Tesseract fast and 4.86x slower than Tesseract best on this 44-page run.",
+    "decision": "Paddle becomes the candidate engine for the next representative gold set. It is not promoted to production and does not overwrite historical OCR."
+  },
+  "publication_blockers": [
+    "independent character-perfect gold transcription and true CER/WER",
+    "visual confirmation of dates, numerals, instrument names and signatures flagged above",
+    "120-200 page representative benchmark before national reprocessing",
+    "page-level provenance for any candidate OCR output"
+  ],
+  "artifacts": [
+    "pipeline/benchmark_ocr.py",
+    "docs/agents/evidencia/2026-09-24-03-ocr-full44-review.json",
+    "docs/agents/respuestas/2026-09-24-03-ocr-full44-review.md"
+  ]
+}
