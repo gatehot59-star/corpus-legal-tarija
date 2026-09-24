@@ -4,7 +4,9 @@ from uuid import UUID
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from contracts.corpus_django import Principal, DocumentLocator, AccessDecision, ErrorCode
-from .models import PolicyState, Membership, AccessGrant, Locator
+from .models import PolicyState, Membership, AccessGrant, Locator, PilotAccount
+
+EMPLOYEES_GROUP = "corpus-empleados"
 
 
 class CorpusError(Exception):
@@ -53,6 +55,21 @@ def require(principal: Principal, locator: DocumentLocator) -> Locator:
     if row is None:
         raise CorpusError(ErrorCode.ACCESS_DENIED)
     return row
+
+
+def is_employee(principal: Principal) -> bool:
+    """An employee is an enabled member of the employees group and never a pilot lawyer."""
+    if PilotAccount.objects.filter(lawyer_id=principal.user_id).exists():
+        return False
+    return Membership.objects.filter(user_id=principal.user_id, enabled=True,
+                                     group__name=EMPLOYEES_GROUP).exists()
+
+
+def require_employee(principal: Principal) -> None:
+    """Only employees operate the pilot desk; lawyers and staff-as-such are denied."""
+    state_for(principal)
+    if not is_employee(principal):
+        raise CorpusError(ErrorCode.ACCESS_DENIED)
 
 
 def authorize(principal: Principal, locator: DocumentLocator) -> AccessDecision:

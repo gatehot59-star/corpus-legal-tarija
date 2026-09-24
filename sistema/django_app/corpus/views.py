@@ -16,10 +16,10 @@ from django.utils import timezone
 from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.http import require_http_methods
 from contracts.corpus_django import Principal, DocumentLocator, ErrorCode
-from .access import CorpusError, state_for
-from .forms import QueryForm, PrivateResetForm, strict
-from .models import PolicyState, AttemptBudget, PrivateFeedback
-from .services import Application
+from .access import CorpusError, state_for, require_employee, is_employee
+from .forms import BrowseForm, PilotForm, QueryForm, PrivateResetForm, strict
+from .models import PolicyState, AttemptBudget, PrivateFeedback, Locator, PilotAccount, PilotEvent
+from .services import Application, usage_for
 
 app = Application()
 
@@ -106,6 +106,24 @@ def logout_view(request):
     return redirect("login")
 
 
+@require_http_methods(["POST"])
+@guarded
+def theme_view(request):
+    """Persist the reading theme in a first-party cookie; pages run script-free."""
+    strict(request.GET, set())
+    strict(request.POST, {"csrfmiddlewaretoken", "theme", "next"})
+    theme = request.POST.get("theme", "")
+    if theme not in {"light", "dark", "auto"}:
+        raise CorpusError(ErrorCode.INVALID_INPUT)
+    target = request.POST.get("next", "/corpus/")
+    if not target.startswith("/") or target.startswith("//"):
+        target = "/corpus/"
+    response = redirect(target)
+    response.set_cookie("corpus_theme", theme, max_age=365 * 24 * 3600,
+                        samesite="Lax", secure=not settings.TESTING, httponly=True)
+    return response
+
+
 @require_http_methods(["GET", "POST"])
 @guarded
 def reset_request(request):
@@ -152,23 +170,54 @@ def locator_from(data) -> DocumentLocator:
         raise CorpusError(ErrorCode.INVALID_INPUT)
 
 
+def _feedback_target(refs, page, catalog):
+    """Pick a sane locator for the workspace report form: last reference, else first visible hit."""
+    if refs:
+        return refs[-1].locator
+    if page is not None and page.results:
+        return page.results[0].locator
+    if catalog is not None and catalog["items"]:
+        item = catalog["items"][0]
+        return {"collection_id": item["collection_id"], "uid": item["uid"],
+                "version_sha256": item["version_sha256"]}
+    return None
+
+
 @require_http_methods(["GET"])
 @guarded
 def workspace(request):
-    """Render search, private references and owned report receipts."""
+    """Render search, authorized catalog navigation, private references and reports."""
     p = principal(request)
-    strict(request.GET, {"q", "offset", "limit"})
-    page = None
-    form = QueryForm(request.GET or None)
-    if request.GET:
-        if not form.is_valid():
+    if "browse" in request.GET:
+        strict(request.GET, {"browse", "source", "rubro", "tipo", "offset", "limit"})
+        browse_form = BrowseForm(request.GET or None)
+        if not browse_form.is_valid():
             raise CorpusError(ErrorCode.INVALID_INPUT)
-        page = app.search(p, form.cleaned_data["q"],
-                          int(form.cleaned_data["offset"] or 0), int(form.cleaned_data["limit"] or 10))
+        data = browse_form.cleaned_data
+        catalog = app.browse(p, data.get("source", ""), data.get("rubro", ""), data.get("tipo", ""),
+                              int(data.get("offset") or 0), int(data.get("limit") or 20))
+        catalog_facets = catalog
+        form = QueryForm(None)
+        page = None
+    else:
+        strict(request.GET, {"q", "offset", "limit"})
+        form = QueryForm(request.GET or None)
+        page = None
+        catalog = None
+        if request.GET:
+            if not form.is_valid():
+                raise CorpusError(ErrorCode.INVALID_INPUT)
+            page = app.search(p, form.cleaned_data["q"],
+                              int(form.cleaned_data["offset"] or 0), int(form.cleaned_data["limit"] or 10))
+        browse_form = BrowseForm(initial={"browse": "1", "limit": "20"})
+        catalog_facets = app.browse(p, offset=0, limit=1)
     refs = app.list_references(p)
     feedback = PrivateFeedback.objects.filter(owner_id=p.user_id).order_by("-created_at")[:20]
-    return render(request, "corpus/workspace.html", {"form": form, "page": page,
-                  "references": refs, "feedback": feedback, "query": request.GET.get("q", "")})
+    return render(request, "corpus/workspace.html", {"form": form, "page": page, "catalog": catalog,
+                  "catalog_facets": catalog_facets, "browse_form": browse_form,
+                  "references": refs, "feedback": feedback, "query": request.GET.get("q", ""),
+                  "feedback_target": _feedback_target(refs, page, catalog),
+                  "is_employee": is_employee(p)})
 
 
 @require_http_methods(["GET"])
@@ -183,10 +232,15 @@ def read_view(request):
             raise ValueError
         if not limit_text.isascii() or not limit_text.isdecimal() or str(int(limit_text)) != limit_text:
             raise ValueError
-        result = app.read(p, locator_from(request.GET), int(start_text), int(limit_text))
+        locator = locator_from(request.GET)
+        result = app.read(p, locator, int(start_text), int(limit_text))
     except ValueError:
         raise CorpusError(ErrorCode.INVALID_INPUT)
-    return render(request, "corpus/workspace.html", {"text": result})
+    row = Locator.objects.filter(collection_id=locator.collection_id, uid=locator.uid,
+                                 version_sha256=locator.version_sha256).first()
+    title = row.title if row and row.title else locator.uid
+    return render(request, "corpus/workspace.html", {"text": result, "doc_title": title,
+                                                     "is_employee": is_employee(p)})
 
 
 @require_http_methods(["POST"])
@@ -213,6 +267,116 @@ def feedback_view(request):
         return JsonResponse({"id": str(receipt.id), "created_at": receipt.created_at.isoformat(),
                              "status": receipt.status}, status=201)
     return redirect("workspace")
+
+
+@require_http_methods(["GET", "POST"])
+@guarded
+def pilot_view(request):
+    """Legacy desk path; the desk is now the independent employee portal."""
+    return redirect("portal")
+
+
+def _portal_context(form, created=None, notice=""):
+    """Assemble accounts with usage, recent activity and lawyer reports."""
+    accounts = (PilotAccount.objects.select_related("lawyer", "created_by")
+                .order_by("-created_at")[:50])
+    rows = []
+    for account in accounts:
+        rows.append({"account": account, "usage": usage_for(account.lawyer),
+                     "reports": PrivateFeedback.objects.filter(owner=account.lawyer).count()})
+    recent = PilotEvent.objects.select_related("lawyer").order_by("-at")[:50]
+    reports = (PrivateFeedback.objects.select_related("owner", "locator")
+               .order_by("-created_at")[:100])
+    return {"form": form, "created": created, "notice": notice, "rows": rows,
+            "recent": recent, "reports": reports}
+
+
+@require_http_methods(["GET", "POST"])
+@guarded
+def portal_login(request):
+    """Independent employee entrance: same credential store, separate door."""
+    strict(request.GET, set())
+    if request.user.is_authenticated and is_employee(Principal(request.user.pk, -1)):
+        return redirect("portal")
+    form = AuthenticationForm(request, data=request.POST if request.method == "POST" else None)
+    if request.method == "POST":
+        strict(request.POST, {"username", "password", "csrfmiddlewaretoken"})
+        consume_budget(request, "portal-login")
+        if form.is_valid():
+            user = form.get_user()
+            if not is_employee(Principal(user.pk, -1)):
+                form.add_error(None, "Esta entrada es solo para el equipo de Corpus Tarija.")
+            else:
+                state = PolicyState.objects.filter(pk=1, quarantined=False).first()
+                if state is None:
+                    raise CorpusError(ErrorCode.ACCESS_DENIED)
+                login(request, user)
+                request.session["corpus_epoch"] = state.session_epoch
+                return redirect("portal")
+    return render(request, "corpus/portal_login.html", {"form": form})
+
+
+@require_http_methods(["POST"])
+@guarded
+def portal_logout(request):
+    """Close the employee session and return to the independent entrance."""
+    strict(request.GET, set())
+    strict(request.POST, {"csrfmiddlewaretoken"})
+    logout(request)
+    return redirect("portal-login")
+
+
+@require_http_methods(["GET", "POST"])
+@guarded
+def portal(request):
+    """Employee portal: create accounts, review usage and read lawyer reports."""
+    if not request.user.is_authenticated:
+        return redirect("portal-login")
+    p = principal(request)
+    require_employee(p)
+    created = None
+    form = PilotForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST":
+        strict(request.POST, {"first_name", "last_name", "bar_number", "csrfmiddlewaretoken"})
+        consume_budget(request, "pilot")
+        if form.is_valid():
+            created = app.create_pilot(p, form.cleaned_data["first_name"],
+                                       form.cleaned_data["last_name"],
+                                       form.cleaned_data.get("bar_number", ""))
+            form = PilotForm(None)
+    notice = request.session.pop("portal_notice", "")
+    if created is None:
+        created = request.session.pop("portal_credentials", None)
+    return render(request, "corpus/portal.html", _portal_context(form, created, notice))
+
+
+@require_http_methods(["POST"])
+@guarded
+def portal_reissue(request, account_id):
+    """Re-issue a pilot password and show it once back in the portal."""
+    if not request.user.is_authenticated:
+        return redirect("portal-login")
+    strict(request.GET, set())
+    strict(request.POST, {"csrfmiddlewaretoken"})
+    consume_budget(request, "pilot")
+    result = app.reissue_pilot_password(principal(request), account_id)
+    request.session["portal_credentials"] = result
+    return redirect("portal")
+
+
+@require_http_methods(["POST"])
+@guarded
+def portal_delete(request, account_id):
+    """Remove a lawyer's access; usage history and reports stay attributable."""
+    if not request.user.is_authenticated:
+        return redirect("portal-login")
+    strict(request.GET, set())
+    strict(request.POST, {"csrfmiddlewaretoken"})
+    consume_budget(request, "pilot")
+    username = app.deactivate_pilot(principal(request), account_id)
+    request.session["portal_notice"] = (
+        f"Acceso eliminado: {username}. Sus lecturas e informes quedan registrados.")
+    return redirect("portal")
 
 
 @require_http_methods(["GET"])

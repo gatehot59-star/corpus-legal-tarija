@@ -1,15 +1,44 @@
 """sistema/django_app/corpus/services.py: authorized application operations."""
+import re
+import secrets
 import time
+from collections import Counter
+from datetime import timedelta
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import transaction
+from django.utils import timezone
 from contracts import corpus_django as dto
 from . import access
-from .reader import read_exact, search_snapshot
-from .models import SavedReference, PrivateFeedback
+from .reader import read_exact, search_snapshot, browse_snapshot
+from .models import (SavedReference, PrivateFeedback, Collection, AccessGrant, Membership,
+                     PilotAccount, PilotEvent)
 
 
 def locator_of(row) -> dto.DocumentLocator:
     """Convert a server catalog row into the public exact-version locator."""
     return dto.DocumentLocator(row.collection_id, row.uid, row.version_sha256)
+
+
+SESSION_GAP = timedelta(minutes=30)
+
+
+def usage_for(lawyer) -> dict:
+    """Estimate usage from recorded events: visits, minutes, sections and last visit."""
+    events = list(PilotEvent.objects.filter(lawyer=lawyer).order_by("at"))
+    minutes = 0.0
+    sessions = 0
+    last = None
+    for event in events:
+        if last is None or event.at - last > SESSION_GAP:
+            sessions += 1
+            minutes += 1.0
+        else:
+            minutes += (event.at - last).total_seconds() / 60
+        last = event.at
+    sections = Counter(event.section for event in events).most_common(3)
+    return {"pages": len(events), "sessions": sessions, "minutes": int(round(minutes)),
+            "last_at": last, "sections": sections}
 
 
 class Application:
@@ -73,6 +102,21 @@ class Application:
                               end if end < len(hits) else None)
 
     @transaction.atomic
+    def browse(self, principal, source: str = "", rubro: str = "", tipo: str = "",
+               offset: int = 0, limit: int = 20) -> dict:
+        """Browse authorized metadata by source, matter and norm type."""
+        if any(not isinstance(value, str) or len(value) > 120 for value in (source, rubro, tipo)):
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        if type(offset) is not int or not 0 <= offset <= 10000 or type(limit) is not int or not 1 <= limit <= 50:
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        rows = list(access.eligible(principal).select_related("collection").order_by(
+            "collection_id", "uid", "version_sha256"))
+        if not rows:
+            return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
+        versions = {row.uid: row.version_sha256 for row in rows}
+        return browse_snapshot(rows[0], versions, source, rubro, tipo, offset, limit)
+
+    @transaction.atomic
     def save_reference(self, principal, locator) -> dto.SavedReference:
         """Persist an owned locator, not content; request is freshly authorized."""
         row = access.require(principal, locator)
@@ -97,6 +141,82 @@ class Application:
         receipt = PrivateFeedback.objects.create(owner_id=principal.user_id, locator=row,
                                                  category=category, description=description.strip())
         return dto.FeedbackReceipt(receipt.id, receipt.created_at, "received")
+
+    @staticmethod
+    def _pilot_username(first: str, last: str) -> str:
+        """Build a readable unique pilot username from the lawyer's name."""
+        base = re.sub(r"[^a-z0-9]", "", f"{first}.{last}".lower())
+        if len(base) < 3:
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        candidate = base
+        suffix = 2
+        users = get_user_model()
+        while users.objects.filter(username=candidate).exists():
+            candidate = f"{base}{suffix}"
+            suffix += 1
+            if suffix > 200:
+                raise access.CorpusError(dto.ErrorCode.SERVICE_UNAVAILABLE)
+        return candidate
+
+    @transaction.atomic
+    def create_pilot(self, operator: dto.Principal, first_name: str, last_name: str,
+                     bar_number: str = "") -> dict:
+        """Create a working pilot account: user, membership, grant and receipt."""
+        state_for = access.state_for(operator)
+        if not (first_name.strip() and last_name.strip()) or len(bar_number) > 40:
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        users = get_user_model()
+        operator_user = users.objects.filter(pk=operator.user_id, is_active=True).first()
+        if operator_user is None:
+            raise access.CorpusError(dto.ErrorCode.ACCESS_DENIED)
+        group = Group.objects.filter(membership__user_id=operator.user_id,
+                                     membership__enabled=True).first()
+        collection = Collection.objects.filter(enabled=True).order_by("name").first()
+        if group is None or collection is None:
+            raise access.CorpusError(dto.ErrorCode.SERVICE_UNAVAILABLE)
+        now = timezone.now()
+        username = self._pilot_username(first_name, last_name)
+        password = secrets.token_urlsafe(9)
+        lawyer = users.objects.create_user(username=username, password=password,
+                                           first_name=first_name.strip(), last_name=last_name.strip())
+        Membership.objects.create(user=lawyer, group=group, enabled=True)
+        AccessGrant.objects.create(
+            user=lawyer, group=group, collection=collection, origin="pilot",
+            valid_from=now, valid_until=now + timedelta(days=30),
+            issued_by=operator_user, evidence_id=f"pilot:{state_for.revision}")
+        PilotAccount.objects.create(lawyer=lawyer, first_name=first_name.strip(),
+                                    last_name=last_name.strip(), bar_number=bar_number.strip(),
+                                    created_by=operator_user)
+        return {"username": username, "password": password}
+
+    @transaction.atomic
+    def reissue_pilot_password(self, operator: dto.Principal, account_id) -> dict:
+        """Re-issue a lawyer's password: shown once to the employee, stored hashed."""
+        access.require_employee(operator)
+        account = PilotAccount.objects.select_related("lawyer").filter(pk=account_id).first()
+        if account is None or account.status != "activa":
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        password = secrets.token_urlsafe(9)
+        account.lawyer.set_password(password)
+        account.lawyer.save(update_fields=["password"])
+        return {"username": account.lawyer.username, "password": password}
+
+    @transaction.atomic
+    def deactivate_pilot(self, operator: dto.Principal, account_id) -> str:
+        """Remove a lawyer's access: account off, grants revoked, history preserved."""
+        access.require_employee(operator)
+        account = PilotAccount.objects.select_related("lawyer").filter(pk=account_id).first()
+        if account is None or account.status != "activa":
+            raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
+        now = timezone.now()
+        account.status = "eliminada"
+        account.save(update_fields=["status"])
+        lawyer = account.lawyer
+        lawyer.is_active = False
+        lawyer.save(update_fields=["is_active"])
+        AccessGrant.objects.filter(user=lawyer, revoked_at__isnull=True).update(revoked_at=now)
+        Membership.objects.filter(user=lawyer, enabled=True).update(enabled=False)
+        return lawyer.username
 
 
 class OfflineRecovery:

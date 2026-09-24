@@ -101,6 +101,56 @@ class PrivateFeedback(models.Model):
         ]
 
 
+class EmployeeAccount(models.Model):
+    """Employee operator account; password is always stored only as a hash."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                    related_name="employee_account")
+    first_name = models.CharField(max_length=80)
+    last_name = models.CharField(max_length=80, blank=True)
+    status = models.CharField(max_length=16, default="activa")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+                                   null=True, blank=True, related_name="created_employee_accounts")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(status__in=["activa", "eliminada"]),
+                                   name="employee_account_status"),
+        ]
+
+
+class PilotAccount(models.Model):
+    """A pilot lawyer account created by an employee; password never stored here."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lawyer = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                  related_name="pilot_account")
+    first_name = models.CharField(max_length=80)
+    last_name = models.CharField(max_length=80)
+    bar_number = models.CharField(max_length=40, blank=True)
+    status = models.CharField(max_length=16, default="activa")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+                                   related_name="created_pilot_accounts")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(status__in=["activa", "eliminada"]),
+                                   name="pilot_account_status"),
+        ]
+
+
+class PilotEvent(models.Model):
+    """Server-side pilot usage event: section and moment, never content nor passwords."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lawyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                               related_name="pilot_events")
+    at = models.DateTimeField(auto_now_add=True, db_index=True)
+    section = models.CharField(max_length=40)
+    detail = models.CharField(max_length=240, blank=True)
+    path = models.CharField(max_length=240, blank=True)
+
+
 class AttemptBudget(models.Model):
     """Persistent per-IP/purpose/window budget, stored as keyed digest."""
     key = models.CharField(primary_key=True, max_length=64)
