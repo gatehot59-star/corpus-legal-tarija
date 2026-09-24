@@ -58,7 +58,7 @@ def run_tess(image,dst,tessdata):
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--manifest",type=Path,required=True); ap.add_argument("--output",type=Path,required=True); ap.add_argument("--docs",type=int,default=40); ap.add_argument("--dpi",type=int,default=300); ap.add_argument("--tessdata-fast",type=Path,required=True); ap.add_argument("--tessdata-best",type=Path,required=True); args=ap.parse_args()
-    args.output.mkdir(parents=True,exist_ok=True); source=args.output/"sources"; images=args.output/"images"; selected=sample_rows(args.manifest,args.docs)
+    args.output.mkdir(parents=True,exist_ok=True); source=args.output/"sources"; images=args.output/"images"; source.mkdir(parents=True,exist_ok=True); images.mkdir(parents=True,exist_ok=True); selected=sample_rows(args.manifest,args.docs)
     rows=[]
     for ix,r in enumerate(selected,1):
         key=r.get("sha256") or hashlib.sha256(r["fuente_url"].encode()).hexdigest(); pdf=source/(key+".pdf"); download(r["fuente_url"],pdf)
