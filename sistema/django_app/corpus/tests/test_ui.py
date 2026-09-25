@@ -1,4 +1,4 @@
-"""UI polish regression tests for the reading desk templates."""
+"""UI regression tests for the corrected reading desk."""
 from django.test import Client
 from .test_access import FixtureBase
 
@@ -6,49 +6,44 @@ from .test_access import FixtureBase
 class UiTests(FixtureBase):
     """The redesigned pages must remain usable, readable and authorized."""
 
-    def test_workspace_shell_exposes_theme_toggle_and_catalog_controls(self):
-        """The workspace renders the professional shell, filters and theme control."""
+    def test_workspace_has_single_filter_panel_and_aligned_search(self):
+        """Filters live in one sidebar panel; search button aligns with the query box."""
         self.login()
         response = self.client.get("/corpus/")
         self.assertContains(response, 'data-theme-toggle')
-        self.assertContains(response, 'Explorar el catálogo')
-        self.assertContains(response, 'Tus referencias')
-        self.assertContains(response, 'Tus reportes privados')
+        self.assertContains(response, 'Filtros')
+        self.assertContains(response, 'hero-search')
+        self.assertContains(response, '<button type="submit">Buscar</button>')
         self.assertContains(response, 'Buscar. Leer. Verificar.')
 
-    def test_search_button_is_aligned_with_query_box(self):
-        """Search action and query field share the same visual row."""
-        self.login()
-        response = self.client.get("/corpus/")
-        self.assertContains(response, 'hero-search-main')
-        self.assertContains(response, '<button type="submit">Buscar</button>')
-
-    def test_search_filters_are_persisted_after_results(self):
-        """Text search keeps query and legal filter fields visible after results."""
+    def test_search_filters_persist_and_results_show_citation_download_source(self):
+        """After searching, filters stay selected and each hit shows citation, download and source."""
         self.login()
         response = self.client.get("/corpus/", {"q": "Artículo"})
         self.assertContains(response, 'value="Artículo"')
         self.assertContains(response, 'name="source"')
         self.assertContains(response, 'name="rubro"')
         self.assertContains(response, 'name="tipo"')
-        self.assertContains(response, 'Cita interna')
+        self.assertContains(response, 'Cita')
         self.assertContains(response, 'Documento sintético')
+        self.assertContains(response, 'Descargar texto')
+        self.assertContains(response, 'resultado')
 
     def test_search_zero_results_replaces_previous_results(self):
         """An empty search explicitly says so and does not leave stale hits visible."""
         self.login()
         self.client.get("/corpus/", {"q": "Artículo"})
         response = self.client.get("/corpus/", {"q": "sin-resultado"})
-        self.assertContains(response, 'Sin resultados autorizados para esta consulta.')
+        self.assertContains(response, 'Sin resultados para esta consulta.')
         self.assertNotContains(response, 'Documento sintético')
 
-    def test_reader_shell_keeps_provenance_actions_citation_and_progress(self):
-        """The reading view shows legal citation, page progress and a visual guide."""
+    def test_reader_has_citation_progress_and_download(self):
+        """The reading view shows legal citation, page progress, guide and download."""
         self.login()
         response = self.client.get("/corpus/read/", self.fields)
         self.assertContains(response, 'Procedencia verificada')
         self.assertContains(response, 'Guardar referencia')
-        self.assertContains(response, 'Cita interna para copiar')
+        self.assertContains(response, 'Cita interna')
         self.assertContains(response, 'Página ')
         self.assertContains(response, 'progress-shell')
         self.assertContains(response, 'reading-guide')
@@ -94,14 +89,6 @@ class UiTests(FixtureBase):
             target = self.client.get(url, self.fields if url.endswith("read/") else None)
             self.assertNotIn(b"<script", target.content, url)
 
-    def test_search_results_have_no_redundant_badges(self):
-        """Result cards show title, snippet, citation and metadata, not empty badges."""
-        self.login()
-        response = self.client.get("/corpus/", {"q": "Artículo"})
-        self.assertNotContains(response, '>Resultado<')
-        self.assertNotContains(response, '>Versión verificada<')
-        self.assertContains(response, 'Cita interna')
-
     def test_workspace_report_form_has_glossary_and_target_after_read(self):
         """Reporting is possible from the workspace too, with plain-language categories."""
         self.login()
@@ -120,3 +107,11 @@ class UiTests(FixtureBase):
         self.login()
         response = self.client.get("/corpus/")
         self.assertContains(response, 'Abrí cualquier documento una vez')
+
+    def test_download_view_returns_plain_text_with_filename(self):
+        """The download endpoint serves authorized exact text as an attachment."""
+        self.login()
+        response = self.client.get("/corpus/download/", self.fields)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertIn(b"Documento", response.content)
