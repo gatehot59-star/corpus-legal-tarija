@@ -65,6 +65,9 @@ class TextSlice:
     source_sha256: str
     authority: Literal["secondary"]
     legal_validity: Literal["NOT_MEASURED"]
+    citation: str
+    page_number: int
+    page_total: int
 
 
 @dataclass(frozen=True)
@@ -76,6 +79,10 @@ class SearchHit:
     snippet: str
     authority: Literal["secondary"]
     legal_validity: Literal["NOT_MEASURED"]
+    citation: str
+    source_name: str
+    matter: str
+    norm_type: str
 
 
 @dataclass(frozen=True)
@@ -127,7 +134,8 @@ class CorpusApplication(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def search(self, principal: Principal, query: str, offset: int, limit: int) -> SearchPage:
+    def search(self, principal: Principal, query: str, offset: int, limit: int,
+               source: str = "", rubro: str = "", tipo: str = "") -> SearchPage:
         """Restrict eligible documents before reading text or constructing snippets."""
         raise NotImplementedError
 
