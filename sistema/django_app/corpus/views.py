@@ -200,7 +200,7 @@ def workspace(request):
         form = QueryForm(None)
         page = None
     else:
-        strict(request.GET, {"q", "offset", "limit"})
+        strict(request.GET, {"q", "source", "rubro", "tipo", "offset", "limit"})
         form = QueryForm(request.GET or None)
         page = None
         catalog = None
@@ -208,7 +208,11 @@ def workspace(request):
             if not form.is_valid():
                 raise CorpusError(ErrorCode.INVALID_INPUT)
             page = app.search(p, form.cleaned_data["q"],
-                              int(form.cleaned_data["offset"] or 0), int(form.cleaned_data["limit"] or 10))
+                              int(form.cleaned_data["offset"] or 0),
+                              int(form.cleaned_data["limit"] or 10),
+                              form.cleaned_data.get("source", ""),
+                              form.cleaned_data.get("rubro", ""),
+                              form.cleaned_data.get("tipo", ""))
         browse_form = BrowseForm(initial={"browse": "1", "limit": "20"})
         catalog_facets = app.browse(p, offset=0, limit=1)
     refs = app.list_references(p)
