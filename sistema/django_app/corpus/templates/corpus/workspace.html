@@ -43,13 +43,13 @@ h1,h2,h3{overflow-wrap:anywhere}
 button,input,select,textarea{font:inherit}
 button,.button{
   border:0;border-radius:12px;background:var(--accent);color:#fff;
-  padding:.6rem 1rem;cursor:pointer;display:inline-flex;align-items:center;
-  justify-content:center;gap:.4rem;font-weight:600;
+  padding:.7rem 1rem;cursor:pointer;display:inline-flex;align-items:center;
+  justify-content:center;gap:.4rem;font-weight:600;min-height:2.9rem;
 }
 button.secondary,.button.secondary{background:transparent;color:var(--accent);border:1px solid var(--line)}
 input,select,textarea{
   width:100%;border:1px solid var(--line);border-radius:12px;
-  background:var(--card);color:var(--text);padding:.7rem .85rem;outline:none;
+  background:var(--card);color:var(--text);padding:.7rem .85rem;outline:none;min-height:2.9rem;
 }
 input:focus,select:focus,textarea:focus{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(23,63,95,.18)}
 textarea{min-height:7rem;resize:vertical}
@@ -110,9 +110,11 @@ code{overflow-wrap:anywhere;font-size:.85em}
   line-height:1.05;margin:.5rem 0 .6rem;max-width:18ch;
 }
 .hero p{max-width:62ch;color:var(--muted);font-size:.98rem;margin:.2rem 0}
-.hero-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;margin-top:.9rem;align-items:end}
-.hero-search>*{min-width:0}
-.hero-search button{white-space:nowrap}
+.hero-search{display:grid;gap:.6rem;margin-top:.9rem}
+.hero-search-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;align-items:end}
+.hero-search-main>*{min-width:0}
+.hero-search-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}
+.hero-search-filters>*{min-width:0}
 .hero-side{display:grid;gap:.75rem;grid-template-rows:repeat(2,minmax(0,1fr))}
 .stat{
   padding:.85rem 1rem;display:flex;flex-direction:column;justify-content:center;
@@ -151,10 +153,18 @@ code{overflow-wrap:anywhere;font-size:.85em}
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
 }
 .doc-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.2rem}
+.citation-block{
+  border-left:3px solid var(--accent-2);padding:.5rem .7rem;background:var(--card-soft);
+  border-radius:10px;display:grid;gap:.4rem;
+}
+.citation-block small{color:var(--muted)}
+.citation-text{overflow-wrap:anywhere}
+.copy-form{display:inline}
 .empty{
   padding:1rem;border:1px dashed var(--line);border-radius:var(--radius);
   color:var(--muted);background:var(--card-soft);
 }
+.empty strong{display:block;color:var(--text);margin-bottom:.25rem}
 .pager{display:flex;margin-top:.25rem}
 
 .reader-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1.25rem;align-items:start}
@@ -162,11 +172,27 @@ code{overflow-wrap:anywhere;font-size:.85em}
 .reader-card{padding:1.1rem}
 .reader-head{display:flex;justify-content:space-between;gap:1rem;align-items:start;margin-bottom:.8rem}
 .reader-head h1{font-family:var(--serif);font-size:clamp(1.2rem,2.2vw,1.6rem);line-height:1.2;margin:.4rem 0 0}
+.reader-status{
+  display:grid;gap:.4rem;margin:.8rem 0;padding:.8rem;border-radius:12px;
+  border:1px solid var(--line);background:var(--card-soft);
+}
+.reader-status strong{display:block}
+.progress-shell{
+  height:10px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+  overflow:hidden;
+}
+.progress-bar{display:block;height:100%;background:var(--accent-2)}
 .reader-text{
   font-family:var(--serif);font-size:1.05rem;line-height:1.75;
   white-space:pre-wrap;overflow-wrap:anywhere;
   background:var(--card-soft);border:1px solid var(--line);
   border-radius:var(--radius);padding:1rem;
+  background-image:linear-gradient(to bottom, rgba(23,63,95,.08), rgba(23,63,95,0) 45%);
+}
+.reading-guide{
+  position:sticky;top:86px;height:2px;background:var(--accent);
+  border-radius:999px;box-shadow:0 0 0 1px var(--accent);
+  margin:0 -0.5rem .8rem -0.5rem;
 }
 .provenance{
   padding:.9rem;border-radius:12px;border:1px solid var(--line);background:var(--card-soft);
@@ -197,10 +223,8 @@ details summary{cursor:pointer;font-weight:600}
   .topbar-inner{padding:.6rem .8rem}
   .shell{padding:1rem .8rem}
   .hero{padding:1rem}
-  .hero-search{grid-template-columns:1fr}
-  .hero-side{grid-template-columns:1fr}
+  .hero-search-main,.hero-search-filters,.hero-side,.grid-two{grid-template-columns:1fr}
   .reader-head{flex-direction:column}
-  .grid-two{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -231,9 +255,25 @@ details summary{cursor:pointer;font-weight:600}
         </div>
         <small>Documento legal protegido por autorización de usuario</small>
       </div>
+      <div class="reader-status">
+        <strong>Página {{ text.page_number }} de {{ text.page_total }}</strong>
+        <span class="progress-shell" aria-label="Progreso de lectura"><span class="progress-bar" style="width:{{ text.reading_progress_pct }}%"></span></span>
+        <small>La guía superior marca el punto de lectura actual.</small>
+      </div>
+      <div class="citation-block">
+        <small>Cita interna para copiar</small>
+        <span class="citation-text">{{ text.citation }}</span>
+        <form method="post" action="{% url 'save' %}" class="copy-form">{% csrf_token %}
+          <input type="hidden" name="collection" value="{{ text.locator.collection_id }}">
+          <input type="hidden" name="uid" value="{{ text.locator.uid }}">
+          <input type="hidden" name="version" value="{{ text.locator.version_sha256 }}">
+          <button type="submit" class="secondary">Guardar referencia</button>
+        </form>
+      </div>
+      <div class="reading-guide" aria-hidden="true"></div>
       <div class="reader-text">{{ text.text }}</div>
       {% if text.next_start != None %}
-      <div class="pager"><a class="button secondary" href="?collection={{ text.locator.collection_id }}&amp;uid={{ text.locator.uid|urlencode }}&amp;version={{ text.locator.version_sha256 }}&amp;start={{ text.next_start }}">Seguir leyendo</a></div>
+      <div class="pager"><a class="button secondary" href="?collection={{ text.locator.collection_id }}&amp;uid={{ text.locator.uid|urlencode }}&amp;version={{ text.locator.version_sha256 }}&amp;start={{ text.next_start }}">Seguir leyendo página {{ text.next_page_number }}</a></div>
       {% endif %}
     </section>
 
@@ -253,13 +293,6 @@ details summary{cursor:pointer;font-weight:600}
       <section class="card panel">
         <h3>Acciones privadas</h3>
         <div class="action-stack">
-          <form method="post" action="{% url 'save' %}">
-            {% csrf_token %}
-            <input type="hidden" name="collection" value="{{ text.locator.collection_id }}">
-            <input type="hidden" name="uid" value="{{ text.locator.uid }}">
-            <input type="hidden" name="version" value="{{ text.locator.version_sha256 }}">
-            <button type="submit">Guardar referencia privada</button>
-          </form>
           <details class="card" open>
             <summary>Reportar un problema en privado</summary>
             <form method="post" action="{% url 'feedback' %}">
@@ -362,12 +395,43 @@ details summary{cursor:pointer;font-weight:600}
           <h1>Buscar. Leer. Verificar.</h1>
           <p>La mesa queda ordenada para investigar con más contexto: fuente, rubro, tipo de norma y versión exacta, sin saltarse permisos ni mezclar resultados de usuarios.</p>
           <form class="hero-search" method="get">
-            <div class="field">
-              <label for="q">Buscar en tus colecciones autorizadas</label>
-              <input id="q" name="q" value="{{ query }}" required maxlength="128" placeholder="Ej.: propiedad, familia, sentencia, ley...">
-              <small>Podés buscar por texto completo o abrir el catálogo y entrar por metadata.</small>
+            <div class="hero-search-main">
+              <div class="field">
+                <label for="q">Buscar en tus colecciones autorizadas</label>
+                <input id="q" name="q" value="{{ query }}" required maxlength="128" placeholder="Ej.: propiedad, familia, sentencia, ley...">
+                <small>Podés buscar por texto completo o abrir el catálogo y entrar por metadata.</small>
+              </div>
+              <button type="submit">Buscar</button>
             </div>
-            <button type="submit">Buscar</button>
+            <div class="hero-search-filters">
+              <div class="field">
+                <label for="search-source">Fuente</label>
+                <select id="search-source" name="source">
+                  <option value="">Todas las fuentes</option>
+                  {% for value,label in catalog_facets.sources %}
+                    <option value="{{ value }}"{% if request.GET.source == value %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="search-rubro">Rubro / materia</label>
+                <select id="search-rubro" name="rubro">
+                  <option value="">Todos los rubros</option>
+                  {% for value in catalog_facets.rubros %}
+                    <option value="{{ value }}"{% if request.GET.rubro == value %} selected{% endif %}>{{ value }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="search-tipo">Tipo de norma</label>
+                <select id="search-tipo" name="tipo">
+                  <option value="">Todos los tipos</option>
+                  {% for value in catalog_facets.tipos %}
+                    <option value="{{ value }}"{% if request.GET.tipo == value %} selected{% endif %}>{{ value }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
           </form>
         </div>
         <div class="hero-side">
@@ -404,6 +468,10 @@ details summary{cursor:pointer;font-weight:600}
           {% if item.organ %}<span><strong>Órgano:</strong> {{ item.organ }}</span>{% endif %}
           {% if item.department %}<span><strong>Departamento:</strong> {{ item.department }}</span>{% endif %}
         </div>
+        <div class="citation-block">
+          <small>Cita interna</small>
+          <span class="citation-text">{{ item.citation }}</span>
+        </div>
         <div class="doc-actions">
           <a class="button secondary" href="{% url 'read' %}?collection={{ item.collection_id }}&amp;uid={{ item.uid|urlencode }}&amp;version={{ item.version_sha256 }}">Abrir lectura verificada</a>
         </div>
@@ -413,7 +481,7 @@ details summary{cursor:pointer;font-weight:600}
       {% endfor %}
       {% if catalog.next_offset != None %}
       <div class="pager" style="grid-column:1 / -1;">
-        <a class="button secondary" href="?browse=1&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ catalog.next_offset }}">Más documentos</a>
+        <a class="button secondary" href="?browse=1&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ catalog.next_offset }}">Página {{ catalog.next_page }} de {{ catalog.page_total }}</a>
       </div>
       {% endif %}
     </section>
@@ -429,8 +497,17 @@ details summary{cursor:pointer;font-weight:600}
       </div>
       {% for hit in page.results %}
       <article class="card doc-card">
+        <div class="badges">
+          {% if hit.source_name %}<span class="badge strong">{{ hit.source_name }}</span>{% endif %}
+          {% if hit.matter %}<span class="badge">{{ hit.matter }}</span>{% endif %}
+          {% if hit.norm_type %}<span class="badge">{{ hit.norm_type }}</span>{% endif %}
+        </div>
         <h3><a href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">{{ hit.title }}</a></h3>
         <p class="doc-snippet">{{ hit.snippet }}</p>
+        <div class="citation-block">
+          <small>Cita interna</small>
+          <span class="citation-text">{{ hit.citation }}</span>
+        </div>
         <div class="doc-meta">
           <span><strong>Fuente secundaria</strong> · Vigencia no medida</span>
         </div>
@@ -439,11 +516,14 @@ details summary{cursor:pointer;font-weight:600}
         </div>
       </article>
       {% empty %}
-      <div class="empty">Sin resultados autorizados para esta consulta.</div>
+      <div class="empty" style="grid-column:1 / -1;">
+        <strong>Sin resultados autorizados para esta consulta.</strong>
+        No hay documentos que coincidan con el texto y los filtros elegidos. Los resultados anteriores fueron reemplazados.
+      </div>
       {% endfor %}
       {% if page.next_offset != None %}
       <div class="pager" style="grid-column:1 / -1;">
-        <a class="button secondary" href="?q={{ query|urlencode }}&amp;offset={{ page.next_offset }}">Más resultados</a>
+        <a class="button secondary" href="?q={{ query|urlencode }}&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ page.next_offset }}">Página {{ page.next_page }} de {{ page.page_total }}</a>
       </div>
       {% endif %}
     </section>
