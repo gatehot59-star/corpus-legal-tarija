@@ -110,11 +110,9 @@ code{overflow-wrap:anywhere;font-size:.85em}
   line-height:1.05;margin:.5rem 0 .6rem;max-width:18ch;
 }
 .hero p{max-width:62ch;color:var(--muted);font-size:.98rem;margin:.2rem 0}
-.hero-search{display:grid;gap:.6rem;margin-top:.9rem}
-.hero-search-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;align-items:end}
-.hero-search-main>*{min-width:0}
-.hero-search-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}
-.hero-search-filters>*{min-width:0}
+.hero-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;margin-top:.9rem;align-items:end}
+.hero-search>*{min-width:0}
+.hero-search button{white-space:nowrap}
 .hero-side{display:grid;gap:.75rem;grid-template-rows:repeat(2,minmax(0,1fr))}
 .stat{
   padding:.85rem 1rem;display:flex;flex-direction:column;justify-content:center;
@@ -122,11 +120,18 @@ code{overflow-wrap:anywhere;font-size:.85em}
 }
 .stat strong{font-size:1.5rem;font-family:var(--serif)}
 .stat span{color:var(--muted);font-size:.9rem}
-.notice{
-  margin-top:1rem;padding:.85rem 1rem;border-radius:12px;
-  border:1px solid var(--line);background:var(--card-soft);font-size:.92rem;
+
+.results-meta{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  margin-bottom:.5rem;
 }
-.notice strong{display:block;margin-bottom:.25rem}
+.results-meta .count{font-weight:600}
+.pager-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+  margin-top:.75rem;flex-wrap:wrap;
+}
+.pager-bar .pages{color:var(--muted);font-weight:600}
+.pager{display:flex;gap:.5rem;flex-wrap:wrap}
 
 .grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
 .grid-two>*{min-width:0}
@@ -159,13 +164,11 @@ code{overflow-wrap:anywhere;font-size:.85em}
 }
 .citation-block small{color:var(--muted)}
 .citation-text{overflow-wrap:anywhere}
-.copy-form{display:inline}
 .empty{
   padding:1rem;border:1px dashed var(--line);border-radius:var(--radius);
   color:var(--muted);background:var(--card-soft);
 }
 .empty strong{display:block;color:var(--text);margin-bottom:.25rem}
-.pager{display:flex;margin-top:.25rem}
 
 .reader-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1.25rem;align-items:start}
 .reader-grid>*{min-width:0}
@@ -187,7 +190,6 @@ code{overflow-wrap:anywhere;font-size:.85em}
   white-space:pre-wrap;overflow-wrap:anywhere;
   background:var(--card-soft);border:1px solid var(--line);
   border-radius:var(--radius);padding:1rem;
-  background-image:linear-gradient(to bottom, rgba(23,63,95,.08), rgba(23,63,95,0) 45%);
 }
 .reading-guide{
   position:sticky;top:86px;height:2px;background:var(--accent);
@@ -223,7 +225,7 @@ details summary{cursor:pointer;font-weight:600}
   .topbar-inner{padding:.6rem .8rem}
   .shell{padding:1rem .8rem}
   .hero{padding:1rem}
-  .hero-search-main,.hero-search-filters,.hero-side,.grid-two{grid-template-columns:1fr}
+  .hero-search,.hero-side,.grid-two{grid-template-columns:1fr}
   .reader-head{flex-direction:column}
 }
 </style>
@@ -258,17 +260,10 @@ details summary{cursor:pointer;font-weight:600}
       <div class="reader-status">
         <strong>Página {{ text.page_number }} de {{ text.page_total }}</strong>
         <span class="progress-shell" aria-label="Progreso de lectura"><span class="progress-bar" style="width:{{ reading_progress_pct }}%"></span></span>
-        <small>La guía superior marca el punto de lectura actual.</small>
       </div>
       <div class="citation-block">
-        <small>Cita interna para copiar</small>
+        <small>Cita interna</small>
         <span class="citation-text">{{ text.citation }}</span>
-        <form method="post" action="{% url 'save' %}" class="copy-form">{% csrf_token %}
-          <input type="hidden" name="collection" value="{{ text.locator.collection_id }}">
-          <input type="hidden" name="uid" value="{{ text.locator.uid }}">
-          <input type="hidden" name="version" value="{{ text.locator.version_sha256 }}">
-          <button type="submit" class="secondary">Guardar referencia</button>
-        </form>
       </div>
       <div class="reading-guide" aria-hidden="true"></div>
       <div class="reader-text">{{ text.text }}</div>
@@ -283,7 +278,7 @@ details summary{cursor:pointer;font-weight:600}
         <p>La lectura se abre con la versión exacta y la fuente registradas en el snapshot.</p>
         <div class="provenance">
           <strong>Fuente secundaria. Vigencia jurídica no medida.</strong>
-          <span>Fuente: <a href="{{ text.source_url }}">{{ text.source_url }}</a></span>
+          <span>Fuente original: <a href="{{ text.source_url }}" rel="noopener">{{ text.source_url }}</a></span>
           <span class="mono">Versión exacta: {{ text.locator.version_sha256 }}</span>
           <span class="mono">SHA de fuente: {{ text.source_sha256 }}</span>
           <span>Caracteres {{ text.start }} a {{ text.end }} de {{ text.total_characters }}</span>
@@ -293,6 +288,13 @@ details summary{cursor:pointer;font-weight:600}
       <section class="card panel">
         <h3>Acciones privadas</h3>
         <div class="action-stack">
+          <form method="post" action="{% url 'save' %}">
+            {% csrf_token %}
+            <input type="hidden" name="collection" value="{{ text.locator.collection_id }}">
+            <input type="hidden" name="uid" value="{{ text.locator.uid }}">
+            <input type="hidden" name="version" value="{{ text.locator.version_sha256 }}">
+            <button type="submit">Guardar referencia</button>
+          </form>
           <details class="card" open>
             <summary>Reportar un problema en privado</summary>
             <form method="post" action="{% url 'feedback' %}">
@@ -331,10 +333,13 @@ details summary{cursor:pointer;font-weight:600}
 <main class="shell">
   <aside class="sidebar">
     <section class="card panel">
-      <h2>Explorar el catálogo</h2>
-      <p>Buscar por texto o navegar por fuente, rubro y tipo de norma. Todo sigue pasando por autorización.</p>
+      <h2>Filtros</h2>
+      <p>Los filtros valen para buscar por texto y para explorar el catálogo. Se mantienen al buscar.</p>
       <form method="get">
-        <input type="hidden" name="browse" value="1">
+        <div class="field">
+          <label for="q">Buscar en tus colecciones</label>
+          <input id="q" name="q" value="{{ query }}" maxlength="128" placeholder="Ej.: propiedad, familia, sentencia, ley...">
+        </div>
         <div class="field">
           <label for="source">Fuente</label>
           <select id="source" name="source">
@@ -363,19 +368,10 @@ details summary{cursor:pointer;font-weight:600}
           </select>
         </div>
         <div class="filters-actions">
-          <button type="submit">Explorar catálogo</button>
+          <button type="submit">Buscar</button>
           <a class="button secondary" href="{% url 'workspace' %}">Limpiar</a>
         </div>
       </form>
-    </section>
-
-    <section class="card panel">
-      <h3>Atajos útiles</h3>
-      <div class="link-list">
-        <a class="link-item" href="?browse=1"><span>Ver catálogo completo</span><span aria-hidden="true">→</span></a>
-        <a class="link-item" href="?q=ley"><span>Buscar “ley”</span><span aria-hidden="true">→</span></a>
-        <a class="link-item" href="?q=código"><span>Buscar “código”</span><span aria-hidden="true">→</span></a>
-      </div>
     </section>
 
     <section class="card panel">
@@ -394,45 +390,6 @@ details summary{cursor:pointer;font-weight:600}
           <span class="kicker">Corpus legal privado</span>
           <h1>Buscar. Leer. Verificar.</h1>
           <p>La mesa queda ordenada para investigar con más contexto: fuente, rubro, tipo de norma y versión exacta, sin saltarse permisos ni mezclar resultados de usuarios.</p>
-          <form class="hero-search" method="get">
-            <div class="hero-search-main">
-              <div class="field">
-                <label for="q">Buscar en tus colecciones autorizadas</label>
-                <input id="q" name="q" value="{{ query }}" required maxlength="128" placeholder="Ej.: propiedad, familia, sentencia, ley...">
-                <small>Podés buscar por texto completo o abrir el catálogo y entrar por metadata.</small>
-              </div>
-              <button type="submit">Buscar</button>
-            </div>
-            <div class="hero-search-filters">
-              <div class="field">
-                <label for="search-source">Fuente</label>
-                <select id="search-source" name="source">
-                  <option value="">Todas las fuentes</option>
-                  {% for value,label in catalog_facets.sources %}
-                    <option value="{{ value }}"{% if request.GET.source == value %} selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="field">
-                <label for="search-rubro">Rubro / materia</label>
-                <select id="search-rubro" name="rubro">
-                  <option value="">Todos los rubros</option>
-                  {% for value in catalog_facets.rubros %}
-                    <option value="{{ value }}"{% if request.GET.rubro == value %} selected{% endif %}>{{ value }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="field">
-                <label for="search-tipo">Tipo de norma</label>
-                <select id="search-tipo" name="tipo">
-                  <option value="">Todos los tipos</option>
-                  {% for value in catalog_facets.tipos %}
-                    <option value="{{ value }}"{% if request.GET.tipo == value %} selected{% endif %}>{{ value }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-          </form>
         </div>
         <div class="hero-side">
           <div class="stat">
@@ -447,14 +404,58 @@ details summary{cursor:pointer;font-weight:600}
       </div>
     </div>
 
-    {% if catalog %}
-    <section class="grid-two" aria-label="Catálogo por fuente y rubro">
-      <div class="section-head" style="grid-column:1 / -1;">
-        <div>
-          <h2>Catálogo navegable</h2>
-          <p>Documentos autorizados, ordenados para entrar por contexto y no solo por término exacto.</p>
+    {% if page %}
+    <section aria-label="Resultados de búsqueda" style="margin-top:1.25rem;">
+      <div class="results-meta">
+        <h2 style="font-family:var(--serif);margin:0;font-size:1.35rem;">Resultados de búsqueda</h2>
+        <span class="count">{{ page_ctx.shown }} resultado{{ page_ctx.shown|pluralize }} en esta página</span>
+      </div>
+      <div class="grid-two">
+      {% for hit in page.results %}
+      <article class="card doc-card">
+        <div class="badges">
+          {% if hit.source_name %}<span class="badge strong">{{ hit.source_name }}</span>{% endif %}
+          {% if hit.matter %}<span class="badge">{{ hit.matter }}</span>{% endif %}
+          {% if hit.norm_type %}<span class="badge">{{ hit.norm_type }}</span>{% endif %}
+        </div>
+        <h3><a href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">{{ hit.title }}</a></h3>
+        <p class="doc-snippet">{{ hit.snippet }}</p>
+        <div class="citation-block">
+          <small>Cita</small>
+          <span class="citation-text">{{ hit.citation }}</span>
+        </div>
+        <div class="doc-meta">
+          {% if hit.source_url %}<span><strong>Fuente original:</strong> <a href="{{ hit.source_url }}" rel="noopener">{{ hit.source_url }}</a></span>{% endif %}
+        </div>
+        <div class="doc-actions">
+          <a class="button secondary" href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">Abrir documento</a>
+          <a class="button secondary" href="{% url 'download_text' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">Descargar texto</a>
+        </div>
+      </article>
+      {% empty %}
+      <div class="empty" style="grid-column:1 / -1;">
+        <strong>Sin resultados para esta consulta.</strong>
+        No hay documentos que coincidan con el texto y los filtros elegidos.
+      </div>
+      {% endfor %}
+      </div>
+      <div class="pager-bar">
+        <span class="pages">Página {{ page_ctx.page }} de {{ page_ctx.page_total }}</span>
+        <div class="pager">
+          {% if page_ctx.prev_offset != None %}<a class="button secondary" href="?q={{ query|urlencode }}&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ page_ctx.prev_offset }}">Anterior</a>{% endif %}
+          {% if page.next_offset != None %}<a class="button secondary" href="?q={{ query|urlencode }}&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ page.next_offset }}">Siguiente</a>{% endif %}
         </div>
       </div>
+    </section>
+    {% endif %}
+
+    {% if catalog %}
+    <section aria-label="Catálogo por fuente y rubro" style="margin-top:1.25rem;">
+      <div class="results-meta">
+        <h2 style="font-family:var(--serif);margin:0;font-size:1.35rem;">Catálogo navegable</h2>
+        <span class="count">{{ catalog.items|length }} documento{{ catalog.items|length|pluralize }} en esta página</span>
+      </div>
+      <div class="grid-two">
       {% for item in catalog.items %}
       <article class="card doc-card">
         <div class="badges">
@@ -466,66 +467,30 @@ details summary{cursor:pointer;font-weight:600}
         <div class="doc-meta">
           {% if item.jurisdiction %}<span><strong>Jurisdicción:</strong> {{ item.jurisdiction }}</span>{% endif %}
           {% if item.organ %}<span><strong>Órgano:</strong> {{ item.organ }}</span>{% endif %}
-          {% if item.department %}<span><strong>Departamento:</strong> {{ item.department }}</span>{% endif %}
         </div>
         <div class="citation-block">
-          <small>Cita interna</small>
+          <small>Cita</small>
           <span class="citation-text">{{ item.citation }}</span>
+        </div>
+        <div class="doc-meta">
+          {% if item.source_url %}<span><strong>Fuente original:</strong> <a href="{{ item.source_url }}" rel="noopener">{{ item.source_url }}</a></span>{% endif %}
         </div>
         <div class="doc-actions">
           <a class="button secondary" href="{% url 'read' %}?collection={{ item.collection_id }}&amp;uid={{ item.uid|urlencode }}&amp;version={{ item.version_sha256 }}">Abrir lectura verificada</a>
+          <a class="button secondary" href="{% url 'download_text' %}?collection={{ item.collection_id }}&amp;uid={{ item.uid|urlencode }}&amp;version={{ item.version_sha256 }}">Descargar texto</a>
         </div>
       </article>
       {% empty %}
-      <div class="empty">No hay documentos autorizados con esos filtros.</div>
+      <div class="empty" style="grid-column:1 / -1;">No hay documentos autorizados con esos filtros.</div>
       {% endfor %}
-      {% if catalog.next_offset != None %}
-      <div class="pager" style="grid-column:1 / -1;">
-        <a class="button secondary" href="?browse=1&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ catalog.next_offset }}">Página {{ catalog.next_page }} de {{ catalog.page_total }}</a>
       </div>
-      {% endif %}
-    </section>
-    {% endif %}
-
-    {% if page %}
-    <section class="grid-two" aria-label="Resultados de búsqueda" style="margin-top:1.25rem;">
-      <div class="section-head" style="grid-column:1 / -1;">
-        <div>
-          <h2>Resultados de búsqueda</h2>
-          <p>Textos encontrados en las colecciones autorizadas, con acceso directo a la versión exacta.</p>
+      <div class="pager-bar">
+        <span class="pages">Página {{ catalog.page }} de {{ catalog.page_total }}</span>
+        <div class="pager">
+          {% if catalog.prev_offset != None %}<a class="button secondary" href="?browse=1&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ catalog.prev_offset }}">Anterior</a>{% endif %}
+          {% if catalog.next_offset != None %}<a class="button secondary" href="?browse=1&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ catalog.next_offset }}">Siguiente</a>{% endif %}
         </div>
       </div>
-      {% for hit in page.results %}
-      <article class="card doc-card">
-        <div class="badges">
-          {% if hit.source_name %}<span class="badge strong">{{ hit.source_name }}</span>{% endif %}
-          {% if hit.matter %}<span class="badge">{{ hit.matter }}</span>{% endif %}
-          {% if hit.norm_type %}<span class="badge">{{ hit.norm_type }}</span>{% endif %}
-        </div>
-        <h3><a href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">{{ hit.title }}</a></h3>
-        <p class="doc-snippet">{{ hit.snippet }}</p>
-        <div class="citation-block">
-          <small>Cita interna</small>
-          <span class="citation-text">{{ hit.citation }}</span>
-        </div>
-        <div class="doc-meta">
-          <span><strong>Fuente secundaria</strong> · Vigencia no medida</span>
-        </div>
-        <div class="doc-actions">
-          <a class="button secondary" href="{% url 'read' %}?collection={{ hit.locator.collection_id }}&amp;uid={{ hit.locator.uid|urlencode }}&amp;version={{ hit.locator.version_sha256 }}">Abrir documento</a>
-        </div>
-      </article>
-      {% empty %}
-      <div class="empty" style="grid-column:1 / -1;">
-        <strong>Sin resultados autorizados para esta consulta.</strong>
-        No hay documentos que coincidan con el texto y los filtros elegidos. Los resultados anteriores fueron reemplazados.
-      </div>
-      {% endfor %}
-      {% if page.next_offset != None %}
-      <div class="pager" style="grid-column:1 / -1;">
-        <a class="button secondary" href="?q={{ query|urlencode }}&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ page.next_offset }}">Página {{ page_ctx.next_page }} de {{ page_ctx.page_total }}</a>
-      </div>
-      {% endif %}
     </section>
     {% endif %}
 
