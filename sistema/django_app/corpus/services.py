@@ -89,6 +89,9 @@ class Application:
         filtered = browse_snapshot(rows[0], versions, source, rubro, tipo, 0, 50)
         matches_by_uid = {item.get("uid"): item for item in filtered["items"]
                           if isinstance(item, dict) and item.get("uid")}
+        if not matches_by_uid and not (source or rubro or tipo):
+            matches_by_uid = {row.uid: {"source_name": "", "matter": "", "type": ""}
+                              for row in rows}
         rows = [row for row in rows if row.uid in matches_by_uid]
         if not rows:
             return dto.SearchPage((), offset, None)
@@ -147,6 +150,13 @@ class Application:
             return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
         versions = {row.uid: row.version_sha256 for row in rows}
         result = browse_snapshot(rows[0], versions, source, rubro, tipo, offset, limit)
+        if not result["items"] and not (source or rubro or tipo):
+            result["items"] = tuple({"uid": row.uid, "collection_id": str(row.collection_id),
+                                     "version_sha256": row.version_sha256, "title": row.title,
+                                     "source_id": "", "source_name": "", "jurisdiction": "",
+                                     "department": "", "organ": "", "type": "", "matter": "",
+                                     "source_url": ""} for row in rows[offset:offset + limit])
+            result["next_offset"] = offset + limit if offset + limit < len(rows) else None
         result["items"] = tuple(dict(item, citation=citation_for(item.get("title", item.get("uid", "Documento")),
                                                                   item.get("uid", "sin-uid")))
                                 for item in result["items"])
