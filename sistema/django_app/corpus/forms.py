@@ -14,8 +14,11 @@ def strict(data, allowed: set[str]) -> None:
 
 
 class QueryForm(forms.Form):
-    """Bound query length, byte count and canonical pagination."""
+    """Bound query, legal facets, byte count and canonical pagination."""
     q = forms.CharField(min_length=1, max_length=128)
+    source = forms.CharField(max_length=80, required=False)
+    rubro = forms.CharField(max_length=120, required=False)
+    tipo = forms.CharField(max_length=120, required=False)
     offset = forms.RegexField(r"^(0|[1-9][0-9]{0,4})$", initial="0", required=False)
     limit = forms.RegexField(r"^([1-9]|1[0-9]|20)$", initial="10", required=False)
 
