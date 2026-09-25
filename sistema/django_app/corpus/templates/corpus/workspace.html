@@ -257,7 +257,7 @@ details summary{cursor:pointer;font-weight:600}
       </div>
       <div class="reader-status">
         <strong>Página {{ text.page_number }} de {{ text.page_total }}</strong>
-        <span class="progress-shell" aria-label="Progreso de lectura"><span class="progress-bar" style="width:{{ text.reading_progress_pct }}%"></span></span>
+        <span class="progress-shell" aria-label="Progreso de lectura"><span class="progress-bar" style="width:{{ reading_progress_pct }}%"></span></span>
         <small>La guía superior marca el punto de lectura actual.</small>
       </div>
       <div class="citation-block">
@@ -273,7 +273,7 @@ details summary{cursor:pointer;font-weight:600}
       <div class="reading-guide" aria-hidden="true"></div>
       <div class="reader-text">{{ text.text }}</div>
       {% if text.next_start != None %}
-      <div class="pager"><a class="button secondary" href="?collection={{ text.locator.collection_id }}&amp;uid={{ text.locator.uid|urlencode }}&amp;version={{ text.locator.version_sha256 }}&amp;start={{ text.next_start }}">Seguir leyendo página {{ text.next_page_number }}</a></div>
+      <div class="pager"><a class="button secondary" href="?collection={{ text.locator.collection_id }}&amp;uid={{ text.locator.uid|urlencode }}&amp;version={{ text.locator.version_sha256 }}&amp;start={{ text.next_start }}">Seguir leyendo página {{ next_page_number }}</a></div>
       {% endif %}
     </section>
 
@@ -523,7 +523,7 @@ details summary{cursor:pointer;font-weight:600}
       {% endfor %}
       {% if page.next_offset != None %}
       <div class="pager" style="grid-column:1 / -1;">
-        <a class="button secondary" href="?q={{ query|urlencode }}&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ page.next_offset }}">Página {{ page.next_page }} de {{ page.page_total }}</a>
+        <a class="button secondary" href="?q={{ query|urlencode }}&amp;source={{ request.GET.source|urlencode }}&amp;rubro={{ request.GET.rubro|urlencode }}&amp;tipo={{ request.GET.tipo|urlencode }}&amp;offset={{ page.next_offset }}">Página {{ page_ctx.next_page }} de {{ page_ctx.page_total }}</a>
       </div>
       {% endif %}
     </section>
