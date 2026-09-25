@@ -10,6 +10,7 @@ urlpatterns = [
     path("reset/", views.reset_request, name="reset"),
     path("reset/<str:uid>/<str:token>/", views.reset_confirm, name="reset-confirm"),
     path("read/", views.read_view, name="read"),
+    path("download/", views.download_view, name="download_text"),
     path("save/", views.save_view, name="save"),
     path("feedback/", views.feedback_view, name="feedback"),
     path("piloto/", views.pilot_view, name="pilot"),
