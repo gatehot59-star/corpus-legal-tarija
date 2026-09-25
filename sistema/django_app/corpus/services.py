@@ -1,4 +1,5 @@
 """sistema/django_app/corpus/services.py: authorized application operations."""
+import math
 import re
 import secrets
 import time
@@ -21,6 +22,14 @@ def locator_of(row) -> dto.DocumentLocator:
 
 
 SESSION_GAP = timedelta(minutes=30)
+READER_PAGE_CHARS = 4000
+
+
+def citation_for(title: str, uid: str) -> str:
+    """Build a transparent internal citation, not a pretend official citation."""
+    clean_title = " ".join((title or uid or "Documento").split()).strip()
+    clean_uid = " ".join(str(uid or "sin-uid").split()).strip()
+    return f"{clean_title}, Corpus Tarija, documento {clean_uid}."
 
 
 def usage_for(lawyer) -> dict:
@@ -53,22 +62,33 @@ class Application:
         """Read only after authorization; bounds checked independently of HTTP."""
         if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 10000:
             raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
-        result = read_exact(access.require(principal, locator), start, limit)
+        row = access.require(principal, locator)
+        result = read_exact(row, start, limit)
+        page_total = max(1, math.ceil(result["total_characters"] / READER_PAGE_CHARS))
+        page_number = min(page_total, max(1, (result["start"] // READER_PAGE_CHARS) + 1))
         return dto.TextSlice(locator, result["text"], result["start"], result["end"],
                              result["total_characters"],
                              result["next"]["start"] if result["next"] else None,
                              result["source_url"], result["source_sha256"],
-                             "secondary", "NOT_MEASURED")
+                             "secondary", "NOT_MEASURED",
+                             citation_for(row.title, row.uid), page_number, page_total)
 
     @transaction.atomic
-    def search(self, principal, query: str, offset: int, limit: int) -> dto.SearchPage:
-        """Search all authorized versions using verified FTS or exact fixture reads."""
+    def search(self, principal, query: str, offset: int, limit: int,
+               source: str = "", rubro: str = "", tipo: str = "") -> dto.SearchPage:
+        """Search authorized versions using verified FTS or exact fixture reads."""
         if (not isinstance(query, str) or not query.strip() or len(query) > 128
                 or len(query.encode()) > 256 or type(offset) is not int
                 or not 0 <= offset <= 10000 or type(limit) is not int or not 1 <= limit <= 20):
             raise access.CorpusError(dto.ErrorCode.INVALID_INPUT)
         rows = list(access.eligible(principal).select_related("collection").order_by(
             "collection_id", "uid", "version_sha256"))
+        if not rows:
+            return dto.SearchPage((), offset, None)
+        versions = {row.uid: row.version_sha256 for row in rows}
+        filtered = browse_snapshot(rows[0], versions, source, rubro, tipo, 0, 50)
+        matches_by_uid = {item["uid"]: item for item in filtered["items"]}
+        rows = [row for row in rows if row.uid in matches_by_uid]
         if not rows:
             return dto.SearchPage((), offset, None)
         allowed = {row.uid for row in rows}
@@ -91,12 +111,23 @@ class Application:
                 position = text.casefold().find(needle)
                 if position >= 0 or needle in row.title.casefold():
                     snippet = text[max(0, position - 60):max(0, position - 60) + 240]
+                    meta = matches_by_uid.get(row.uid, {})
                     hits.append(dto.SearchHit(locator_of(row), row.title, snippet,
-                                              "secondary", "NOT_MEASURED"))
+                                              "secondary", "NOT_MEASURED",
+                                              citation_for(row.title, row.uid),
+                                              meta.get("source_name", ""), meta.get("matter", ""),
+                                              meta.get("type", "")))
         else:
-            hits = [dto.SearchHit(locator_of(row), row.title, snippets[row.uid],
-                                  "secondary", "NOT_MEASURED")
-                    for row in rows if row.uid in snippets]
+            hits = []
+            for row in rows:
+                if row.uid not in snippets:
+                    continue
+                meta = matches_by_uid.get(row.uid, {})
+                hits.append(dto.SearchHit(locator_of(row), row.title, snippets[row.uid],
+                                          "secondary", "NOT_MEASURED",
+                                          citation_for(row.title, row.uid),
+                                          meta.get("source_name", ""), meta.get("matter", ""),
+                                          meta.get("type", "")))
         end = offset + limit
         return dto.SearchPage(tuple(hits[offset:end]), offset,
                               end if end < len(hits) else None)
@@ -114,7 +145,10 @@ class Application:
         if not rows:
             return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
         versions = {row.uid: row.version_sha256 for row in rows}
-        return browse_snapshot(rows[0], versions, source, rubro, tipo, offset, limit)
+        result = browse_snapshot(rows[0], versions, source, rubro, tipo, offset, limit)
+        result["items"] = tuple(dict(item, citation=citation_for(item["title"], item["uid"]))
+                                for item in result["items"])
+        return result
 
     @transaction.atomic
     def save_reference(self, principal, locator) -> dto.SavedReference:
