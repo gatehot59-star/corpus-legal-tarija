@@ -87,14 +87,16 @@ class Application:
             return dto.SearchPage((), offset, None)
         versions = {row.uid: row.version_sha256 for row in rows}
         filtered = browse_snapshot(rows[0], versions, source, rubro, tipo, 0, 50)
-        matches_by_uid = {item["uid"]: item for item in filtered["items"]}
+        matches_by_uid = {item.get("uid"): item for item in filtered["items"]
+                          if isinstance(item, dict) and item.get("uid")}
         rows = [row for row in rows if row.uid in matches_by_uid]
         if not rows:
             return dto.SearchPage((), offset, None)
         allowed = {row.uid for row in rows}
         snippets = search_snapshot(rows[0], query.strip(), allowed)
+        hits = []
         if snippets is None:
-            deadline, consumed, hits = time.monotonic() + 5, 0, []
+            deadline, consumed = time.monotonic() + 5, 0
             needle = query.casefold()
             for row in rows[:201]:
                 pieces, start = [], 0
@@ -118,7 +120,6 @@ class Application:
                                               meta.get("source_name", ""), meta.get("matter", ""),
                                               meta.get("type", "")))
         else:
-            hits = []
             for row in rows:
                 if row.uid not in snippets:
                     continue
@@ -146,7 +147,8 @@ class Application:
             return {"items": (), "sources": (), "rubros": (), "tipos": (), "next_offset": None}
         versions = {row.uid: row.version_sha256 for row in rows}
         result = browse_snapshot(rows[0], versions, source, rubro, tipo, offset, limit)
-        result["items"] = tuple(dict(item, citation=citation_for(item["title"], item["uid"]))
+        result["items"] = tuple(dict(item, citation=citation_for(item.get("title", item.get("uid", "Documento")),
+                                                                  item.get("uid", "sin-uid")))
                                 for item in result["items"])
         return result
 
