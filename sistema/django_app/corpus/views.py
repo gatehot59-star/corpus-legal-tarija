@@ -1,7 +1,6 @@
 """sistema/django_app/corpus/views.py: session/CSRF boundary and private UI."""
 import hashlib
 import hmac
-import math
 import time
 from uuid import UUID
 from datetime import timedelta
@@ -184,17 +183,16 @@ def _feedback_target(refs, page, catalog):
     return None
 
 
-def _page_context(offset: int, limit: int, next_offset: int | None,
-                  visible_count: int, shown_count: int) -> dict:
-    """Compute pagination copy for search and catalog pages."""
+def _page_context(offset: int, limit: int, next_offset: int | None, visible_count: int) -> dict:
+    """Compute honest pagination copy without inventing a total collection size."""
     page = (offset // max(limit, 1)) + 1
-    if next_offset is None:
-        total_pages = page if visible_count or offset == 0 else max(1, page)
-        return {"page": page, "page_total": total_pages, "next_page": None, "shown": visible_count}
-    next_page = (next_offset // max(limit, 1)) + 1
-    page_total = next_page
+    next_page = None
+    page_total = page
+    if next_offset is not None:
+        next_page = (next_offset // max(limit, 1)) + 1
+        page_total = next_page
     return {"page": page, "page_total": page_total, "next_page": next_page,
-            "shown": shown_count or visible_count}
+            "shown": visible_count}
 
 
 @require_http_methods(["GET"])
@@ -202,19 +200,21 @@ def _page_context(offset: int, limit: int, next_offset: int | None,
 def workspace(request):
     """Render search, authorized catalog navigation, private references and reports."""
     p = principal(request)
+    page_ctx = {}
     if "browse" in request.GET:
         strict(request.GET, {"browse", "source", "rubro", "tipo", "offset", "limit"})
         browse_form = BrowseForm(request.GET or None)
         if not browse_form.is_valid():
             raise CorpusError(ErrorCode.INVALID_INPUT)
         data = browse_form.cleaned_data
+        offset = int(data.get("offset") or 0)
+        limit = int(data.get("limit") or 20)
         catalog = app.browse(p, data.get("source", ""), data.get("rubro", ""), data.get("tipo", ""),
-                              int(data.get("offset") or 0), int(data.get("limit") or 20))
+                              offset, limit)
         catalog_facets = catalog
         form = QueryForm(None)
         page = None
-        catalog.update(_page_context(int(data.get("offset") or 0), int(data.get("limit") or 20),
-                                     catalog["next_offset"], len(catalog["items"]), len(catalog["items"])))
+        catalog.update(_page_context(offset, limit, catalog["next_offset"], len(catalog["items"])))
     else:
         strict(request.GET, {"q", "source", "rubro", "tipo", "offset", "limit"})
         form = QueryForm(request.GET or None)
@@ -223,24 +223,15 @@ def workspace(request):
         if request.GET:
             if not form.is_valid():
                 raise CorpusError(ErrorCode.INVALID_INPUT)
+            offset = int(form.cleaned_data["offset"] or 0)
             limit = int(form.cleaned_data["limit"] or 10)
-            page = app.search(p, form.cleaned_data["q"],
-                              int(form.cleaned_data["offset"] or 0), limit,
+            page = app.search(p, form.cleaned_data["q"], offset, limit,
                               form.cleaned_data.get("source", ""),
                               form.cleaned_data.get("rubro", ""),
                               form.cleaned_data.get("tipo", ""))
-            page = page.__class__(page.results, page.offset, page.next_offset,
-                                  **{})
-            page = page.__class__(page.results, page.offset, page.next_offset) if False else page
+            page_ctx = _page_context(offset, limit, page.next_offset, len(page.results))
         browse_form = BrowseForm(initial={"browse": "1", "limit": "20"})
         catalog_facets = app.browse(p, offset=0, limit=1)
-    if page is not None:
-        page = page
-        page_ctx = _page_context(int(form.cleaned_data["offset"] or 0),
-                                 int(form.cleaned_data["limit"] or 10),
-                                 page.next_offset, len(page.results), len(page.results))
-    else:
-        page_ctx = {}
     refs = app.list_references(p)
     feedback = PrivateFeedback.objects.filter(owner_id=p.user_id).order_by("-created_at")[:20]
     return render(request, "corpus/workspace.html", {"form": form, "page": page,
