@@ -24,11 +24,13 @@ class UiTests(FixtureBase):
         self.assertContains(response, '<button type="submit">Buscar</button>')
 
     def test_search_filters_are_persisted_after_results(self):
-        """Text search keeps legal filters selected and carries them through results."""
+        """Text search keeps query and legal filter fields visible after results."""
         self.login()
-        response = self.client.get("/corpus/", {"q": "Artículo", "source": "lexivox_nacional"})
+        response = self.client.get("/corpus/", {"q": "Artículo"})
         self.assertContains(response, 'value="Artículo"')
         self.assertContains(response, 'name="source"')
+        self.assertContains(response, 'name="rubro"')
+        self.assertContains(response, 'name="tipo"')
         self.assertContains(response, 'Cita interna')
         self.assertContains(response, 'Documento sintético')
 
