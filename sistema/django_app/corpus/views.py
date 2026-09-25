@@ -1,6 +1,7 @@
 """sistema/django_app/corpus/views.py: session/CSRF boundary and private UI."""
 import hashlib
 import hmac
+import math
 import time
 from uuid import UUID
 from datetime import timedelta
@@ -184,15 +185,16 @@ def _feedback_target(refs, page, catalog):
 
 
 def _page_context(offset: int, limit: int, next_offset: int | None, visible_count: int) -> dict:
-    """Compute honest pagination copy without inventing a total collection size."""
+    """Compute pagination metadata: current page, total pages (bounded by next_offset), prev link."""
     page = (offset // max(limit, 1)) + 1
+    prev_offset = offset - limit if offset > 0 else None
     next_page = None
     page_total = page
     if next_offset is not None:
         next_page = (next_offset // max(limit, 1)) + 1
         page_total = next_page
     return {"page": page, "page_total": page_total, "next_page": next_page,
-            "shown": visible_count}
+            "shown": visible_count, "prev_offset": prev_offset}
 
 
 @require_http_methods(["GET"])
@@ -214,7 +216,9 @@ def workspace(request):
         catalog_facets = catalog
         form = QueryForm(None)
         page = None
-        catalog.update(_page_context(offset, limit, catalog["next_offset"], len(catalog["items"])))
+        ctx = _page_context(offset, limit, catalog["next_offset"], len(catalog["items"]))
+        catalog.update(ctx)
+        catalog["prev_offset"] = ctx["prev_offset"]
     else:
         strict(request.GET, {"q", "source", "rubro", "tipo", "offset", "limit"})
         form = QueryForm(request.GET or None)
@@ -266,6 +270,23 @@ def read_view(request):
                                                      "next_page_number": next_page_number,
                                                      "reading_progress_pct": round((result.end / result.total_characters) * 100),
                                                      "is_employee": is_employee(p)})
+
+
+@require_http_methods(["GET"])
+@guarded
+def download_view(request):
+    """Download the authorized exact text as a plain .txt file."""
+    p = principal(request)
+    strict(request.GET, {"collection", "uid", "version"})
+    locator = locator_from(request.GET)
+    result = app.read(p, locator, 0, 10000)
+    row = Locator.objects.filter(collection_id=locator.collection_id, uid=locator.uid,
+                                 version_sha256=locator.version_sha256).first()
+    title = (row.title if row and row.title else locator.uid)
+    safe = "".join(c if c.isalnum() or c in " -_." else "" for c in title)[:80].strip() or "documento"
+    response = HttpResponse(result.text, content_type="text/plain; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{safe}.txt"'
+    return response
 
 
 @require_http_methods(["POST"])
