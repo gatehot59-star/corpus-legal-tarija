@@ -4,6 +4,7 @@ import json, re, collections
 # Columnas: a=tesseract_fast, b=tesseract_best, c=paddleocr_ppocrv5_mobile.
 # Mi juicio humano codificado por familia de fallo; lo que ninguna regla
 # resuelve queda en residual.txt para fallo manual uno por uno.
+# v3: guardas anti-basura en digit_skel/border_strip, familia de pie de pagina ALD.
 
 V='/tmp/gold_build/variants.tsv'; C='/tmp/gold_build/clusters.jsonl'
 variants={}; order=[]
@@ -62,32 +63,67 @@ def digit_skel(t): return re.sub(r'\D','',t)
 EDGE='.,;:!?\u00bf\u00a1()[]{}"\u201c\u201d\u2019\'\u00ab\u00bb'
 def coretok(t): return t.strip().strip(EDGE).strip()
 def sorted_tok(t): return sorted(nw(t).lower().split())
+# pie de pagina ALD: url, separadores y fax
+FOOT_URL=re.compile(r'www\.aldt\.gob')
+def footer_family(na,nb,nc):
+    trio=[x for x in (na,nb,nc)]
+    if any(FOOT_URL.search(x) for x in trio):
+        # reconstruir el pie canonico segun que partes aparecen
+        toks=[]
+        src=max(trio,key=len)
+        if 'Fax' in src or any('Fax' in x for x in trio):
+            pass
+        m=re.search(r'(\d{7})?\s*[+\*\u00ab\u00bb\u2022-]?\s*(Fax:\s*[0-9\s-]+)?\s*(www\.aldt\.gob)\s*([+\*\u00ab\u00bb\u2022-]?)', src)
+        parts=[]
+        for x in trio:
+            for mm in re.finditer(r'\d{7}', x):
+                if mm.group(0) not in parts: parts.append(mm.group(0))
+        has_fax=any('Fax' in x for x in trio)
+        faxnum=''
+        for x in trio:
+            m2=re.search(r'Fax:?\s*([0-9][0-9\s-]{4,}[0-9])', x)
+            if m2: faxnum=m2.group(1).strip(); break
+        out=''
+        if parts and not faxnum:
+            out=parts[0]+' \u2022 www.aldt.gob \u2022'
+        elif has_fax:
+            pre=(parts[0]+' \u2022 ') if parts else ''
+            out=pre+'Fax: '+(faxnum if faxnum else '591 - 4 - 6113308')+' www.aldt.gob \u2022'
+        else:
+            out='www.aldt.gob \u2022'
+        return ('T',nw(out),'pie_pagina')
+    return None
+def footer_sep(t):
+    return re.match(r'^(Tarija|Bolivia|Gesti\u00f3n.*|[-\u2013\u00b7\u2022+\*\u00ab\u00bbe\s]*)$', t.strip())
 
 rulings={}; residual=[]
 for vid in order:
     r=variants[vid]; a,b,c=r['a'],r['b'],r['c']
     na,nb,nc=nw(a),nw(b),nw(c)
     ruled=None
+    # pie de pagina ALD
+    if not ruled:
+        fr=footer_family(na,nb,nc)
+        if fr: ruled=fr
+    if not ruled and any(re.match(r'^Bolivia\s*[-\u2013\u00b7\u2022+\*\u00ab\u00bb]?$',x) or x.strip() in ('+','*','\u00ab','\u00bb','-','e','\u2022') for x in (na,nb,nc)) and any(x.startswith('Bolivia') for x in (na,nb,nc)):
+        ruled=('T','Bolivia \u2022','pie_sep')
+    if not ruled and any('Fax:' in x for x in (na,nb,nc)) and all(len(x)<=12 for x in (na,nb,nc)):
+        ruled=('T','\u2022 Fax:','pie_fax')
     # bordes de tabla puros -> ruido
-    if (borderonly(a) or not a.strip()) and (borderonly(b) or not b.strip()) and (borderonly(c) or not c.strip()):
+    if not ruled and (borderonly(a) or not a.strip()) and (borderonly(b) or not b.strip()) and (borderonly(c) or not c.strip()):
         if borderonly(a) or borderonly(b) or borderonly(c): ruled=('X','','border_tabla')
-    # familia N de numero de ley
     if not ruled:
         nf=[is_n_family(x) for x in (na,nb,nc) if x!='']
         if nf and all(nf) and any(x in ('N\u00b0','N\u00ba') for x in (na,nb,nc)):
             ruled=('T','N\u00b0','familia_N')
-    # vinetas
     if not ruled:
         vals=[x for x in (na,nb,nc) if x!='']
         if vals and all(is_bullet(x) for x in vals) and any(x=='\u2022' for x in vals):
             ruled=('T','\u2022','vineta')
-    # comillas tipograficas normalizadas
     if not ruled and squote(na)==squote(nb)==squote(nc) and not (na==nb==nc):
         ruled=('T',squote(nc) if nc else squote(nb) if nb else squote(na),'comillas_norm')
-    # consenso de motores independientes
     if not ruled and nb==nc and nb!='': ruled=('B',nb,'consenso_bc')
     if not ruled and na==nc and na!='': ruled=('A',na,'consenso_ac')
-    # gemelos tesseract vs paddle
     if not ruled and na==nb:
         if nc=='':
             ruled=('A',na,'consenso_ab_c_omite') if has_alnum(na) else ('X','','ab_ruido_c_omite')
@@ -102,17 +138,15 @@ for vid in order:
         elif ws_skel(na)==ws_skel(nc):
             ruled=('A',na,'ab_ws')
         elif digit_skel(na)!=digit_skel(nc) and digit_skel(na) and digit_skel(nc):
-            pass  # conflicto numerico: riesgo legal, va a manual
+            pass
         elif nw(na.lower())==nw(nc.lower()):
             ruled=('A',na,'ab_case_diff')
         else:
-            ruled=('C',nc,'ab_vs_c_paddle')  # paddle gano 44/44 en revision humana plena
-    # adiciones de un solo motor
+            ruled=('C',nc,'ab_vs_c_paddle')
     if not ruled and nb==nc=='' and na!='':
         ruled=('A',na,'solo_a') if has_alnum(na) else ('X','','solo_a_ruido')
     if not ruled and na==nc=='' and nb!='':
         ruled=('B',nb,'solo_b') if has_alnum(nb) else ('X','','solo_b_ruido')
-    # exactamente un lado vacio, los otros dos difieren
     if not ruled and (na=='') + (nb=='') + (nc=='') == 1:
         if nc=='':
             x,y,sx,sy=na,nb,'A','B'
@@ -129,18 +163,15 @@ for vid in order:
             elif digit_skel(x)!=digit_skel(y) and digit_skel(x) and digit_skel(y): pass
             elif sx=='A' and sy=='B': ruled=('B',y,'empty_ab_b')
             else: ruled=(sy if sy=='C' else sx, y if sy=='C' else x, 'empty_pref')
-    # todos difieren: diccionario
     if not ruled:
         for side,x in (('A',na),('B',nb),('C',nc)):
             if x and in_dict(x): ruled=(side,x,'dict'); break
-    # bordes de tabla mezclados con contenido
     if not ruled and ('|' in na or '|' in nb or '|' in nc):
         sa,sb,sc=stripb(na),stripb(nb),stripb(nc)
-        if sa==sb==sc and sa: ruled=('T',sa,'border_strip_cons')
-        elif sa==sb and sa: ruled=('A',sa,'border_strip_ab')
-        elif sb==sc and sb: ruled=('B',sb,'border_strip_bc')
-        elif sa==sc and sa: ruled=('A',sa,'border_strip_ac')
-    # misma palabra nucleo, difieren bordes de puntuacion
+        if sa==sb==sc and sa and not garble(sa): ruled=('T',sa,'border_strip_cons')
+        elif sa==sb and sa and not garble(sa): ruled=('A',sa,'border_strip_ab')
+        elif sb==sc and sb and not garble(sb): ruled=('B',sb,'border_strip_bc')
+        elif sa==sc and sa and not garble(sa): ruled=('A',sa,'border_strip_ac')
     if not ruled and na and nb and nc:
         if coretok(na)==coretok(nb)==coretok(nc) and coretok(na):
             ruled=('C',nc,'punct_edge')
@@ -148,13 +179,17 @@ for vid in order:
             ruled=('C',nc,'reorder_paddle')
         elif sorted_tok(na)==sorted_tok(nc): ruled=('C',nc,'reorder_ac')
         elif sorted_tok(nb)==sorted_tok(nc): ruled=('B',nb,'reorder_bc')
-    # esqueleto de digitos compartido
     if not ruled:
         da,db,dc=digit_skel(na),digit_skel(nb),digit_skel(nc)
         if da or db or dc:
-            if da==db==dc and da: ruled=('C',nc,'digit_skel_cons')
-            elif da==dc and da: ruled=('A',na,'digit_skel_ac')
-            elif db==dc and db: ruled=('B',nb,'digit_skel_bc')
+            if da==db==dc and da and not garble(nc): ruled=('C',nc,'digit_skel_cons')
+            elif da==dc and da and not garble(na): ruled=('A',na,'digit_skel_ac')
+            elif db==dc and db and not garble(nb): ruled=('B',nb,'digit_skel_bc')
+    # marcas sueltas sin alfanumericos -> ruido
+    if not ruled:
+        vals=[x for x in (na,nb,nc) if x]
+        if vals and all(not has_alnum(x) and len(x)<=3 for x in vals):
+            ruled=('X','','marca_suelta')
     if not ruled:
         residual.append(vid); continue
     code,gold,reason=ruled
