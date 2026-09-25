@@ -1,6 +1,7 @@
 """sistema/django_app/corpus/views.py: session/CSRF boundary and private UI."""
 import hashlib
 import hmac
+import math
 import time
 from uuid import UUID
 from datetime import timedelta
@@ -183,6 +184,19 @@ def _feedback_target(refs, page, catalog):
     return None
 
 
+def _page_context(offset: int, limit: int, next_offset: int | None,
+                  visible_count: int, shown_count: int) -> dict:
+    """Compute pagination copy for search and catalog pages."""
+    page = (offset // max(limit, 1)) + 1
+    if next_offset is None:
+        total_pages = page if visible_count or offset == 0 else max(1, page)
+        return {"page": page, "page_total": total_pages, "next_page": None, "shown": visible_count}
+    next_page = (next_offset // max(limit, 1)) + 1
+    page_total = next_page
+    return {"page": page, "page_total": page_total, "next_page": next_page,
+            "shown": shown_count or visible_count}
+
+
 @require_http_methods(["GET"])
 @guarded
 def workspace(request):
@@ -199,6 +213,8 @@ def workspace(request):
         catalog_facets = catalog
         form = QueryForm(None)
         page = None
+        catalog.update(_page_context(int(data.get("offset") or 0), int(data.get("limit") or 20),
+                                     catalog["next_offset"], len(catalog["items"]), len(catalog["items"])))
     else:
         strict(request.GET, {"q", "source", "rubro", "tipo", "offset", "limit"})
         form = QueryForm(request.GET or None)
@@ -207,17 +223,28 @@ def workspace(request):
         if request.GET:
             if not form.is_valid():
                 raise CorpusError(ErrorCode.INVALID_INPUT)
+            limit = int(form.cleaned_data["limit"] or 10)
             page = app.search(p, form.cleaned_data["q"],
-                              int(form.cleaned_data["offset"] or 0),
-                              int(form.cleaned_data["limit"] or 10),
+                              int(form.cleaned_data["offset"] or 0), limit,
                               form.cleaned_data.get("source", ""),
                               form.cleaned_data.get("rubro", ""),
                               form.cleaned_data.get("tipo", ""))
+            page = page.__class__(page.results, page.offset, page.next_offset,
+                                  **{})
+            page = page.__class__(page.results, page.offset, page.next_offset) if False else page
         browse_form = BrowseForm(initial={"browse": "1", "limit": "20"})
         catalog_facets = app.browse(p, offset=0, limit=1)
+    if page is not None:
+        page = page
+        page_ctx = _page_context(int(form.cleaned_data["offset"] or 0),
+                                 int(form.cleaned_data["limit"] or 10),
+                                 page.next_offset, len(page.results), len(page.results))
+    else:
+        page_ctx = {}
     refs = app.list_references(p)
     feedback = PrivateFeedback.objects.filter(owner_id=p.user_id).order_by("-created_at")[:20]
-    return render(request, "corpus/workspace.html", {"form": form, "page": page, "catalog": catalog,
+    return render(request, "corpus/workspace.html", {"form": form, "page": page,
+                  "page_ctx": page_ctx, "catalog": catalog,
                   "catalog_facets": catalog_facets, "browse_form": browse_form,
                   "references": refs, "feedback": feedback, "query": request.GET.get("q", ""),
                   "feedback_target": _feedback_target(refs, page, catalog),
@@ -243,7 +270,10 @@ def read_view(request):
     row = Locator.objects.filter(collection_id=locator.collection_id, uid=locator.uid,
                                  version_sha256=locator.version_sha256).first()
     title = row.title if row and row.title else locator.uid
+    next_page_number = min(result.page_total, result.page_number + 1) if result.next_start is not None else result.page_number
     return render(request, "corpus/workspace.html", {"text": result, "doc_title": title,
+                                                     "next_page_number": next_page_number,
+                                                     "reading_progress_pct": round((result.end / result.total_characters) * 100),
                                                      "is_employee": is_employee(p)})
 
 
