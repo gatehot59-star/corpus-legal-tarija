@@ -16,14 +16,40 @@ class UiTests(FixtureBase):
         self.assertContains(response, 'Tus reportes privados')
         self.assertContains(response, 'Buscar. Leer. Verificar.')
 
-    def test_reader_shell_keeps_provenance_actions_and_human_title(self):
-        """The reading view keeps verification, private actions and the real title."""
+    def test_search_button_is_aligned_with_query_box(self):
+        """Search action and query field share the same visual row."""
+        self.login()
+        response = self.client.get("/corpus/")
+        self.assertContains(response, 'hero-search-main')
+        self.assertContains(response, '<button type="submit">Buscar</button>')
+
+    def test_search_filters_are_persisted_after_results(self):
+        """Text search keeps legal filters selected and carries them through results."""
+        self.login()
+        response = self.client.get("/corpus/", {"q": "Artículo", "source": "lexivox_nacional"})
+        self.assertContains(response, 'value="Artículo"')
+        self.assertContains(response, 'name="source"')
+        self.assertContains(response, 'Cita interna')
+        self.assertContains(response, 'Documento sintético')
+
+    def test_search_zero_results_replaces_previous_results(self):
+        """An empty search explicitly says so and does not leave stale hits visible."""
+        self.login()
+        self.client.get("/corpus/", {"q": "Artículo"})
+        response = self.client.get("/corpus/", {"q": "sin-resultado"})
+        self.assertContains(response, 'Sin resultados autorizados para esta consulta.')
+        self.assertNotContains(response, 'Documento sintético')
+
+    def test_reader_shell_keeps_provenance_actions_citation_and_progress(self):
+        """The reading view shows legal citation, page progress and a visual guide."""
         self.login()
         response = self.client.get("/corpus/read/", self.fields)
         self.assertContains(response, 'Procedencia verificada')
-        self.assertContains(response, 'Guardar referencia privada')
-        self.assertContains(response, 'Reportar un problema en privado')
-        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, 'Guardar referencia')
+        self.assertContains(response, 'Cita interna para copiar')
+        self.assertContains(response, 'Página ')
+        self.assertContains(response, 'progress-shell')
+        self.assertContains(response, 'reading-guide')
         self.assertContains(response, 'Documento sintético')
 
     def test_login_shell_exposes_theme_toggle_and_access_links(self):
@@ -67,11 +93,12 @@ class UiTests(FixtureBase):
             self.assertNotIn(b"<script", target.content, url)
 
     def test_search_results_have_no_redundant_badges(self):
-        """Result cards show title, snippet and provenance note, not empty badges."""
+        """Result cards show title, snippet, citation and metadata, not empty badges."""
         self.login()
         response = self.client.get("/corpus/", {"q": "Artículo"})
         self.assertNotContains(response, '>Resultado<')
         self.assertNotContains(response, '>Versión verificada<')
+        self.assertContains(response, 'Cita interna')
 
     def test_workspace_report_form_has_glossary_and_target_after_read(self):
         """Reporting is possible from the workspace too, with plain-language categories."""
