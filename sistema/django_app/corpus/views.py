@@ -48,12 +48,30 @@ def guarded(view):
                 raise CorpusError(ErrorCode.INVALID_INPUT)
             return view(request, *args, **kwargs)
         except CorpusError as exc:
+            if exc.code == ErrorCode.AUTHENTICATION_REQUIRED or (
+                    exc.code == ErrorCode.ACCESS_DENIED and needs_fresh_login(request)):
+                logout(request)
+                return redirect("login")
             status = {ErrorCode.INVALID_INPUT: 400, ErrorCode.RATE_LIMITED: 429,
                       ErrorCode.SERVICE_UNAVAILABLE: 503, ErrorCode.INTEGRITY_FAILED: 503}.get(exc.code, 403)
             return HttpResponse("Solicitud no disponible.", status=status)
         except DatabaseError:
             return HttpResponse("Servicio temporalmente no disponible.", status=503)
     return wrapped
+
+
+def needs_fresh_login(request) -> bool:
+    """True only when re-authenticating is the way forward: no identity, stale
+    login-bound epoch, deactivated account or missing/quarantined policy.
+    Document-scope denials on a healthy session keep the bounded 403."""
+    if not request.user.is_authenticated:
+        return True
+    try:
+        state = PolicyState.objects.filter(pk=1, quarantined=False).first()
+    except DatabaseError:
+        return False
+    return (state is None or not request.user.is_active
+            or request.session.get("corpus_epoch", -1) != state.session_epoch)
 
 
 def principal(request) -> Principal:
