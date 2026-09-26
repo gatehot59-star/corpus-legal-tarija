@@ -117,8 +117,12 @@ class WorkflowTests(FixtureBase):
         self.assertEqual(response.status_code, 302)
         stale = Client()
         stale.cookies["sessionid"] = session
-        self.assertEqual(stale.get("/corpus/").status_code, 403)
-        self.assertEqual(self.client.get(url).status_code, 403)
+        response = stale.get("/corpus/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/corpus/login/")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/corpus/login/")
 
     def test_health_distinguishes_process_from_policy(self):
         PolicyState.objects.update(quarantined=True)
