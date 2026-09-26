@@ -116,7 +116,9 @@ class AccessTests(FixtureBase):
     def test_login_csrf_required_and_no_header_identity(self):
         self.assertEqual(self.client.post("/corpus/login/", {
             "username": "fixture-ana", "password": FIXTURE_PASSWORD}).status_code, 403)
-        self.assertEqual(self.client.get("/corpus/", HTTP_X_USER=str(self.ana.pk)).status_code, 403)
+        response = self.client.get("/corpus/", HTTP_X_USER=str(self.ana.pk))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/corpus/login/")
 
     def test_browser_origin_passes_without_referer_but_null_origin_does_not(self):
         """Keep CSRF on: browser same-origin login passes, literal null remains denied."""
@@ -145,7 +147,22 @@ class AccessTests(FixtureBase):
         self.assertEqual(response.status_code, 302)
         stale = Client()
         stale.cookies["sessionid"] = old
-        self.assertEqual(stale.get("/corpus/").status_code, 403)
+        response = stale.get("/corpus/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/corpus/login/")
+
+    def test_stale_epoch_redirects_to_login_not_bare_error(self):
+        """A tab left open past an epoch rotation re-authenticates cleanly."""
+        self.login()
+        PolicyState.objects.update(session_epoch=99)
+        response = self.client.get("/corpus/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/corpus/login/")
+
+    def test_session_lifetime_rolls_with_activity(self):
+        """Pilot sessions survive a workday of activity; idle expiry stays bounded."""
+        self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+        self.assertGreaterEqual(settings.SESSION_COOKIE_AGE, 8 * 3600)
 
     def test_throttle_is_persistent_across_clients(self):
         for _ in range(10):
