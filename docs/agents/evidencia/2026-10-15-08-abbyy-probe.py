@@ -1,0 +1,6 @@
+import os,pathlib,platform,shutil,json,subprocess,ctypes.util,resource
+from datetime import datetime,timezone
+mem=dict(x.split(':',1) for x in pathlib.Path('/proc/meminfo').read_text().splitlines())
+flags=next((x.split(':',1)[1].split() for x in pathlib.Path('/proc/cpuinfo').read_text().splitlines() if x.startswith('flags')),[])
+d={'utc':datetime.now(timezone.utc).isoformat(),'platform':platform.platform(),'os_release':pathlib.Path('/etc/os-release').read_text(),'cpu':os.cpu_count(),'sse2':'sse2' in flags,'glibc':platform.libc_ver(),'mem':{k:mem[k].strip() for k in ['MemTotal','MemAvailable','SwapTotal','SwapFree']},'disk_free_GiB':round(shutil.disk_usage('/tmp').free/2**30,3),'tmpfs_dev_shm_GiB':round(shutil.disk_usage('/dev/shm').total/2**30,3),'tmp_filesystem':subprocess.run(['df','-T','/tmp'],capture_output=True,text=True).stdout,'open_files_limit':resource.getrlimit(resource.RLIMIT_NOFILE),'programs':{x:shutil.which(x) for x in ['wine','wine64','FineReader.exe','FREngine','abbyyocr11','qemu-system-x86_64','virsh','VBoxManage','pwsh','gcc','g++','make']},'libraries':{x:ctypes.util.find_library(x) for x in ['c','stdc++','gomp','glib-2.0','pcre','z']},'known_sdk_dirs':{x:pathlib.Path(x).exists() for x in ['/opt/ABBYY','/opt/ABBYY/FREngine12','/var/lib/ABBYY','/usr/local/ABBYY','/opt/wine']}}
+print(json.dumps(d,ensure_ascii=False))
