@@ -1,0 +1,374 @@
+{
+  "schema": 1,
+  "benchmark_id": "corpus-heldout-20261015-v1",
+  "state": "HELD_OUT_RESERVED_GOLD_PENDING",
+  "created_utc": "2026-10-15T17:28:03.468300+00:00",
+  "selection_sealed_utc": "2026-10-15T17:26:43.085874+00:00",
+  "selection_rule": "primeras dos leyes del listado oficial de Tarija al consultar el 15-oct-2026 (524 y 523), todas sus páginas; exclusión por PDF completo respecto de 120 páginas/40 PDFs anteriores y del banco de diez imágenes",
+  "source_listing": "https://www.tarija.gob.bo/gaceta-oficial/leyes-departamentales",
+  "split": "test_only_document_disjoint_from_checked_prior_bank",
+  "candidate_ocr_runs": 0,
+  "gold_status": "PENDING_DOUBLE_VISUAL_TRANSCRIPTION_AND_ADJUDICATION",
+  "gold_text": null,
+  "gold_note": "La Ley 524 contiene capa de texto con origen no verificado en un PDF producido por Scanner System; se leyó una muestra en descubrimiento, se descartó como referencia. Ley 523 no produjo texto. Ninguna capa extraída ni salida de candidato se admite como gold.",
+  "scope_limit": "Reserva nueva frente a los bancos comprobados, no garantía de ausencia en entrenamiento de modelos, en toda la historia de Corpus o de documentos equivalentes con distinto hash. Sólo dos documentos: no estimación representativa del universo jurídico.",
+  "normalization": "NFC + collapse whitespace, preserve accents/case/punctuation; no silent spelling fixes, no reference-assisted reconstruction",
+  "primary_metrics": [
+    "micro CER",
+    "micro WER",
+    "page CER/WER",
+    "document macro CER/WER"
+  ],
+  "timing": "same machine/runtime, sequential, one declared warmup, include calibration stages, no network/download/render in OCR timer; multi-pass timing preregistered separately",
+  "annotation_protocol": {
+    "source": "rendered images only, no existing OCR outputs or PDF text layer",
+    "two_independent_transcribers": true,
+    "adjudication_required": true,
+    "reviewers_distinct_from_engine_author": true,
+    "order": "visual reading order, columns left to right, each column top to bottom; tables row-major with explicit region notes",
+    "scope": "all legible printed text, including headers/footers; handwritten signatures/nontext marks excluded only by documented regions; unresolved illegibility blocks scoring until scope adjudicated",
+    "critical_items": "numbers, dates, amounts, article identifiers and negations must be checked against the image, not inferred from another legal version",
+    "freeze": "freeze gold and engine code/config hashes before any candidate output is inspected; do not tune on this test set; after results-guided changes use a new held-out document set"
+  },
+  "documents": [
+    {
+      "id": "doc01",
+      "url": "https://www.tarija.gob.bo/gaceta-oficial/leyes-departamentales?download=3625:ley-departamental-n-524-presupuesto-institucional-plan-operativo-anual-y-presupuesto-institucional-anual-2027-del-gobierno-autonomo-departamental-de-tarija",
+      "title": "Ley Departamental N 524 Presupuesto Institucional Plan Operativo Anual y Presupuesto Institucional Anual 2027 del GADT.pdf",
+      "pdf_sha256": "29085b9662453ccd51daea02c10bde124b8e0c91adc712d9d6f3f88c8c92b946",
+      "bytes": 1642786,
+      "fetched_utc": "2026-10-15T17:25:32.922489+00:00",
+      "http_status": 200,
+      "pdfinfo_exit": 0,
+      "pdfinfo_stdout": "Creator:         Scanner System\nProducer:        Scanner System Image Conversion\nCreationDate:    Fri Oct  9 18:51:41 2026 UTC\nModDate:         Fri Oct  9 18:51:41 2026 UTC\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           2\nEncrypted:       no\nPage size:       604.8 x 933.12 pts\nPage rot:        0\nFile size:       1642786 bytes\nOptimized:       no\nPDF version:     1.5\n",
+      "pdfinfo_stderr": "",
+      "pdftotext_exit": 0,
+      "native_text_chars": 5821,
+      "pdftotext_stderr": ""
+    },
+    {
+      "id": "doc02",
+      "url": "https://www.tarija.gob.bo/gaceta-oficial/leyes-departamentales?download=3605:ley-departamental-n-523-estructura-de-cargos-y-escala-salarial-del-gobierno-autonomo-departamental-de-tarija",
+      "title": "Ley Departamental N 523 Ley Departamental de la Estructura de Cargos y Escala Salarial del GADT.pdf",
+      "pdf_sha256": "dd85855e5e0d3134e29998776d7c3eb347d3e1ebde24ef890b37fc0c7c4d7d04",
+      "bytes": 2696319,
+      "fetched_utc": "2026-10-15T17:25:35.214829+00:00",
+      "http_status": 200,
+      "pdfinfo_exit": 0,
+      "pdfinfo_stdout": "Creator:         Scanner System\nProducer:        Scanner System Image Conversion\nCreationDate:    Tue Aug 25 20:41:56 2026 UTC\nModDate:         Tue Aug 25 20:41:56 2026 UTC\nCustom Metadata: no\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           3\nEncrypted:       no\nPage size:       605.52 x 939.6 pts\nPage rot:        0\nFile size:       2696319 bytes\nOptimized:       no\nPDF version:     1.4\n",
+      "pdfinfo_stderr": "",
+      "pdftotext_exit": 0,
+      "native_text_chars": 0,
+      "pdftotext_stderr": ""
+    }
+  ],
+  "pages": [
+    {
+      "id": "h01-p001",
+      "document_id": "doc01",
+      "page": 1,
+      "image": "images/h01-p001.png",
+      "image_sha256": "669c89a75a4e3ad2ecc567f03a13e50c2552265b3baf4e4f547e362acbb9c3c4",
+      "pixel_sha256": "7e71fb47a5464b0ad49ecd5d6f6f2b867e36492b8524b2a37887216e00d5a870",
+      "size": [
+        2520,
+        3888
+      ],
+      "mode": "RGB",
+      "bytes": 4443312,
+      "gold_status": "pending",
+      "reference": null
+    },
+    {
+      "id": "h01-p002",
+      "document_id": "doc01",
+      "page": 2,
+      "image": "images/h01-p002.png",
+      "image_sha256": "d64b7b15bcd3010c51a8f3a7c5896c22ae5136bc7814b6824c42134e9a846f1f",
+      "pixel_sha256": "b621ebffffe3f280b33fe029f3f67b924b98f2ead0563f3e995640d49c320a24",
+      "size": [
+        2526,
+        3915
+      ],
+      "mode": "RGB",
+      "bytes": 3232940,
+      "gold_status": "pending",
+      "reference": null
+    },
+    {
+      "id": "h02-p001",
+      "document_id": "doc02",
+      "page": 1,
+      "image": "images/h02-p001.png",
+      "image_sha256": "7c0832b0e046c40d5f0aa3b8026449206fbd2bae7b4c490135420dfd6ee17514",
+      "pixel_sha256": "5f811b7ac878ad8597c70a3323d79cd59a10f9102bdbec8feff7ee79986e2924",
+      "size": [
+        2523,
+        3915
+      ],
+      "mode": "RGB",
+      "bytes": 3935175,
+      "gold_status": "pending",
+      "reference": null
+    },
+    {
+      "id": "h02-p002",
+      "document_id": "doc02",
+      "page": 2,
+      "image": "images/h02-p002.png",
+      "image_sha256": "1b8393227b045728ee0246aa271b7c0ef96e4bc137cec25281e6d9e0720adff9",
+      "pixel_sha256": "dd6bf1526aff0547507934c603ba75582235e246c7ba3082e33ced44fa06ff83",
+      "size": [
+        2523,
+        3918
+      ],
+      "mode": "RGB",
+      "bytes": 5287819,
+      "gold_status": "pending",
+      "reference": null
+    },
+    {
+      "id": "h02-p003",
+      "document_id": "doc02",
+      "page": 3,
+      "image": "images/h02-p003.png",
+      "image_sha256": "026d49e41efecf422469543fb199c2e50f383d79444999123181a312fd803bc8",
+      "pixel_sha256": "e9ff4f7c1f8e3a4047722f97110d7389d2291118672c64e95390ab58a913d6c6",
+      "size": [
+        2523,
+        3918
+      ],
+      "mode": "RGB",
+      "bytes": 3674508,
+      "gold_status": "pending",
+      "reference": null
+    }
+  ],
+  "overlap_evidence": {
+    "index_sha256": "01594b2af1fddeeb9ce741d8940fef2bbaae8a45c91b8e5201d0a86a19efee39",
+    "index_rows": 120,
+    "source_filenames_count": 40,
+    "checks": [
+      {
+        "id": "doc01",
+        "pdf_sha256": "29085b9662453ccd51daea02c10bde124b8e0c91adc712d9d6f3f88c8c92b946",
+        "prior_index_hits": [],
+        "prior_source_filename_hit": false
+      },
+      {
+        "id": "doc02",
+        "pdf_sha256": "dd85855e5e0d3134e29998776d7c3eb347d3e1ebde24ef890b37fc0c7c4d7d04",
+        "prior_index_hits": [],
+        "prior_source_filename_hit": false
+      }
+    ],
+    "scope": "comparación con gold_index.jsonl y nombres hash de PDF en /tmp/ocr-sample120; no garantiza ausencia de exposición en todo entrenamiento o en cada trabajo histórico",
+    "excluded_pdf_sha256": [
+      "0010ab321f965fec437023c3faa626f716a00cbc7495433ac2254e7d99cd1878",
+      "00c08b5f1303563220c93021a9f0867ba01bc452eafd5c6a11fae50389f3bace",
+      "05fb2afbf442fc5298e09da9164db7cf8d7b15710e24c202ef3eb7cbb076357e",
+      "07c5caea50ece02874e4d040aaee1b7ed11694704d536744fa4b93026c5a75f3",
+      "08d2c910705fc15ddf76235caccedbbc945d4e10ae5655f08a6b35eab1e1a04a",
+      "0b1c20d7ce63679204e2c28fd03f46ae0238873d5c85666de9bdfa0be71e3b8c",
+      "0cc4b4a2f21be21002a741ceebdbc27f3e65799daca8177ac3e695bee755d053",
+      "126730d817cad8a7c4c80294d21057e792313f380d16e986fb429c0814dcf5db",
+      "1275b5325e6698beaac105ebe243bb6cf76524bbca020cfc7215667d30020ca6",
+      "12bcc58e14159b7491746790dbe93affe3d32ea4316970fa8dad3c0d2fe8d236",
+      "12fbbc0db866a5eb3ebecc4636f0b2d92d017ac4df0a2c4dd68567358d0530f5",
+      "14dde4637ecee3725d0178a20e183f838e7345ed357da496133046c51f5a57c1",
+      "16a4621380c0a670f282f42ec8c43522b68431d48f71ef73bc746110127d237b",
+      "18c2b913bbaab124aed3f01a8c932828be2e2fbc2ae32bb1b39741ede94473b3",
+      "1b396a80294ba4ca9dafe2665196fa1cc62642b731f816c93ecb5e111a9638af",
+      "220fba7b7f2ff04b6d38345fbae0b006e1a4bf4080f84800291156f61d72dfcb",
+      "244cac60ab5898c130360f1054b7328fded0b7d96bb53cff1bcb61755685c26f",
+      "25640e2b718a79dc27e2d6a07b6a2f1c4d568682c934e8644e4eb61112758f57",
+      "28983804f3c0e59f21254e7f7fd2a8db8be5ade0b68efc7ecda49bea10a39805",
+      "29fef3179845847036dc59045165bb12e6ff6062d47bde3419680daa74deef89",
+      "2b6b072950e4a1f0dc5e9a139ec18e4f1be5703dcffe737a366af187f6865d14",
+      "3174797bec1c214190565164f44e9b3b4961386d0ab843f388fe69288f6a6165",
+      "31cd78b06988e30b6de193ccd3a2ada1cdb35da31d2aac5854f6a234104324c1",
+      "36875b77b7b069e10be0f2afc714d5f03d3b68e5b390c2535d0e94c35d57a96d",
+      "3cc67c7994883e875681e08e00b449b81ba3c57e635f8487aea94d146fad012f",
+      "3d642ebc1f0b6079a87a5c3ed28e2cace23a2066aa5ecc7dbabec6a947e8fb79",
+      "4639cc106225729946e3637714ec3849ebbeeec2c527713a69917bde0be3791d",
+      "4c2f7742a8f6d4207d98c36f040518e1d2485010d8dcf53624a5d8905f85586d",
+      "4e46cf737b20e9acba0f2f9e316193ee7c23d4b37c38d17962af4a31ad3bc557",
+      "4ebc888e88af1b2561d7f0bad3c261e1f908002d1c5a9a28546b91d7cdcf3f47",
+      "4eddc69ca44329ccbdc56c1ba520afa34febd9c990e9b55f063dfe2fa39210f3",
+      "4f70e884a2ef51c5172973cac7a2c6d13feb719988d60cf4a45332a4b1802001",
+      "560a7e4c48f747f1165b24d251f6770cd79415e1f1ea6c5589468fa418625acc",
+      "56be4df8738e08e08a5993492e8c7a9518c14defcb8a7142a15f26f445cc6140",
+      "5b25acf23cd42fda02174047a37f1b8801afc5ae904042140d2017c3a6c26224",
+      "63d0bbca1f40a21ed5b263a016234e756c61a78844d003eede35aca7f83db438",
+      "79af2d593dde98ea1dad72f30c0a1be6e036acec4eae6880eaa03996ca0306a8",
+      "8983ba568fcc777a8515bbbe710175874b7cdabfd14582a7ac85b1e0e63abd18",
+      "ce4e853e86300ecab68729a6a98f646205254ca4cfd6f94a3166aac5d78769b3",
+      "f741344634a4540efc1511b06ed65a625805c413d64778c86477aca08bddc6c6"
+    ],
+    "excluded_previous_bank_image_sha256": [
+      "66a24dab854cefb406318e67536119858581c584d4bc53fdded8d446cd2ca4e9",
+      "720cf19a72998e3321d64e7130dff0617fdc490911c8d95472d77ad97290a982",
+      "9c74d906e06f6dbd8bc692f5b48b06709f8d3a535bb5a55d099995d8fdd86ab7",
+      "a32708242866d58eeec256ec37ea2b3bacb08b8d29cad88b8b1d74f23ca5ecfe",
+      "e011d9efda1a6d680e59d65f8df6b1c864fd99fb4b3c0d1d61794f2923757ebc",
+      "e93d1bb3406141a3d263503a9452c7e63ba187fe122256a64d38b895f3a6dfb8"
+    ]
+  },
+  "renderer": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": "pdftoppm version 24.02.0\nCopyright 2005-2024 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC\n"
+  },
+  "render_log": [
+    {
+      "id": "h01-p001",
+      "document_id": "doc01",
+      "page": 1,
+      "command": [
+        "pdftoppm",
+        "-f",
+        "1",
+        "-l",
+        "1",
+        "-r",
+        "300",
+        "-gray",
+        "-singlefile",
+        "-png",
+        "/tmp/ocr-heldout-20261015/source-01.pdf",
+        "/tmp/ocr-heldout-20261015/images/h01-p001"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "image_sha256": "669c89a75a4e3ad2ecc567f03a13e50c2552265b3baf4e4f547e362acbb9c3c4",
+      "pixel_sha256": "7e71fb47a5464b0ad49ecd5d6f6f2b867e36492b8524b2a37887216e00d5a870",
+      "size": [
+        2520,
+        3888
+      ],
+      "mode": "RGB",
+      "bytes": 4443312
+    },
+    {
+      "id": "h01-p002",
+      "document_id": "doc01",
+      "page": 2,
+      "command": [
+        "pdftoppm",
+        "-f",
+        "2",
+        "-l",
+        "2",
+        "-r",
+        "300",
+        "-gray",
+        "-singlefile",
+        "-png",
+        "/tmp/ocr-heldout-20261015/source-01.pdf",
+        "/tmp/ocr-heldout-20261015/images/h01-p002"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "image_sha256": "d64b7b15bcd3010c51a8f3a7c5896c22ae5136bc7814b6824c42134e9a846f1f",
+      "pixel_sha256": "b621ebffffe3f280b33fe029f3f67b924b98f2ead0563f3e995640d49c320a24",
+      "size": [
+        2526,
+        3915
+      ],
+      "mode": "RGB",
+      "bytes": 3232940
+    },
+    {
+      "id": "h02-p001",
+      "document_id": "doc02",
+      "page": 1,
+      "command": [
+        "pdftoppm",
+        "-f",
+        "1",
+        "-l",
+        "1",
+        "-r",
+        "300",
+        "-gray",
+        "-singlefile",
+        "-png",
+        "/tmp/ocr-heldout-20261015/source-02.pdf",
+        "/tmp/ocr-heldout-20261015/images/h02-p001"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "image_sha256": "7c0832b0e046c40d5f0aa3b8026449206fbd2bae7b4c490135420dfd6ee17514",
+      "pixel_sha256": "5f811b7ac878ad8597c70a3323d79cd59a10f9102bdbec8feff7ee79986e2924",
+      "size": [
+        2523,
+        3915
+      ],
+      "mode": "RGB",
+      "bytes": 3935175
+    },
+    {
+      "id": "h02-p002",
+      "document_id": "doc02",
+      "page": 2,
+      "command": [
+        "pdftoppm",
+        "-f",
+        "2",
+        "-l",
+        "2",
+        "-r",
+        "300",
+        "-gray",
+        "-singlefile",
+        "-png",
+        "/tmp/ocr-heldout-20261015/source-02.pdf",
+        "/tmp/ocr-heldout-20261015/images/h02-p002"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "image_sha256": "1b8393227b045728ee0246aa271b7c0ef96e4bc137cec25281e6d9e0720adff9",
+      "pixel_sha256": "dd6bf1526aff0547507934c603ba75582235e246c7ba3082e33ced44fa06ff83",
+      "size": [
+        2523,
+        3918
+      ],
+      "mode": "RGB",
+      "bytes": 5287819
+    },
+    {
+      "id": "h02-p003",
+      "document_id": "doc02",
+      "page": 3,
+      "command": [
+        "pdftoppm",
+        "-f",
+        "3",
+        "-l",
+        "3",
+        "-r",
+        "300",
+        "-gray",
+        "-singlefile",
+        "-png",
+        "/tmp/ocr-heldout-20261015/source-02.pdf",
+        "/tmp/ocr-heldout-20261015/images/h02-p003"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "",
+      "image_sha256": "026d49e41efecf422469543fb199c2e50f383d79444999123181a312fd803bc8",
+      "pixel_sha256": "e9ff4f7c1f8e3a4047722f97110d7389d2291118672c64e95390ab58a913d6c6",
+      "size": [
+        2523,
+        3918
+      ],
+      "mode": "RGB",
+      "bytes": 3674508
+    }
+  ]
+}
