@@ -1,0 +1,45 @@
+{
+  "checked_utc": "2026-10-15T21:47:27.391766+00:00",
+  "machine": "brain-env",
+  "application_id": "b9585284-f120-4314-bbd4-19416cdc4e17",
+  "requested_region": "US",
+  "files_uploaded": 0,
+  "ocr_jobs_created": 0,
+  "tls_certificate_verification": true,
+  "redirects_followed": false,
+  "credentials_in_report": false,
+  "records": [
+    {
+      "method": "GET",
+      "endpoint": "https://cloud-westus.ocrsdk.com/v2/getApplicationInfo",
+      "authenticated_request": false,
+      "http_status": 401,
+      "content_type": "text/html",
+      "body_complete": true,
+      "response_body": "",
+      "elapsed_seconds": 1.287251
+    },
+    {
+      "method": "GET",
+      "endpoint": "https://cloud-westus.ocrsdk.com/v2/getApplicationInfo",
+      "authenticated_request": true,
+      "http_status": 403,
+      "content_type": "text/plain; charset=utf-8",
+      "body_complete": true,
+      "response_body": "403 Prohibited",
+      "elapsed_seconds": 1.257991
+    },
+    {
+      "method": "GET",
+      "endpoint": "https://cloud-westus.ocrsdk.com/v2/listTasks",
+      "authenticated_request": true,
+      "http_status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "body_complete": true,
+      "elapsed_seconds": 1.19538,
+      "body_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "response_body_omitted": "Existing task details are not needed for authentication validation.",
+      "json_type": "dict"
+    }
+  ]
+}

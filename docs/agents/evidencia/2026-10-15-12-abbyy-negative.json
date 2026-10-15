@@ -1,0 +1,10 @@
+{
+  "checked_utc": "2026-10-15T21:48:17.443184+00:00",
+  "endpoint": "https://cloud-westus.ocrsdk.com/v2/listTasks",
+  "authenticated": false,
+  "files_uploaded": 0,
+  "result": {
+    "http_status": 401,
+    "response_body": ""
+  }
+}
