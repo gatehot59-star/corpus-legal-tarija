@@ -1,0 +1,54 @@
+{
+  "state": "RUNNING_CHECKPOINT_NOT_COMPLETED",
+  "hundred_page_duration_seconds": null,
+  "accuracy": "NOT_MEASURED",
+  "prepare_receipt": {
+    "manifest_sha256":"f20a4fff96ec400b0e877ec800034ae86bfbf7d397c4b0b70c72ff92426f9aad",
+    "zip_sha256":"1902df14f23e1016228db9d1db2684806a0b35ed6bedc2c43fcb5b96ea41fbc3",
+    "zip_bytes":196202786,"pages":100,"distinct_image_hashes":100,"documents":34,"dpi":300,"root":"/tmp/paddle-vl16-100-20261016"
+  },
+  "preflight": {
+    "utc":"2026-10-16T13:27:28.736392+00:00",
+    "runner_sha256":"f4a3ca42cf694fc185ec1e0fc6d56cf8913b4d92d26fde260eb485948bbd182c",
+    "kernel_sha256":"b1ad69ed971d6d95f8e6c76cf1300b89ed69705cfdf738a6e4775b523c84f403",
+    "adapter_test":{"exit":0,"stdout":"{\"adapter_checks\": 5, \"passed\": true}\n","stderr":""},
+    "pages":100,"documents":34,"state":"NOT_LAUNCHED"
+  },
+  "input_preflight": {
+    "utc":"2026-10-16T13:28:27.216779+00:00","exact_archive_entries":101,"positive_input_hashes_verified":101,"mutated_image_rejected":true,"error":"image hash mismatch","source_manifest_sha256":"f20a4fff96ec400b0e877ec800034ae86bfbf7d397c4b0b70c72ff92426f9aad"
+  },
+  "verifier_selftest": {
+    "utc":"2026-10-16T13:28:03.788031+00:00",
+    "command":["/usr/local/bin/python3","/workspace/paddle-vl16-100-20261016/verify100.py","--selftest"],
+    "exit":0,
+    "stdout":"{\"positive_fixture\": true, \"mutations_rejected\": [\"missing\", \"duplicate_input\", \"wrong_hash\", \"zero_time\", \"aggregate\", \"overlap\", \"not_completed\", \"reload\"], \"synthetic_only\": true}\n",
+    "stderr":"","verifier_sha256":"17ee3aa70155273017566a6fb94031fb136ba0e73726ca52d552468b151fe934"
+  },
+  "upload_receipt": {
+    "utc":"2026-10-16T13:30:34.722743+00:00","zip_sha256":"1902df14f23e1016228db9d1db2684806a0b35ed6bedc2c43fcb5b96ea41fbc3",
+    "command":["/usr/local/bin/kaggle","datasets","create","-p","/workspace/paddle-vl16-100-20261016/dataset","--keep-tabular"],"exit":0
+  },
+  "dataset_status": {
+    "utc":"2026-10-16T13:30:46.178964+00:00","command":["/usr/local/bin/kaggle","datasets","status","abrahammendieta/corpus-throughput100-20261016"],"exit":0,"stdout":"ready","stderr":""
+  },
+  "push_receipt": {
+    "utc":"2026-10-16T13:31:01.644942+00:00",
+    "command":["/usr/local/bin/kaggle","kernels","push","-p","/workspace/paddle-vl16-100-20261016/kernel","--accelerator","NvidiaTeslaT4","--timeout","25200"],
+    "exit":0,"stdout":"Kernel version 1 successfully pushed.  Please check progress at https://www.kaggle.com/code/abrahammendieta/corpus-vl16-100-pages-20261016\n","stderr":""
+  },
+  "status_readback": {
+    "utc":"2026-10-16T13:31:18.869906+00:00","command":["/usr/local/bin/kaggle","kernels","status","abrahammendieta/corpus-vl16-100-pages-20261016"],"exit":0,"stdout":"abrahammendieta/corpus-vl16-100-pages-20261016 has status \"KernelWorkerStatus.RUNNING\"\n","stderr":""
+  },
+  "pull_readback": {
+    "utc":"2026-10-16T13:31:20.715301+00:00","command":["/usr/local/bin/kaggle","kernels","pull","abrahammendieta/corpus-vl16-100-pages-20261016","-m","-p","/workspace/paddle-vl16-100-20261016/server-v1"],"exit":0,"stdout":"Source code and metadata downloaded to /workspace/paddle-vl16-100-20261016/server-v1\n","stderr":""
+  },
+  "server_metadata": {
+    "id":"abrahammendieta/corpus-vl16-100-pages-20261016","id_no":139033211,"title":"Corpus VL16 100 Pages 20261016","code_file":"corpus-vl16-100-pages-20261016.py","language":"python","kernel_type":"script","is_private":true,"enable_gpu":true,"enable_tpu":false,"enable_internet":true,"keywords":[],"dataset_sources":["abrahammendieta/corpus-throughput100-20261016"],"kernel_sources":[],"competition_sources":[],"model_sources":[],"docker_image":"gcr.io/kaggle-private-byod/python@sha256:2757e0c7d1e0a9cb43da657b97e223c321a98f5014bdf64f44f2f6b083ad2b2f","machine_shape":"NvidiaTeslaT4"
+  },
+  "server_code_sha256":"b1ad69ed971d6d95f8e6c76cf1300b89ed69705cfdf738a6e4775b523c84f403",
+  "watch_launch": {
+    "pid":9000,"started_utc":"2026-10-16T13:31:01.656787+00:00","script_sha256":"773ce68bf94b80f0071f3d433b4d6ef456f16e25f098dc87e40d53b43384bddd","does_not_notify_user":true
+  },
+  "watch_first_output":"2026-10-16T13:31:03.275119+00:00 abrahammendieta/corpus-vl16-100-pages-20261016 has status \"KernelWorkerStatus.RUNNING\"\n",
+  "not_claimed":["100 pages completed","GPU model loaded in this new job","successful hundred-page duration","accuracy on these pages","external audit","production deployment"]
+}
