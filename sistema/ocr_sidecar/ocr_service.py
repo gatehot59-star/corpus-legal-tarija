@@ -168,7 +168,7 @@ def complete_document(pages, expected):
         blocks = page["blocks"]
         if [b["index"] for b in blocks] != list(range(len(blocks))):
             raise ValueError("block_order")
-        if not blocks and not page.get("blank_by_pixels", False):
+        if (not blocks or not any(b["text"].strip() for b in blocks)) and not page.get("blank_by_pixels", False):
             raise ValueError("empty_nonblank_output")
         if page["text"] != "\n".join(b["text"] for b in blocks):
             raise ValueError("block_text_mismatch")
@@ -180,6 +180,47 @@ def complete_document(pages, expected):
             "fidelity_certified": False}
 
 
+def validate_result(result):
+    """Reject a worker envelope inconsistent with its validated pages."""
+    try:
+        if not isinstance(result, dict):
+            raise ValueError("invalid_worker_result")
+        expected = result["expected_pages"]
+        if type(expected) is not int or not 1 <= expected <= MAX_PAGES:
+            raise ValueError("invalid_worker_result")
+        canonical = complete_document(result["pages"], expected)
+        for key in ("schema", "status", "expected_pages", "completed_pages",
+                    "text", "markdown", "fidelity_certified"):
+            if type(result[key]) is not type(canonical[key]) or result[key] != canonical[key]:
+                raise ValueError("invalid_worker_result")
+    except (ValueError, KeyError, TypeError, AttributeError):
+        raise ValueError("invalid_worker_result") from None
+    return result
+
+
+def terminal_progress(job, status, error=None, result=None):
+    """Finalize progress without hiding a failure or counting unvalidated pages."""
+    expected, completed = None, 0
+    if result is not None:
+        expected, completed = result["expected_pages"], result["completed_pages"]
+    else:
+        try:
+            partial = read_json(job / "partial.json")
+            count = partial["expected_pages"]
+            pages = partial["pages"]
+            if type(count) is int and 1 <= count <= MAX_PAGES and isinstance(pages, list):
+                expected = count
+                if 0 < len(pages) <= count:
+                    complete_document(pages, len(pages))
+                    completed = len(pages)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            pass
+    atomic(job / "progress.json", {
+        "phase": "completed" if status == REVIEW else "failed",
+        "expected_pages": expected, "completed_pages": completed,
+        "error": error, "updated_utc": now()})
+
+
 def run_command(args, timeout=30):
     """Bound a parser subprocess and discard its potentially sensitive errors."""
     result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -189,6 +230,21 @@ def run_command(args, timeout=30):
     if len(result.stdout) > 1024 * 1024:
         raise ValueError("parser_output_limit")
     return result.stdout.decode("utf-8", errors="strict")
+
+
+def page_has_raster(source, page):
+    """Use Poppler's decoded image inventory; fail closed on unknown output."""
+    listing = run_command(["/usr/bin/pdfimages", "-f", str(page), "-l", str(page),
+                           "-list", str(source)])
+    lines = [line.strip() for line in listing.splitlines() if line.strip()]
+    if len(lines) < 2 or not re.match(r"page\s+num\s+type\b", lines[0]):
+        raise ValueError("invalid_image_inventory")
+    if not re.fullmatch(r"-+", lines[1]):
+        raise ValueError("invalid_image_inventory")
+    for line in lines[2:]:
+        if not re.match(r"\d+\s+\d+\s+(?:image|mask|smask)\s", line):
+            raise ValueError("invalid_image_inventory")
+    return bool(lines[2:])
 
 
 def prepare_pages(source, kind, mode, work):
@@ -210,7 +266,11 @@ def prepare_pages(source, kind, mode, work):
                 native = run_command(["/usr/bin/pdftotext", "-f", str(page),
                                       "-l", str(page), "-enc", "UTF-8",
                                       str(source), "-"])
+            # Any raster can contain a clause or signature. Do not silently prefer
+            # a long native layer over it. Native text remains separately preserved.
             native_ok = eligible_native(native)
+            if native_ok and page_has_raster(source, page):
+                native_ok = False
             if mode == "txt" and not native_ok:
                 raise ValueError("native_text_not_usable")
             image_path = None
@@ -284,7 +344,7 @@ def verify_runtime(root):
     for name, version in PINS.items():
         if importlib.metadata.version(name) != version:
             raise ValueError("package_pin_mismatch:" + name)
-    for tool in ("pdfinfo", "pdftotext", "pdftoppm"):
+    for tool in ("pdfinfo", "pdftotext", "pdftoppm", "pdfimages"):
         if not Path("/usr/bin", tool).is_file():
             raise ValueError("missing_parser")
     sealed = read_json(root / "models.json")
@@ -373,6 +433,7 @@ def worker(job, runtime):
             page = {"page": number, "status": REVIEW, "method": method,
                     "selection_reason": ("native_text_heuristic_not_fidelity" if native
                                          else "forced_ocr" if request["mode"] == "ocr"
+                                         else "native_with_raster_requires_ocr" if eligible_native(native_text)
                                          else "native_missing_or_rejected"),
                     "native_text": native_text, "blocks": blocks, "text": text,
                     "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
@@ -400,6 +461,7 @@ def worker(job, runtime):
                         "extraction_sum_seconds": sum(p["extraction_seconds"] for p in pages),
                         "worker_wall_seconds": time.monotonic() - start}}
         atomic(job / "result.json", result)
+        terminal_progress(job, REVIEW, result=result)
     finally:
         # Only the job's transient images are removed, never the submitted source.
         shutil.rmtree(work, ignore_errors=True)
@@ -499,6 +561,8 @@ class Jobs:
                 continue
             directory = self.root / ident
             process = None
+            timed_out = False
+            result = None
             try:
                 atomic(directory / "state.json", {"status": "running", "updated_utc": now()})
                 t = time.monotonic()
@@ -510,28 +574,39 @@ class Jobs:
                     try:
                         code = process.wait(timeout=self.timeout)
                     except subprocess.TimeoutExpired:
-                        os.killpg(process.pid, signal.SIGKILL)
+                        timed_out = True
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
                         process.wait()
-                        code = -9
-                if code == 0:
-                    result = read_json(directory / "result.json")
-                    complete_document(result["pages"], result["expected_pages"])
-                    status, error = REVIEW, None
+                        code = process.returncode
+                if code == 0 and not timed_out:
+                    try:
+                        result = validate_result(read_json(directory / "result.json"))
+                        status, error = REVIEW, None
+                    except (OSError, ValueError, KeyError, TypeError):
+                        result = None
+                        status, error = "failed", "invalid_worker_result"
                 else:
-                    status, error = "failed", "timeout" if code == -9 else "worker_failed"
-                    if code != -9 and (directory / "error.json").exists():
+                    status, error = "failed", ("timeout" if timed_out else
+                                               "worker_signal" if code < 0 else "worker_failed")
+                    if not timed_out and code > 0 and (directory / "error.json").exists():
                         error = read_json(directory / "error.json")["error"]
                     if error in ("ModuleNotFoundError", "ImportError", "FileNotFoundError",
                                  "runtime_changed", "model_hash_mismatch"):
                         self.failure = "runtime_unavailable"
+                terminal_progress(directory, status, error, result)
                 atomic(directory / "state.json", {
                     "status": status, "error": error, "worker_exit": code,
+                    "timed_out": timed_out, "signal": -code if code < 0 else None,
                     "job_wall_seconds": time.monotonic() - t, "updated_utc": now()})
             except Exception:
                 if process and process.poll() is None:
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
                 self.failure = "supervisor_failure"
+                terminal_progress(directory, "failed", self.failure)
                 atomic(directory / "state.json", {"status": "failed",
                                                   "error": self.failure, "updated_utc": now()})
             finally:
@@ -600,7 +675,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.reply(404, {"error": "not_found"})
             if state["status"] != REVIEW:
                 return self.reply(409, {"error": "result_not_complete", "state": state})
-            return self.reply(200, read_json(directory / "result.json"))
+            try:
+                result = validate_result(read_json(directory / "result.json"))
+            except (OSError, ValueError, KeyError, TypeError):
+                return self.reply(409, {"error": "invalid_worker_result"})
+            return self.reply(200, result)
         if (directory / "progress.json").exists():
             state["progress"] = read_json(directory / "progress.json")
         return self.reply(200, state)
