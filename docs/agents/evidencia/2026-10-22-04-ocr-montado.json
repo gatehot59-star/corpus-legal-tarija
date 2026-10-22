@@ -1,0 +1,22 @@
+{
+  "scope": "Raw runner stdout verbatim plus command receipts; output hashes/metadata separately derived. Not full per-page logs.",
+  "operator": "ClickUp Brain GPT-6 Astra via brain-env SSH to VM",
+  "command": ["/opt/corpus-ocr-vl/runtime/venv/bin/python", "/opt/corpus-ocr-vl/app/e2e_private.py", "--root", "/tmp/corpus-ocr-e2e-20261022-r4"],
+  "runner_exit_code": null,
+  "runner_exit_note": "Background launcher did not capture exit code. Complete JSON and final pass stdout were read; both workers independently report exit0 and negative control exit1.",
+  "stdout_verbatim": "{\"pass\": true, \"scope\": \"private_service_synthetic_e2e\", \"accuracy_certified\": false, \"jobs\": {\"scanned\": {\"admitted\": {\"job\": \"e4f1e1b429b84762b595db98dd0628f3\", \"status_url\": \"/v1/jobs/e4f1e1b429b84762b595db98dd0628f3\", \"result_url\": \"/v1/jobs/e4f1e1b429b84762b595db98dd0628f3/result\"}, \"input_sha256\": \"5a3c9aee7fbf163e62207bd707bccd09dc776adb06ac6ebfe77337a4bd0e7444\", \"state\": {\"status\": \"requires_review\", \"error\": null, \"worker_exit\": 0, \"job_wall_seconds\": 494.2182320759166, \"updated_utc\": \"2026-10-22T19:37:42.444156+00:00\", \"progress\": {\"phase\": \"extraction\", \"page\": 2, \"expected_pages\": 2, \"completed_pages\": 1, \"model_loaded\": true}}, \"pass\": true}, \"hybrid\": {\"admitted\": {\"job\": \"559ec902c3084ccd93c1d51b69afe5a8\", \"status_url\": \"/v1/jobs/559ec902c3084ccd93c1d51b69afe5a8\", \"result_url\": \"/v1/jobs/559ec902c3084ccd93c1d51b69afe5a8/result\"}, \"input_sha256\": \"b37fcc478abf2b9e3687dc2ec9d5d247cf0d78fbb4dd8899f16476bf794fa6cf\", \"state\": {\"status\": \"requires_review\", \"error\": null, \"worker_exit\": 0, \"job_wall_seconds\": 375.5830298869405, \"updated_utc\": \"2026-10-22T19:43:58.040309+00:00\", \"progress\": {\"phase\": \"extraction\", \"page\": 2, \"expected_pages\": 2, \"completed_pages\": 1, \"model_loaded\": true}}, \"pass\": true}, \"overlimit\": {\"admitted\": {\"job\": \"5b208227b46e45d6a04df83ce05524b0\", \"status_url\": \"/v1/jobs/5b208227b46e45d6a04df83ce05524b0\", \"result_url\": \"/v1/jobs/5b208227b46e45d6a04df83ce05524b0/result\"}, \"input_sha256\": \"408d490ce0fbc06c9a6da9383bb7bd2e79e64aec84e68ebb916d5338544110e1\", \"state\": {\"status\": \"failed\", \"error\": \"page_limit\", \"worker_exit\": 1, \"job_wall_seconds\": 3.3826019009575248, \"updated_utc\": \"2026-10-22T19:44:01.437862+00:00\"}}}}\n",
+  "commands": [
+    {"args":["systemctl","is-active","corpus-api.service","corpus-django-staging.service","corpus-ocr-vl.service"],"exit":0,"stdout":"active\nactive\nactive\n","stderr":""},
+    {"args":["systemctl","is-enabled","corpus-ocr-vl.service"],"exit":0,"stdout":"enabled\n","stderr":""},
+    {"args":["systemctl","show","corpus-ocr-vl.service","-p","MemoryMax","-p","MemorySwapMax","-p","MemoryPeak","-p","NRestarts"],"exit":0,"stdout":"NRestarts=0\nMemoryPeak=6442450944\nMemoryMax=6442450944\nMemorySwapMax=3221225472\n","stderr":""}
+  ],
+  "memory_events_verbatim":"low 0\nhigh 0\nmax 157265\noom 0\noom_kill 0\noom_group_kill 0\n",
+  "result_readback": {
+    "scanned":{"file_sha256":"ad57f68b330a790d9f98499c00c7c0b859e4f41e4361ca7880c363288ec69510","expected_pages":2,"completed_pages":2,"text":"PRIMERA PAGINA\nContrato de prueba.\n\f\nSEGUNDA PAGINA\nNO PAGAR BS20.000.000","methods":["PaddleOCR-VL-1.6","PaddleOCR-VL-1.6"],"timings":{"preparation_seconds":0.8129131341120228,"load_seconds":148.13836307206657,"warmup_seconds":54.699243871029466,"extraction_sum_seconds":281.63998126913793,"worker_wall_seconds":488.804841469042}},
+    "hybrid":{"file_sha256":"d8e237a4335f54aa873cab8e50e1b2ea477c292e06fe6985517cbffff6d955ae","expected_pages":2,"completed_pages":2,"methods":["pdftotext","PaddleOCR-VL-1.6"],"timings":{"preparation_seconds":0.513773150043562,"load_seconds":156.3019555649953,"warmup_seconds":59.7997050289996,"extraction_sum_seconds":147.40505302499514,"worker_wall_seconds":369.7038231919287}}
+  },
+  "service_source_sha256":"ba6319aed537f601745e9d54c1156ce5ee2dd3da500581a94347fc4b64ce5e0f",
+  "runtime_seal":"c430bdc3be7b24257de8d8ac0af3df33ed7ad880f5e00e2a03734f007dfa5696",
+  "accuracy_certified":false,
+  "all_seven_tasks_closed":false
+}
