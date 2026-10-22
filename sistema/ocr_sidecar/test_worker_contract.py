@@ -61,6 +61,8 @@ class WorkerContract(unittest.TestCase):
             def command(args, timeout=30):
                 if "pdfinfo" in args[0]:
                     return "Pages: 2\nEncrypted: no\n"
+                if "pdfimages" in args[0]:
+                    return "page num type width height\n--------------------------\n"
                 if "pdftotext" in args[0]:
                     return native if args[2] == "1" else ""
                 Image.new("RGB", (64, 64), "black").save(args[-1] + ".png")
