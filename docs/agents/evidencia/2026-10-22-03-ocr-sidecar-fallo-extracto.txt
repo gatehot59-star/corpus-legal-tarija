@@ -1,0 +1,18 @@
+EXTRACTOS EXPLICITOS. No son los logs completos. Salida de dmesg filtrada por oom/killed process/corpus-ocr/memory cgroup, seguida de systemctl y stat capturados por SSH desde brain-env.
+
+[Thu Oct 22 19:09:13 2026] python invoked oom-killer: gfp_mask=0xcc0(GFP_KERNEL), order=0, oom_score_adj=0
+[Thu Oct 22 19:09:13 2026]  oom_kill_process+0x102/0x210
+[Thu Oct 22 19:09:13 2026] Memory cgroup stats for /system.slice/corpus-ocr-vl.service:
+[Thu Oct 22 19:09:13 2026] [  pid  ]   uid  tgid total_vm      rss rss_anon rss_file rss_shmem pgtables_bytes swapents oom_score_adj name
+[Thu Oct 22 19:09:13 2026] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=corpus-ocr-vl.service,mems_allowed=0,oom_memcg=/system.slice/corpus-ocr-vl.service,task_memcg=/system.slice/corpus-ocr-vl.service,task=python,pid=2248848,uid=2000
+[Thu Oct 22 19:09:13 2026] Memory cgroup out of memory: Killed process 2248848 (python) total-vm:7670308kB, anon-rss:5221388kB, file-rss:197800kB, shmem-rss:0kB, UID:2000 pgtables:13596kB oom_score_adj:0
+
+safe-stop, command results verbatim JSON:
+[{"args": ["sudo", "systemctl", "disable", "--now", "corpus-ocr-vl.service"], "exit": 0, "stdout": "", "stderr": "Removed \"/etc/systemd/system/multi-user.target.wants/corpus-ocr-vl.service\".\n"}, {"args": ["systemctl", "is-active", "corpus-api.service", "corpus-django-staging.service"], "exit": 0, "stdout": "active\nactive\n", "stderr": ""}, {"args": ["systemctl", "is-enabled", "corpus-ocr-vl.service"], "exit": 1, "stdout": "disabled\n", "stderr": ""}]
+SOCKET_EXISTS False
+
+Local trace summary excerpt, command python -m trace --count --summary --missing --coverdir trace-output --module unittest test_ocr_service test_worker_contract:
+Ran 46 tests in 5.301s
+OK
+  608    86%   ocr_service   (/home/user/work/corpus-ocr-20261022/ocr_service.py)
+  358    99%   test_ocr_service   (/home/user/work/corpus-ocr-20261022/test_ocr_service.py)
