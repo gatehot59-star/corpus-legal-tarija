@@ -1,0 +1,126 @@
+{
+  "captured_utc": "2026-10-22T17:34:03.369202+00:00",
+  "main": "c273c659ee90f2259f540cb14c576d6a16dcfb40",
+  "audit_base": "18fc28c080aee086bb07bf34f5d9b83f3c673b19",
+  "staging_git": "c0e44af31a54bc2f0ba8304fc6572467082b69d6",
+  "scope": "Documento pegado; main; fuentes oficiales; lectura de dos servicios VM. No inferencia nueva ni prueba HTTP productiva.",
+  "capture_limit": "Capturas completas conservadas en brain-env; Git publica este indice, instrumento y resultados completos del instrumento, no el cuerpo completo de todas las fuentes.",
+  "excluded": "Sin valores de credenciales, entorno de servicios, bases, datos privados ni pesos.",
+  "captures": [
+    {
+      "file": "surya-readme.txt",
+      "bytes": 26407,
+      "sha256": "fb88edcbac404f6836654fd4fbe1222ed367315e2d7c25d780d73c4223b1c891"
+    },
+    {
+      "file": "surya-recognition.txt",
+      "bytes": 15806,
+      "sha256": "6aa7ec482e83e2c41759e74d28f9ac33c8afc7ea8a58d930c446d8cb6f796e72"
+    },
+    {
+      "file": "surya-weights-license.txt",
+      "bytes": 14744,
+      "sha256": "b6be9042dce439368b606444256cd97624a97c67dfae33957b87c3a0b461ae03"
+    },
+    {
+      "file": "mineru-license.txt",
+      "bytes": 3301,
+      "sha256": "2d9aeb5d15159329a20dd804f251c64860ba954fbd26ec02f802220e6d71cf5c"
+    },
+    {
+      "file": "mineru-2605-card.txt",
+      "bytes": 15571,
+      "sha256": "8f829b69be518375b02023f795b3898adec98f5ac37208239884ad88e9a21cb7"
+    },
+    {
+      "file": "glm-card.txt",
+      "bytes": 6795,
+      "sha256": "172334449c3df98650bc9a42781c254c64c9d466b440e2ca8ce31f99829212b2"
+    },
+    {
+      "file": "glm-code-license.txt",
+      "bytes": 11338,
+      "sha256": "7cfe2db2477ee1e98b57ea1d8655aa8c39416022bab61aa4303e09af05495797"
+    },
+    {
+      "file": "paddle-license.txt",
+      "bytes": 11376,
+      "sha256": "3840c5c0c61c294264d2dd77b8777be6ddd90121ef4e0e64abcd22edea581d6e"
+    },
+    {
+      "file": "paddle-model-license.txt",
+      "bytes": 11376,
+      "sha256": "b8c4d7deccd236af023af1c88c4d4e8f0fc2f41914e0fb23a3ec9678fb5a8456"
+    },
+    {
+      "file": "paddle-ocr-class.txt",
+      "bytes": 23064,
+      "sha256": "fc870f7a7f1b33756020d75c63c6dc0dc04981df1ff46627a040336ead9a9b88"
+    },
+    {
+      "file": "paddle-vl-class.txt",
+      "bytes": 18227,
+      "sha256": "2a411338b652ca6534861f52b380bae03d4ebcdbd20d9806bfbc3c8d3ecb0c2b"
+    },
+    {
+      "file": "omni-readme.txt",
+      "bytes": 96525,
+      "sha256": "a799f3dabee0d8e2be9f990fc325c3fefadb8d7f8d0cf56148406547d495a3ad"
+    },
+    {
+      "file": "vm-code-read.json",
+      "bytes": 9871,
+      "sha256": "49474152bfe1ead86c9b5b6e60a7ae4db0628ec42b013079539ea27d713e4342"
+    },
+    {
+      "file": "vm-scan.json",
+      "bytes": 3143,
+      "sha256": "98cb8c896784531a018a6b3e377deea479f1fefc3a8e10cb63f9d71078c9fac7"
+    },
+    {
+      "file": "run100.py",
+      "bytes": 10366,
+      "sha256": "f4a3ca42cf694fc185ec1e0fc6d56cf8913b4d92d26fde260eb485948bbd182c"
+    },
+    {
+      "file": "pipeline.yaml",
+      "bytes": 1624,
+      "sha256": "8bc76c43c68b58f90e7ca8cc9b1414be0fff7437e2e3be52021dcd485830b9e1"
+    },
+    {
+      "file": "pipeline__ocr_masivo.py",
+      "bytes": 11064,
+      "sha256": "355b1c7d04c519e52a589f0f63ad89da8470faff7dfee56ba22be78d7d8592cd"
+    },
+    {
+      "file": "pipeline__genesis_bajar.py",
+      "bytes": 14438,
+      "sha256": "506cc1e04d65d4333c5774dee9ce3a09cfe65e575e7a34ffc5d84949066ebdc7"
+    },
+    {
+      "file": "pipeline__indexar_fts.py",
+      "bytes": 8370,
+      "sha256": "6fdd6442432f26e3c47518c7184e6627f894c81a5bf43a106056b3c7902595bc"
+    }
+  ],
+  "vm_summary": {
+    "files_scanned": 71,
+    "paddle_hits_only_in": [
+      "pipeline/gold_adjudicate.py",
+      "pipeline/benchmark_ocr_sample.py",
+      "pipeline/benchmark_ocr.py"
+    ],
+    "api_sha256": "01daf5e1cf7e75eb5adff0bdeb5fdd57af1ab5b3b79a5d56466b1179f34d5b48",
+    "api_engine_hits": [],
+    "ocr_masivo_sha256": "355b1c7d04c519e52a589f0f63ad89da8470faff7dfee56ba22be78d7d8592cd"
+  },
+  "probe_source": "import ast,inspect,json,pathlib\nD=pathlib.Path(__file__).parent\n# Contrato previo: conservar ambas paginas y cada texto, en orden; no ejecutar OCR.\npages=[{\"rec_texts\":[\"PAGINA_UNO\"],\"rec_scores\":[0.99]}, {\"rec_texts\":[\"NO AUTORIZADO; Bs 20.000.000\"],\"rec_scores\":[0.98]}]\nexpected=[\"PAGINA_UNO\",\"NO AUTORIZADO; Bs 20.000.000\"]\ndef complete(p): return [s for page in p for s in page.get(\"rec_texts\",[])]\ndef supplied(p): return p[0].get(\"rec_texts\",[])\ndef check(v): return v==expected\nassert check(complete(pages))\nassert not check(supplied(pages))\nresult={\"scope\":\"aislamiento de expresiones del ejemplo, no FastAPI ni inferencia\",\"multipage\":{\"expected\":expected,\"positive\":complete(pages),\"candidate\":supplied(pages),\"positive_pass\":check(complete(pages)),\"candidate_pass\":check(supplied(pages)),\"declared_pages\":len(pages),\"serialized_pages\":1}}\n# Control con una pagina: el mismo candidato conserva su contenido.\nassert supplied(pages[:1])==[\"PAGINA_UNO\"]\nresult[\"single_page_control\"]=True\ntry:supplied([])\nexcept IndexError:result[\"empty_result\"]=\"IndexError\"\n# Construir SOLO la firma publicada: sin imports, modelos o efectos del proveedor.\ntree=ast.parse((D/\"surya-recognition.txt\").read_text())\ncls=next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name==\"RecognitionPredictor\")\nfn=next(n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name==\"__call__\")\nfn.body=[ast.Pass()];fn.decorator_list=[];fn.returns=None\nfor arg in [*fn.args.posonlyargs,*fn.args.args,*fn.args.kwonlyargs]:arg.annotation=None\nmodule=ast.fix_missing_locations(ast.Module(body=[fn],type_ignores=[]));ns={};exec(compile(module,\"official-signature-only\",\"exec\"),ns)\nsig=inspect.signature(ns[\"__call__\"]);sig.bind(object(),images=[object()])\nresult[\"surya_signature\"]={\"signature\":str(sig),\"positive_bind\":True}\ntry:sig.bind(object(),images=[object()],langs=[[\"es\"]],det_predictions=[])\nexcept TypeError as e:result[\"surya_signature\"][\"candidate_rejected\"]=str(e)\nelse:raise AssertionError(\"negative should reject unsupported keywords\")\nprint(json.dumps(result,ensure_ascii=False,indent=2))\n",
+  "probe_exit": 0,
+  "probe_stdout": "{\n  \"scope\": \"aislamiento de expresiones del ejemplo, no FastAPI ni inferencia\",\n  \"multipage\": {\n    \"expected\": [\n      \"PAGINA_UNO\",\n      \"NO AUTORIZADO; Bs 20.000.000\"\n    ],\n    \"positive\": [\n      \"PAGINA_UNO\",\n      \"NO AUTORIZADO; Bs 20.000.000\"\n    ],\n    \"candidate\": [\n      \"PAGINA_UNO\"\n    ],\n    \"positive_pass\": true,\n    \"candidate_pass\": false,\n    \"declared_pages\": 2,\n    \"serialized_pages\": 1\n  },\n  \"single_page_control\": true,\n  \"empty_result\": \"IndexError\",\n  \"surya_signature\": {\n    \"signature\": \"(self, images, layout_results=None, *, full_page=None)\",\n    \"positive_bind\": true,\n    \"candidate_rejected\": \"got an unexpected keyword argument 'langs'\"\n  }\n}\n",
+  "probe_stderr": "",
+  "gates": {
+    "I": "PASA para pruebas de expresiones y firma; inferencia/HTTP N/A a esas pruebas",
+    "II": "Revision documental y codigo, no certificacion productiva",
+    "III": "INCOMPLETA: sin main ni Nexus; readback Git y Doc por comprobar al publicar"
+  }
+}
