@@ -9,6 +9,7 @@ import http.client
 import http.server
 import importlib.metadata
 import json
+import math
 import os
 from pathlib import Path
 import queue
@@ -34,10 +35,20 @@ MAX_QUEUE = 4
 JOB_TIMEOUT = 7200
 RETENTION = 86400
 PINS = {"paddleocr": "3.7.0", "paddlex": "3.7.2", "paddlepaddle": "3.3.1",
-        "Pillow": "12.3.0"}
+        "Pillow": "13.0.0"}
 MODES = {"auto", "ocr", "txt"}
 REVIEW = "requires_review"
 ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
+MODEL_REVISIONS = {
+    "PaddlePaddle/PaddleOCR-VL-1.6": ("vl", "c5630abae1d940eafe0697512a0325494b02ab42"),
+    "PaddlePaddle/PP-DocLayoutV3": ("layout", "241f8bdfc77a7c7bee915a5057aaee58c235a8d3"),
+}
+
+
+def canonical_hash(value):
+    """Hash the effective JSON configuration, not its pre-rewrite YAML template."""
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
+                                    allow_nan=False, separators=(",", ":")).encode()).hexdigest()
 
 
 def now():
@@ -107,7 +118,8 @@ def legal_alerts(text):
 
 def check_reference(text, expected):
     """Verify explicit anchored reference fragments; not a general OCR oracle."""
-    absent = [fragment for fragment in expected if fragment not in text]
+    absent = [fragment for fragment in expected
+              if not re.search(r"(?<!\w)" + re.escape(fragment) + r"(?!\w|[.,]\d)", text)]
     return {"pass": not absent, "missing": absent}
 
 
@@ -115,16 +127,30 @@ def blocks_from_raw(raw):
     """Preserve every parsing block and native order, including table markup."""
     if isinstance(raw, str):
         raw = json.loads(raw)
+    if not isinstance(raw, dict):
+        raise ValueError("invalid_raw")
     obj = raw.get("res", raw)
-    if not isinstance(obj.get("parsing_res_list"), list):
+    if not isinstance(obj, dict) or not isinstance(obj.get("parsing_res_list"), list):
         raise ValueError("missing_parsing_blocks")
     blocks = []
     for i, block in enumerate(obj["parsing_res_list"]):
+        if not isinstance(block, dict):
+            raise ValueError("invalid_block")
         content = block.get("block_content")
         if not isinstance(content, str):
             raise ValueError("invalid_block_text")
-        blocks.append({"index": i, "label": block.get("block_label", "unknown"),
-                       "text": content, "bbox": block.get("block_bbox"),
+        label, bbox = block.get("block_label"), block.get("block_bbox")
+        if not isinstance(label, str) or not label or len(label) > 128:
+            raise ValueError("invalid_block_label")
+        # Missing geometry is explicit, never invented. Present geometry is bounded.
+        if bbox is not None:
+            if (not isinstance(bbox, (list, tuple)) or len(bbox) != 4
+                    or any(type(v) not in (int, float) or not math.isfinite(v)
+                           or not 0 <= v <= MAX_PIXELS for v in bbox)
+                    or bbox[0] > bbox[2] or bbox[1] > bbox[3]):
+                raise ValueError("invalid_block_bbox")
+        blocks.append({"index": i, "label": label,
+                       "text": content, "bbox": bbox,
                        "source_block_id": block.get("block_id"),
                        "source_order": block.get("block_order")})
     return blocks
@@ -221,6 +247,38 @@ def prepare_pages(source, kind, mode, work):
     return pages
 
 
+def model_paths(root, sealed):
+    """Confine every sealed relative file to an exact model revision, without symlinks."""
+    if not isinstance(sealed, list) or len(sealed) != len(MODEL_REVISIONS):
+        raise ValueError("invalid_model_manifest")
+    seen, paths = set(), []
+    for model in sealed:
+        repo = model.get("repo")
+        if repo not in MODEL_REVISIONS or repo in seen:
+            raise ValueError("invalid_model_manifest")
+        seen.add(repo)
+        folder, revision = MODEL_REVISIONS[repo]
+        if model.get("revision") != revision or not model.get("files"):
+            raise ValueError("invalid_model_revision")
+        base = Path(root) / "models" / folder
+        entries = set()
+        for entry in model["files"]:
+            relative = Path(entry["path"])
+            if (relative.is_absolute() or ".." in relative.parts or not relative.parts
+                    or str(relative) in entries
+                    or not re.fullmatch(r"[0-9a-f]{64}", entry["sha256"])):
+                raise ValueError("unsafe_model_path")
+            entries.add(str(relative))
+            path = base / relative
+            for component in (path, *path.parents):
+                if component.is_symlink():
+                    raise ValueError("unsafe_model_symlink")
+            if not path.resolve().is_relative_to(base.resolve()) or not path.is_file():
+                raise ValueError("unsafe_model_path")
+            paths.append((path, entry["sha256"]))
+    return paths
+
+
 def verify_runtime(root):
     """Verify pinned packages and all sealed model files before admitting jobs."""
     for name, version in PINS.items():
@@ -230,15 +288,21 @@ def verify_runtime(root):
         if not Path("/usr/bin", tool).is_file():
             raise ValueError("missing_parser")
     sealed = read_json(root / "models.json")
-    for model in sealed:
-        folder = "layout" if "DocLayout" in model["repo"] else "vl"
-        for entry in model["files"]:
-            path = root / "models" / folder / entry["path"]
-            if path.is_symlink() or not path.is_file() or digest(path) != entry["sha256"]:
-                raise ValueError("model_hash_mismatch")
+    for path, expected in model_paths(root, sealed):
+        if digest(path) != expected:
+            raise ValueError("model_hash_mismatch")
     return {"packages": PINS, "models": [
         {"repo": m["repo"], "revision": m["revision"]} for m in sealed],
+        "manifest_sha256": digest(root / "models.json"),
         "config_sha256": digest(root / "pipeline.yaml")}
+
+
+def verify_job_runtime(runtime, request):
+    """Rehash the installed models immediately before each job, against its admission seal."""
+    installation = verify_runtime(runtime)
+    if canonical_hash(installation) != request["runtime_seal"]:
+        raise ValueError("runtime_changed")
+    return installation
 
 
 def worker(job, runtime):
@@ -249,6 +313,7 @@ def worker(job, runtime):
     resource.setrlimit(resource.RLIMIT_FSIZE, (64 * 1024 * 1024,) * 2)
     resource.setrlimit(resource.RLIMIT_NOFILE, (256, 256))
     request = read_json(job / "request.json")
+    installation = verify_job_runtime(runtime, request)
     source = job / "input"
     if digest(source) != request["input_sha256"]:
         raise ValueError("input_changed")
@@ -317,14 +382,18 @@ def worker(job, runtime):
             pages.append(page)
             atomic(job / "partial.json", {"status": "incomplete", "pages": pages,
                                          "expected_pages": len(plan), "fidelity_certified": False})
+        if digest(source) != request["input_sha256"]:
+            raise ValueError("input_changed")
         result = complete_document(pages, len(plan))
         result["provenance"] = {
             "source_sha256": request["input_sha256"], "mode": request["mode"],
             "engine": "PaddleOCR-VL-1.6" if pipeline else "pdftotext",
             "device": "cpu" if pipeline else None, "packages": PINS,
-            "configuration": configuration, "configuration_sha256": digest(runtime / "pipeline.yaml"),
-            "models": [{"repo": m["repo"], "revision": m["revision"]}
-                       for m in read_json(runtime / "models.json")],
+            "configuration": configuration,
+            "effective_configuration_sha256": canonical_hash(configuration),
+            "template_configuration_sha256": installation["config_sha256"],
+            "runtime_seal": request["runtime_seal"],
+            "models": installation["models"],
             "code_sha256": digest(__file__), "completed_utc": now(),
             "timings": {"preparation_seconds": preparation, "load_seconds": load_seconds,
                         "warmup_seconds": warmup_seconds,
@@ -346,13 +415,11 @@ class Jobs:
         self.failure = None
         self.stopping = False
         self.installation = verify_runtime(self.runtime)
+        self.runtime_seal = canonical_hash(self.installation)
         self.config_stat = self.identity(self.runtime / "pipeline.yaml")
-        self.model_stats = {}
-        for model in read_json(self.runtime / "models.json"):
-            folder = "layout" if "DocLayout" in model["repo"] else "vl"
-            for item in model["files"]:
-                p = self.runtime / "models" / folder / item["path"]
-                self.model_stats[str(p)] = self.identity(p)
+        self.model_stats = {str(p): self.identity(p) for p, _ in model_paths(
+            self.runtime, read_json(self.runtime / "models.json"))}
+        self.model_stats[str(self.runtime / "models.json")] = self.identity(self.runtime / "models.json")
         for directory in self.root.iterdir():
             if directory.is_dir() and ID_PATTERN.fullmatch(directory.name):
                 state_path = directory / "state.json"
@@ -367,7 +434,7 @@ class Jobs:
     def identity(path):
         """Detect runtime replacement after initial full hash validation."""
         s = Path(path).stat()
-        return (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns)
+        return (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
 
     def ready(self):
         """Report launch readiness, not a continuously resident/warmed model."""
@@ -391,6 +458,10 @@ class Jobs:
     def admit(self, stream, length, mode):
         """Copy a bounded body inside cleanup protection and admit only complete uploads."""
         with self.lock:
+            if mode not in MODES or not 0 < length <= MAX_BYTES:
+                raise ValueError("invalid_request")
+            if not self.ready():
+                raise ValueError("runtime_unavailable")
             self.expire()
             if self.queue.full() or len(list(self.root.iterdir())) >= MAX_JOBS:
                 raise OverflowError("queue_or_storage_limit")
@@ -410,7 +481,8 @@ class Jobs:
                     kind = input_kind(f.read(16))
                 atomic(directory / "request.json",
                        {"mode": mode, "kind": kind, "input_sha256": digest(directory / "input"),
-                        "submitted_utc": now(), "bytes": length})
+                        "submitted_utc": now(), "bytes": length,
+                        "runtime_seal": self.runtime_seal})
                 atomic(directory / "state.json", {"status": "queued", "updated_utc": now()})
                 self.queue.put_nowait(ident)
                 return ident
@@ -449,6 +521,9 @@ class Jobs:
                     status, error = "failed", "timeout" if code == -9 else "worker_failed"
                     if code != -9 and (directory / "error.json").exists():
                         error = read_json(directory / "error.json")["error"]
+                    if error in ("ModuleNotFoundError", "ImportError", "FileNotFoundError",
+                                 "runtime_changed", "model_hash_mismatch"):
+                        self.failure = "runtime_unavailable"
                 atomic(directory / "state.json", {
                     "status": status, "error": error, "worker_exit": code,
                     "job_wall_seconds": time.monotonic() - t, "updated_utc": now()})
