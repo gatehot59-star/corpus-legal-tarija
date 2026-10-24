@@ -1,0 +1,103 @@
+{
+  "schema": "corpus-first-batch-check/1",
+  "captured_utc": "2026-10-24T05:37:41.215814+00:00",
+  "scope": "read first job only; no restart, retries, production writes or fidelity adjudication",
+  "batch_number": 1,
+  "job": "8cbfcde8623a4827aa679acde29fbcca",
+  "source_uid": "dep-tar-compilado-de-sin-numero-2013-6b9dcffa",
+  "source_sha256": "6b9dcffaffdfb997dc4227dea2d89d0a01b4474d6c00abfa4bb4152ca4750784",
+  "submitted_input_sha256": "6d243b8fba9b238e421280c343cd6336228de8e2a9795f68c09d0a97d47b7cd0",
+  "requested_pages": [1, 2, 3, 4],
+  "partial_pages": [1, 2],
+  "state": {
+    "status": "failed",
+    "error": "timeout",
+    "worker_exit": -9,
+    "timed_out": true,
+    "signal": 9,
+    "job_wall_seconds": 7200.8110510339975,
+    "updated_utc": "2026-10-24T04:22:44.190023+00:00"
+  },
+  "progress": {
+    "phase": "failed",
+    "expected_pages": 4,
+    "completed_pages": 2,
+    "error": "timeout",
+    "updated_utc": "2026-10-24T04:22:44.182661+00:00"
+  },
+  "run_outcome": {
+    "status": "stopped_incomplete",
+    "started_utc": "2026-10-24T02:22:40.901997+00:00",
+    "finished_utc": "2026-10-24T04:22:47.987056+00:00",
+    "completed_jobs": 0,
+    "completed_pages": 0,
+    "vl_inferences": 0,
+    "wall_seconds": 7207.085081701996,
+    "resources_before_teardown": {
+      "path": "/sys/fs/cgroup/system.slice/corpus-ocr-reported125-_la5lozi.service",
+      "memory.current": "23646208\n",
+      "memory.peak": "6442450944\n",
+      "memory.swap.current": "21135360\n",
+      "memory.swap.peak": "2999431168\n",
+      "memory.events": "low 0\nhigh 0\nmax 164198\noom 0\noom_kill 0\noom_group_kill 0\n",
+      "cpu.stat": "usage_usec 6375326448\nuser_usec 5082317377\nsystem_usec 1293009070\nnice_usec 5080058902\nnr_periods 72036\nnr_throttled 264\nthrottled_usec 549976\nnr_bursts 0\nburst_usec 0\n"
+    },
+    "teardown": {"actions": [], "server_exit": -15, "remaining_workers": []}
+  },
+  "counter_caveat": "completed_pages/vl_inferences count fully accepted jobs; two fresh page outputs exist in partial.json, despite those counters being zero",
+  "poll_transitions": [
+    {"utc": "2026-10-24T02:22:43.386115+00:00", "state": {"status": "running", "updated_utc": "2026-10-24T02:22:43.377493+00:00"}},
+    {"utc": "2026-10-24T02:22:53.435360+00:00", "state": {"status": "running", "updated_utc": "2026-10-24T02:22:43.377493+00:00", "progress": {"phase": "loading", "expected_pages": 4, "completed_pages": 0}}},
+    {"utc": "2026-10-24T02:26:24.699219+00:00", "state": {"status": "running", "updated_utc": "2026-10-24T02:22:43.377493+00:00", "progress": {"phase": "extraction", "page": 1, "expected_pages": 4, "completed_pages": 0, "model_loaded": true}}},
+    {"utc": "2026-10-24T03:15:18.171267+00:00", "state": {"status": "running", "updated_utc": "2026-10-24T02:22:43.377493+00:00", "progress": {"phase": "extraction", "page": 2, "expected_pages": 4, "completed_pages": 1, "model_loaded": true}}},
+    {"utc": "2026-10-24T04:12:56.151671+00:00", "state": {"status": "running", "updated_utc": "2026-10-24T02:22:43.377493+00:00", "progress": {"phase": "extraction", "page": 3, "expected_pages": 4, "completed_pages": 2, "model_loaded": true}}},
+    {"utc": "2026-10-24T04:22:47.872821+00:00", "state": {"status": "failed", "error": "timeout", "worker_exit": -9, "timed_out": true, "signal": 9, "job_wall_seconds": 7200.8110510339975, "updated_utc": "2026-10-24T04:22:44.190023+00:00", "progress": {"phase": "failed", "expected_pages": 4, "completed_pages": 2, "error": "timeout", "updated_utc": "2026-10-24T04:22:44.182661+00:00"}}}
+  ],
+  "poll_count": 1437,
+  "poll_file_sha256": "5b1591f7d172a540bf07782b100de2f5b6e64e16f815dca165f23ad3bfb6e4a7",
+  "job_files": [
+    {"name": "partial.json", "bytes": 18283, "sha256": "789049f57e73bbb8615d98e1c52faeca95c6ec13171cd41ab31ea0ee3bc6f0ad"},
+    {"name": "progress.json", "bytes": 134, "sha256": "5c58d8f9a7414a53d45e00dfe4545c1cdfe95880ebacf6d9aeaaaaed9067aa31"},
+    {"name": "raw-0001.json", "bytes": 11829, "sha256": "61cc418dd70ac49ef5eec82f911f8b8b8962b462c9d73b8b9e460d42c2e81563"},
+    {"name": "raw-0002.json", "bytes": 12291, "sha256": "b30904a7b039a9f46e7a3fba9c6dae3dd3200bde904401966a3d3b9657914f47"},
+    {"name": "request.json", "bytes": 269, "sha256": "d73c29d3981117e5b3bb25e5ad909a32d46d90ccbb9898c4b0259fc96b50432f"},
+    {"name": "state.json", "bytes": 183, "sha256": "9a45d051bb936a94cb277be37d42708dd174cb9d49efb83b1abebca3b76c6cde"},
+    {"name": "worker.log", "bytes": 2701, "sha256": "d2e88fc974aa819752abc9bfdbe07004fc13af866405387505a8ea1ffb2e2394"}
+  ],
+  "archive_files_verified_byte_equal": 8,
+  "verification": {
+    "positive": {
+      "integrity": "PASS", "execution": "FAIL_TIMEOUT", "completed_jobs": 0, "partial_pages_preserved": 2,
+      "pages": [
+        {"source_page": 1, "utf8_bytes": 2969, "characters": 2919, "blocks": 19, "text_sha256": "2d0c3ec7d53981d5cecc5ef9b688bde0d0db81711834dfdb31bc91c24663e3b7", "extraction_seconds": 2934.823720114, "review": "pending"},
+        {"source_page": 2, "utf8_bytes": 3424, "characters": 3379, "blocks": 19, "text_sha256": "18f00f6f44b7c60dab277890027409624f593200e0885e29a645c1796b7fba79", "extraction_seconds": 3457.8997809939974, "review": "pending"}
+      ],
+      "legal_fidelity": "NO MEDIDO", "visual_comparison_performed": false
+    },
+    "negative_controls": [
+      {"mutant": "missing_partial_page", "rejected": "partial_coverage"},
+      {"mutant": "wrong_raw_text", "rejected": "raw_disagreement"},
+      {"mutant": "false_timeout", "rejected": "timeout_evidence"},
+      {"mutant": "changed_archive", "rejected": "archive_changed"},
+      {"mutant": "fidelity_certified", "rejected": "partial_status"}
+    ],
+    "operator": "same operator; independent of candidate validation code, not external audit"
+  },
+  "verification_exit": 0,
+  "verification_instrument_sha256": "098364ec149c58be69d2ef1a6d94e23724a85e58d548d101fceca6c387898acd",
+  "product_code_sha256": "ba6319aed537f601745e9d54c1156ce5ee2dd3da500581a94347fc4b64ce5e0f",
+  "product_services": [
+    {"unit": "corpus-api.service", "pid": 726, "state": "active/running", "restarts": 0},
+    {"unit": "corpus-django-staging.service", "pid": 727, "state": "active/running", "restarts": 0},
+    {"unit": "corpus-ocr-vl.service", "pid": 739, "state": "active/running", "restarts": 0}
+  ],
+  "experimental_processes": [], "process_scan_errors": [],
+  "full_capture": {
+    "path": "/workspace/corpus-ocr-reported125-check-20261024-0236/first-batch-evidence.json",
+    "bytes": 140649,
+    "sha256": "56c06ae7b70e17268b0f5e4ac526e308883148db0887f25895fe545f7e590645",
+    "status_sha256": "9ab799a57d2c835ffdc9b7f23b313ebcae452ebf57a61ff8da7623bc6d7f8a08",
+    "contains_full_partial_and_raw_json": true,
+    "published_here": "structured status and hashes only; full capture retained on brain-env and VM"
+  }
+}
