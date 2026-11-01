@@ -73,3 +73,13 @@ Gate II, informe: PASA en el alcance seleccionado. Distingue diseño, seguimient
 Gate III, entrega: INCOMPLETA al crear este archivo. Falta adjuntar/verificar el paquete de evidencia y cerrar Doc/Nexus. Se actualizará sólo después de comprobarlos. El veredicto experimental no depende de simular ese cierre.
 
 Paquete preparado: evidencia seleccionada sin truncar los archivos incluidos, 179.702 bytes, SHA256 5227f193d7d4cf29b4f59a046123e5448ef58fb6030ebe6822ac151ff10034ac. Compresión reversible XZ+base64. Incluye fuentes del piloto, salidas crudas seleccionadas, estados, configuración, evento OOM y controles. Excluye binarios, metadatos auxiliares de instalación, mensajes ajenos y credenciales. El servicio instalado se referencia por Git inmutable con identidad de bytes comprobada. La selección y las exclusiones están dentro del paquete.
+
+## Cierre comprobado, 1-nov-2026
+
+Informe y selección de evidencia publicados en main en f937fe3cf4a5346287adc341fa5d4cc501da8ce2. Se recuperaron por Contents API y raw; ambas vías dieron los mismos bytes y sus blobs Git coincidieron. El script reducido extraído de Git coincide byte a byte con public_controls.py ejecutado localmente y volvió a producir el mismo stdout, exit0 y stderr vacío. Se compararon seis bloques JSON GPU publicados contra los archivos originales.
+
+[Doc público de la auditoría](https://app.clickup.com/90171457413/docs/2kza6fw5-26077), ubicado en Space > Doc, creado y leído de vuelta. Continuidad propia registrada en Nexus, reporte140. No se marcaron trabajos ajenos terminados ni se cambiaron mensajes.
+
+Nueva lectura terminal a2026-11-01T04:35:51.313072+00:00: piloto CPU failed/oom-kill sin PID; GPU COMPLETE; OCR/API/staging activos con los mismos inicios y cero reinicios automáticos. Cero nuevas inferencias en la auditoría.
+
+**Gate III sigue INCOMPLETA por una razón concreta:** el paquete ampliado íntegro no se publicó en Git. Sí están publicados y comprobados el informe y la selección explícita de capturas y controles. El paquete local de179.702bytes y su SHA indicado arriba quedan registrados en Nexus para continuidad. No se atribuye este pendiente al producto, a falta de permisos ni a una caída de las conexiones. No se presenta la selección como captura completa ni se firma aprobación de producción.
