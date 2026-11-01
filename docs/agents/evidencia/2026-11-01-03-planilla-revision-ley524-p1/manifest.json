@@ -1,0 +1,459 @@
+{
+ "schema": "corpus-human-review-sheet-v1",
+ "status": "pendiente de revisión humana",
+ "purpose": "Revisión humana de la referencia IA de la Ley 524, página 1 (h01-p001), para congelar un gold humano",
+ "reference": {
+  "file": "benchmarks/ocr-heldout-20261015/gold-ai-v1.json",
+  "git_commit": "05ecc45c4beca50cd28ca45f2d4bfc371b0c6049",
+  "file_sha256": "36097a8dcb63e601cf3a3108d63fb9178a3d57067019c5b9c9e4d4c3331806d7",
+  "page_id": "h01-p001",
+  "human_review": false,
+  "text_chars": 2854,
+  "text_sha256": "12ded3ed113cf7dcd9c1c34335c7d0ec080175430a083a1c83a3f4b428de83fd",
+  "lines_total": 35,
+  "lines_nonempty": 24,
+  "empty_line_index": [
+   3,
+   6,
+   9,
+   12,
+   16,
+   18,
+   20,
+   22,
+   24,
+   26,
+   28
+  ]
+ },
+ "lines": [
+  {
+   "id": "R01",
+   "line_index": 0,
+   "text": "ASAMBLEA LEGISLATIVA"
+  },
+  {
+   "id": "R02",
+   "line_index": 1,
+   "text": "DEPARTAMENTAL DE"
+  },
+  {
+   "id": "R03",
+   "line_index": 2,
+   "text": "TARIJA"
+  },
+  {
+   "id": "R04",
+   "line_index": 4,
+   "text": "LEY DEPARTAMENTAL N° 524"
+  },
+  {
+   "id": "R05",
+   "line_index": 5,
+   "text": "9 de octubre de 2026"
+  },
+  {
+   "id": "R06",
+   "line_index": 7,
+   "text": "Abg. María René Soruco Campero"
+  },
+  {
+   "id": "R07",
+   "line_index": 8,
+   "text": "GOBERNADORA DEL DEPARTAMENTO DE TARIJA"
+  },
+  {
+   "id": "R08",
+   "line_index": 10,
+   "text": "ASAMBLEA LEGISLATIVA DEPARTAMENTAL DE TARIJA"
+  },
+  {
+   "id": "R09",
+   "line_index": 11,
+   "text": "Por cuanto la Asamblea Legislativa Departamental de Tarija, ha sancionado la presente Ley Departamental:"
+  },
+  {
+   "id": "R10",
+   "line_index": 13,
+   "text": "\"LEY DEPARTAMENTAL PRESUPUESTO INSTITUCIONAL, PLAN OPERATIVO ANUAL"
+  },
+  {
+   "id": "R11",
+   "line_index": 14,
+   "text": "(POA) Y PRESUPUESTO INSTITUCIONAL ANUAL 2027 DEL GOBIERNO AUTÓNOMO"
+  },
+  {
+   "id": "R12",
+   "line_index": 15,
+   "text": "DEPARTAMENTAL DE TARIJA\""
+  },
+  {
+   "id": "R13",
+   "line_index": 17,
+   "text": "Artículo 1. (Objeto). - La presente Ley Departamental tiene por objeto aprobar el Presupuesto Institucional, el Plan Operativo Anual (POA) y el Presupuesto Institucional Anual 2027 del Gobierno Autónomo Departamental de Tarija."
+  },
+  {
+   "id": "R14",
+   "line_index": 19,
+   "text": "Artículo 2. (Ámbito de Aplicación). - La presente Ley es de aplicación obligatoria para todas las unidades organizacionales que forman parte de la estructura del Gobierno Autónomo Departamental de Tarija, así como todas las instituciones, entidades y/u organizaciones que perciben recursos económicos provenientes de los ingresos del Gobierno Autónomo Departamental de Tarija."
+  },
+  {
+   "id": "R15",
+   "line_index": 21,
+   "text": "Artículo 3. (Responsabilidad). - La Máxima Autoridad Ejecutiva (MAE) del Órgano Ejecutivo Departamental es responsable del uso, administración, ejecución, cumplimiento de objetivos, metas y resultados establecidos en el Plan Operativo Anual y Presupuesto Institucional correspondiente a la Gestión 2027, para lo cual deberá observar las disposiciones contenidas en la presente Ley y demás normativa vigente."
+  },
+  {
+   "id": "R16",
+   "line_index": 23,
+   "text": "Artículo 4. (Plan Operativo Anual). - Aprobar el Plan Operativo Anual (POA) del Gobierno Autónomo Departamental de Tarija, para la Gestión Fiscal comprendida desde el 1 de enero al 31 de diciembre de 2027, el mismo que en anexo forma parte integral e indisoluble de la presente Ley."
+  },
+  {
+   "id": "R17",
+   "line_index": 25,
+   "text": "Artículo 5. (Presupuesto Institucional Gestión 2027). - Aprobar el Presupuesto Institucional para la Gestión Fiscal 2027 del Gobierno Autónomo Departamental de Tarija, por Bs. 595.477.378. (quinientos noventa y cinco millones cuatrocientos setenta y siete mil trescientos setenta y ocho 00/100 Bolivianos), según el detalle de recursos y gastos consignados en el documento anexo, que contiene los recursos y fuentes asignados para financiar Proyectos de Inversión, Programas, Transferencias de Capital, Gasto Corriente Institucional, Transferencias Corrientes, Servicio de la Deuda y Activos Financieros que constituyen parte integral e indisoluble de la presente Ley."
+  },
+  {
+   "id": "R18",
+   "line_index": 27,
+   "text": "Artículo 6. (Presupuesto de la Asamblea Legislativa Departamental de Tarija). - Aprobar el presupuesto asignado al Órgano Legislativo Departamental de Tarija por un monto de Bs. 17,568,575.- (diecisiete millones quinientos sesenta y ocho mil quinientos setenta y cinco 00/100 Bolivianos)."
+  },
+  {
+   "id": "R19",
+   "line_index": 29,
+   "text": "Telf. : 6113312"
+  },
+  {
+   "id": "R20",
+   "line_index": 30,
+   "text": "Fax : 6113308"
+  },
+  {
+   "id": "R21",
+   "line_index": 31,
+   "text": "www.aldt.gob"
+  },
+  {
+   "id": "R22",
+   "line_index": 32,
+   "text": "Tarija - Bolivia"
+  },
+  {
+   "id": "R23",
+   "line_index": 33,
+   "text": "Calle Sucre Esq. La Madrid"
+  },
+  {
+   "id": "R24",
+   "line_index": 34,
+   "text": "(Plaza Luis de Fuentes y Vargas)"
+  }
+ ],
+ "scan": {
+  "source": "PDF oficial Ley 524 adjunto en ClickUp (attachment:1a7e60a8-3b63-4c22-acff-e4ff06a754c1.pdf)",
+  "pdf_sha256": "29085b9662453ccd51daea02c10bde124b8e0c91adc712d9d6f3f88c8c92b946",
+  "render": "pdftoppm -f 1 -l 1 -r 300 -gray -singlefile -png",
+  "size": [
+   2520,
+   3888
+  ],
+  "pixel_sha256_rgb": "7e71fb47a5464b0ad49ecd5d6f6f2b867e36492b8524b2a37887216e00d5a870",
+  "pixel_identical_to_benchmark_image": true
+ },
+ "bands": [
+  {
+   "id": "F1",
+   "title": "Encabezado, número de ley, fecha y gobernadora",
+   "cut_y": [
+    0,
+    995
+   ],
+   "crop_box": [
+    0,
+    0,
+    2520,
+    1015
+   ],
+   "layout_blocks": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "lines": [
+    "R01",
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06",
+    "R07"
+   ],
+   "line_index": [
+    0,
+    1,
+    2,
+    4,
+    5,
+    7,
+    8
+   ],
+   "pixel_sha256_gray": "1f8a8ab125f061d8e339978d90c6748f3215e5b2a5783e30884e3956f130b43c"
+  },
+  {
+   "id": "F2",
+   "title": "Promulgación y título de la ley",
+   "cut_y": [
+    995,
+    1503
+   ],
+   "crop_box": [
+    0,
+    975,
+    2520,
+    1523
+   ],
+   "layout_blocks": [
+    5,
+    6
+   ],
+   "lines": [
+    "R08",
+    "R09",
+    "R10",
+    "R11",
+    "R12"
+   ],
+   "line_index": [
+    10,
+    11,
+    13,
+    14,
+    15
+   ],
+   "pixel_sha256_gray": "4bb085db9dd00de5c7dc80ec380216b891a2d8b3fa9e927f88002bc599f6b18f"
+  },
+  {
+   "id": "F3",
+   "title": "Artículo 1",
+   "cut_y": [
+    1503,
+    1758
+   ],
+   "crop_box": [
+    0,
+    1483,
+    2520,
+    1778
+   ],
+   "layout_blocks": [
+    7
+   ],
+   "lines": [
+    "R13"
+   ],
+   "line_index": [
+    17
+   ],
+   "pixel_sha256_gray": "7dbd94c5064986ad86ecfc29ddf09b1afc79d5492a6af8f91c3299df522288c3"
+  },
+  {
+   "id": "F4",
+   "title": "Artículo 2",
+   "cut_y": [
+    1758,
+    2075
+   ],
+   "crop_box": [
+    0,
+    1738,
+    2520,
+    2095
+   ],
+   "layout_blocks": [
+    8
+   ],
+   "lines": [
+    "R14"
+   ],
+   "line_index": [
+    19
+   ],
+   "pixel_sha256_gray": "73a54f422f17808722e3b2bff9477eba812a037689bb5501234732ced8f8589e"
+  },
+  {
+   "id": "F5",
+   "title": "Artículo 3",
+   "cut_y": [
+    2075,
+    2455
+   ],
+   "crop_box": [
+    0,
+    2055,
+    2520,
+    2475
+   ],
+   "layout_blocks": [
+    9
+   ],
+   "lines": [
+    "R15"
+   ],
+   "line_index": [
+    21
+   ],
+   "pixel_sha256_gray": "7bdec98c656f681fc7a249219ad42139b0901d3f2f577997dcf033920a70b510"
+  },
+  {
+   "id": "F6",
+   "title": "Artículo 4",
+   "cut_y": [
+    2455,
+    2710
+   ],
+   "crop_box": [
+    0,
+    2435,
+    2520,
+    2730
+   ],
+   "layout_blocks": [
+    10
+   ],
+   "lines": [
+    "R16"
+   ],
+   "line_index": [
+    23
+   ],
+   "pixel_sha256_gray": "4c4736099eaa947420801aacc613a1ad6d50a8a79d11d4ae9856ed6bffeeb831"
+  },
+  {
+   "id": "F7",
+   "title": "Artículo 5",
+   "cut_y": [
+    2710,
+    3216
+   ],
+   "crop_box": [
+    0,
+    2690,
+    2520,
+    3236
+   ],
+   "layout_blocks": [
+    11
+   ],
+   "lines": [
+    "R17"
+   ],
+   "line_index": [
+    25
+   ],
+   "pixel_sha256_gray": "67878d91af83b7208cc256c5b97dfe77f8afc0b78550b79af71bd23e1fff260b"
+  },
+  {
+   "id": "F8",
+   "title": "Artículo 6",
+   "cut_y": [
+    3216,
+    3571
+   ],
+   "crop_box": [
+    0,
+    3196,
+    2520,
+    3591
+   ],
+   "layout_blocks": [
+    12
+   ],
+   "lines": [
+    "R18"
+   ],
+   "line_index": [
+    27
+   ],
+   "pixel_sha256_gray": "fb60c1ef76842d8bd9ec950a2825cdf7f96c86a6f007a5925dac62d864fbdc66"
+  },
+  {
+   "id": "F9",
+   "title": "Pie de página",
+   "cut_y": [
+    3571,
+    3888
+   ],
+   "crop_box": [
+    0,
+    3551,
+    2520,
+    3888
+   ],
+   "layout_blocks": [
+    13,
+    14,
+    15
+   ],
+   "lines": [
+    "R19",
+    "R20",
+    "R21",
+    "R22",
+    "R23",
+    "R24"
+   ],
+   "line_index": [
+    29,
+    30,
+    31,
+    32,
+    33,
+    34
+   ],
+   "pixel_sha256_gray": "2b2c4db6c370fac038f5130f7eef055b867f57403c3dacd86563eb834f749892"
+  }
+ ],
+ "band_cut_source": {
+  "file": "state/4eb6c147c31d45b3b57c8a95669e8ac5/raw-0001.json",
+  "sha256": "f6c2890de753ecf6ebc882032e1b5f2e2287e93edd17ca39ed228d297552f3f0",
+  "pad_px": 20,
+  "use": "solo cajas de diseño para ubicar cortes en espacios en blanco; ningún texto OCR usado ni mostrado"
+ },
+ "overview": {
+  "format": "JPEG calidad 90",
+  "marks": "cortes y etiquetas F1 a F9 en rojo, solo para ubicarse"
+ },
+ "display": {
+  "ocr_text_shown": false,
+  "numbers_highlighted_regex": "\\d[\\d.,/]*\\d|\\d",
+  "wrapping": "cada renglón de la referencia se muestra entero; el ajuste visual no altera el texto"
+ },
+ "review_conventions": [
+  "Se respeta lo impreso tal cual, incluso erratas propias de la ley; no se corrige ortografía ni aritmética.",
+  "Incluye todo texto impreso, encabezado y pie; excluye escudo, firmas y trazos manuscritos, como el del margen izquierdo junto al Artículo 5.",
+  "Cuentan letras, tildes, mayúsculas, dígitos, signos de puntuación, palabras faltantes o sobrantes y espacios entre palabras.",
+  "No cuentan el corte de renglón dentro de un párrafo ni variantes tipográficas: comillas rectas o curvas, largo del guion, ° frente a º; se conservan en la forma simple ya usada por la referencia."
+ ],
+ "contamination": "Antes de recibir la planilla, el revisor supo por el chat que la única diferencia entre la salida CPU y la referencia IA, fuera de espacios, está en el título del Artículo 6 (Presupuesto frente a Presupuestó). La planilla no muestra ningún OCR.",
+ "reply_and_application": "Respuesta: «sin cambios» o «Rnn: dice X, debe decir Y». Cada corrección se aplica al renglón Rnn de esta tabla; el resultado se congela como gold humano de h01-p001 con human_review=true, revisor y fecha; recién entonces se mide la salida CPU (CER, WER y números).",
+ "generator": {
+  "file": "build.py",
+  "sha256": "452db24c7c805e6bdab7e5a0b8567470909cc65eb7177711b182a8c159f3844a"
+ },
+ "qa": {
+  "instrument": "pdftotext (poppler) sobre el PDF final; cada renglón buscado como «Rnn + texto» con espacios normalizados",
+  "pdf_pages": 8,
+  "lines_present_with_id": 24,
+  "lines_total": 24,
+  "mutant_controls_rejected": 24,
+  "wrong_id_controls_rejected": 24,
+  "ocr_only_variant_absent": true,
+  "failing_rows": []
+ },
+ "output": {
+  "file": "revision-humana-ley-524-p1.pdf",
+  "sha256": "d3fd0d76d4830b9f48a60e724345786748ca1c542e4c511590107723f46c1e98",
+  "bytes": 4320414
+ }
+}
