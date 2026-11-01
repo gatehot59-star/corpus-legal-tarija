@@ -1,0 +1,43 @@
+{
+  "subject": "One new CPU inference of public Ley 524 page 1",
+  "request": "Rehace el piloto CPU con limites defendibles",
+  "input_sha256": "669c89a75a4e3ad2ecc567f03a13e50c2552265b3baf4e4f547e362acbb9c3c4",
+  "source_sha256": "ba6319aed537f601745e9d54c1156ce5ee2dd3da500581a94347fc4b64ce5e0f",
+  "limits": {
+    "ram_bytes": 6442450944,
+    "swap_bytes": 3221225472,
+    "cpu_quota_percent": 100,
+    "threads": 1,
+    "job_timeout_seconds": 7200,
+    "service_timeout_seconds": 7500,
+    "observer_timeout_seconds": 7560
+  },
+  "start_reserves": {
+    "MemAvailable_bytes": 6979321856,
+    "SwapFree_bytes": 3758096384,
+    "disk_free_bytes": 2147483648
+  },
+  "stop_guards": {
+    "MemAvailable_emergency_bytes": 536870912,
+    "MemAvailable_sustained_bytes": 805306368,
+    "sustained_seconds": 30,
+    "SwapFree_bytes": 536870912,
+    "disk_free_bytes": 1073741824,
+    "production_ocr_job": "any queued or active worker",
+    "production_service": "inactive or PID/restart/start changed"
+  },
+  "reason": "6 GiB/3 GiB/one CPU is the existing installed profile; the known-failing 5 GiB profile is rejected. Fresh measurement shows 2 vCPU, 6.85 GiB available RAM and almost 4 GiB free swap. Dynamic guards are not a hard RAM reservation or proof of no performance impact.",
+  "retries": 0,
+  "repetitions": 1,
+  "reproducibility_claim": false,
+  "scope_exclusions": [
+    "no product edits",
+    "no production unit changes",
+    "no API or GPU rerun",
+    "no legal accuracy certification",
+    "no external commercial cost measurement"
+  ],
+  "success": "terminal worker_exit=0, requires_review, one complete nonempty page, original input SHA, raw text and content hashes agree, external observer confirms no OOM or deadline breach",
+  "publication": "documentation and complete bounded raw capture, no binaries or credentials",
+  "independence": "single operator; kernel/systemd and falsifiable local verifier, not independent external review"
+}
