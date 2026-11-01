@@ -1,0 +1,45 @@
+{
+ "subject": "salida CPU del job 4eb6c147c31d45b3b57c8a95669e8ac5, texto SHA-256 fc072bac865c7951fb687e77a9340696e7c0c2a3575705c79f6534e57b4e0451",
+ "reference": "gold humano de h01-p001, texto SHA-256 12ded3ed113cf7dcd9c1c34335c7d0ec080175430a083a1c83a3f4b428de83fd",
+ "cpu_vs_gold": {
+  "chars_gold": 2854,
+  "chars_hyp": 2845,
+  "char_edits_raw": 16,
+  "cer_raw_pct": 0.5606,
+  "chars_gold_ws": 2843,
+  "char_edits_ws": 1,
+  "cer_ws_pct": 0.0352,
+  "words_gold": 401,
+  "word_edits": 1,
+  "wer_pct": 0.2494,
+  "numbers_gold": 23,
+  "numbers_matched": 23,
+  "numbers_missing": {},
+  "numbers_extra": {},
+  "raw_diff_spans": 15,
+  "raw_diff_spans_whitespace_only": 14,
+  "diffs_ws": [
+   {
+    "op": "replace",
+    "gold": "o",
+    "hyp": "ó",
+    "context": "e Ley. Artículo 6. (Presupuesto de la Asamblea Legislativa De"
+   }
+  ]
+ },
+ "control_gold_vs_itself": {
+  "char_edits_raw": 0,
+  "char_edits_ws": 0,
+  "word_edits": 0,
+  "numbers_matched": 23
+ },
+ "control_one_digit_mutation": {
+  "char_edits_ws": 2,
+  "numbers_missing": {
+   "595.477.378": 1
+  },
+  "numbers_extra": {
+   "595.477.379": 1
+  }
+ }
+}
