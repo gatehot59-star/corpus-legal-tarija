@@ -1,0 +1,83 @@
+{
+ "schema": "corpus-gold-asistido-v1",
+ "page_id": "h01-p002",
+ "sheet": "A",
+ "document": "Ley Departamental N° 524",
+ "page": 2,
+ "status": "congelado",
+ "review": {
+  "level": "asistida",
+  "human_review": "parcial",
+  "ai_visual_pass": {
+   "by": "BRAIN",
+   "lines_checked": 25,
+   "lines_matching": 24,
+   "blind": false,
+   "receipt": "docs/agents/respuestas/2026-11-02-02-planilla-a-pase-ia-24-de-25-error-de-referencia-en-a16.md",
+   "commit": "86bdce93896fb22838e558a81c07a93bda6dd070"
+  },
+  "human_confirmation": {
+   "reviewer": "Jorge Abraham Mendieta",
+   "scope": [
+    "A16"
+   ],
+   "reply": "esta sin tilde",
+   "received_at": "2026-11-02T11:29-03:00",
+   "evidence_seen": "recorte ampliado de A16 del escaneo oficial, mostrado en el chat y en el Doc espejo"
+  },
+  "lines_without_human_review": [
+   "A01",
+   "A02",
+   "A03",
+   "A04",
+   "A05",
+   "A06",
+   "A07",
+   "A08",
+   "A09",
+   "A10",
+   "A11",
+   "A12",
+   "A13",
+   "A14",
+   "A15",
+   "A17",
+   "A18",
+   "A19",
+   "A20",
+   "A21",
+   "A22",
+   "A23",
+   "A24",
+   "A25"
+  ]
+ },
+ "source": {
+  "reference": "benchmarks/ocr-heldout-20261015/gold-ai-v1.json",
+  "reference_commit": "05ecc45c4beca50cd28ca45f2d4bfc371b0c6049",
+  "reference_sha256": "36097a8dcb63e601cf3a3108d63fb9178a3d57067019c5b9c9e4d4c3331806d7",
+  "reference_text_sha256": "4406088a5d26bb6238ee5617aba1ed4a563c1ebea55a138024f964231ba5e3e5",
+  "sheet_manifest": "docs/agents/evidencia/2026-11-02-01-planillas-revision-4-paginas/manifest4.json",
+  "sheet_commit": "2d095c3b4b95ab656d0fa768ac9100d6b1ad6734"
+ },
+ "scan": {
+  "pdf_sha256": "29085b9662453ccd51daea02c10bde124b8e0c91adc712d9d6f3f88c8c92b946",
+  "page": 2,
+  "pixel_sha256_rgb": "b621ebffffe3f280b33fe029f3f67b924b98f2ead0563f3e995640d49c320a24"
+ },
+ "corrections": [
+  {
+   "line_id": "A16",
+   "line_index": 25,
+   "before": "veintiséis",
+   "after": "veintiseis",
+   "char_offset": 2076,
+   "char_before": "é",
+   "char_after": "e",
+   "reason": "el impreso no tiene tilde; convencion: respetar lo impreso aunque tenga errores propios"
+  }
+ ],
+ "text_chars": 2277,
+ "text_sha256": "3a9b68b06d1725e15e93ecdb977f9cb099f4351ec2f4be2288b4781a8c168212",
+ "text": "ASAMBLEA LEGISLATIVA\nDEPARTAMENTAL DE\nTARIJA\n\nArtículo 7. (Financiamiento Adicional). - Se autoriza al Órgano Ejecutivo Departamental gestionar y asignar recursos de otras fuentes para incorporar financiamiento adicional y necesario para garantizar la inversión pública departamental directa y concurrente en salud, servicios básicos, turismo, riego, agua y atención de los programas y proyectos sociales.\n\nDISPOSISICON TRANSITORIA PRIMERA: Se dispone la reducción presupuestaria por un monto de Bs. 4.000.000.00 (cuatro millones de bolivianos), de La Partida 252 (Estudios e Investigación para proyectos de Inversión), Modificando su techo asignado de Bs. 17.000.000,00 (diecisiete millones de bolivianos) a Bs 13.000.000.00 (trece millones de bolivianos), los mismos serán redistribuidos en favor de:\n\n1.    Institutos Técnicos Y Tecnológicos.\n2.    Presas Y Sistema De Riego.\n3.    Perforación Y Mantenimiento De Pozos.\n4.    Compensación De Deuda A Los Municipios.\n\nDISPOSISICON TRANSITORIA SEGUNDA: Se dispone se actualice el registro realizado en el sistema SIGEP, el 11 septiembre Del 2026, con el mandato expreso de aplicar las correcciones, redistribuciones y observaciones técnicas que se aprobaran en el anexo / detalle de la presente Ley Departamental.\n\nDISPOSICIÓN FINAL\n\nDisposición Final Única. - El Órgano Ejecutivo Departamental deberá remitir la presente ley, el Programa Operativo Anual, Presupuesto Institucional y Presupuesto Institucional de la Gestión 2027, al Ministerio de Economía y Finanzas Públicas para su inscripción en el Presupuesto General del Estado Plurinacional de Bolivia correspondiente a la Gestión Fiscal 2027.\n\nEs sancionada a los siete días del mes de octubre del año 2026, en la Sala de Sesiones de la Asamblea Legislativa Departamental de Tarija.\n\nRemítase al Órgano Ejecutivo Departamental para los fines constitucionales y estatutarios.\n\nPOR TANTO: La promulgo para que se tenga y cumpla como Ley del Departamento de Tarija.\n\nEs dado en la Gobernación, en la ciudad de Tarija a los nueve días del mes de octubre de dos mil veintiseis años.\n\nAbg. María René Soruco Campero\nGOBERNADORA\nDEL DEPARTAMENTO DE TARIJA\n\nTelf. : 6113312\nFax : 6113308\nwww.aldt.gob\nTarija - Bolivia\nCalle Sucre Esq. La Madrid\n(Plaza Luis de Fuentes y Vargas)"
+}
