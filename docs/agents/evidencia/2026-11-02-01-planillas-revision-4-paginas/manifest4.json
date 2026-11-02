@@ -1,0 +1,1800 @@
+{
+ "schema": "corpus-human-review-sheet-v2",
+ "status": "pendiente de revisión humana",
+ "purpose": "Revisión humana de la referencia IA de las otras cuatro páginas del banco held-out (Ley 524 p. 2 y Ley 523 pp. 1 a 3) para congelar gold humano",
+ "reference": {
+  "file": "benchmarks/ocr-heldout-20261015/gold-ai-v1.json",
+  "git_commit": "05ecc45c4beca50cd28ca45f2d4bfc371b0c6049",
+  "file_sha256": "36097a8dcb63e601cf3a3108d63fb9178a3d57067019c5b9c9e4d4c3331806d7",
+  "human_review": false
+ },
+ "band_cut_source": {
+  "dir": "/workspace/paddle-vl16-gpu-20261016/snapshot-v4-final/corpus-vl16-results",
+  "use": "cajas de diseño y texto de la corrida GPU del 16-oct, sólo para cortar franjas en espacios en blanco y asignar cada renglón a su franja; ningún texto OCR se muestra"
+ },
+ "display": {
+  "ocr_text_shown": false,
+  "numbers_highlighted_regex": "\\d[\\d.,/]*\\d|\\d",
+  "tables": "cada renglón con tabulaciones se muestra como una fila de grilla, una celda por campo; espacios visibles tal como están en la referencia"
+ },
+ "review_conventions": [
+  "Se respeta lo impreso tal cual, incluso erratas propias de la ley; no se corrige ortografía ni aritmética.",
+  "Incluye todo texto impreso, encabezado y pie; excluye escudo, firmas y trazos manuscritos.",
+  "Cuentan letras, tildes, mayúsculas, dígitos, signos de puntuación, palabras faltantes o sobrantes y espacios entre palabras; en las tablas, además, que cada valor esté en su columna.",
+  "No cuentan el corte de renglón dentro de un párrafo, la cantidad de espacios seguidos ni variantes tipográficas: comillas rectas o curvas, largo del guion, ° frente a º; se conservan en la forma ya usada por la referencia.",
+  "En las tablas, la categoría de una celda combinada va sólo en la primera fila de su grupo, como en la referencia."
+ ],
+ "contamination": "En este chat no se le mostró al revisor ninguna diferencia del OCR en estas cuatro páginas. Existe un informe del 16-oct sobre la corrida GPU de las cinco páginas que pudo haber leído; las planillas no lo muestran.",
+ "reply_and_application": "Respuesta por planilla: «X: sin cambios» o «Xnn: dice ..., debe decir ...». Cada corrección se aplica a su renglón; cada página se congela como gold humano con human_review=true, revisor y fecha.",
+ "generator": {
+  "file": "build4.py",
+  "sha256": "8b124f2c0952d36bf85de650f131e2aed866a1ccdd749ce6a0fc9ff9c32e4a6e"
+ },
+ "pages": [
+  {
+   "pid": "h01-p002",
+   "law": "524",
+   "page": 2,
+   "prefix": "A",
+   "name": "Ley Departamental N° 524, página 2",
+   "reference": {
+    "text_chars": 2277,
+    "text_sha256": "4406088a5d26bb6238ee5617aba1ed4a563c1ebea55a138024f964231ba5e3e5",
+    "lines_total": 37,
+    "lines_nonempty": 25
+   },
+   "lines": [
+    [
+     "A01",
+     0
+    ],
+    [
+     "A02",
+     1
+    ],
+    [
+     "A03",
+     2
+    ],
+    [
+     "A04",
+     4
+    ],
+    [
+     "A05",
+     6
+    ],
+    [
+     "A06",
+     8
+    ],
+    [
+     "A07",
+     9
+    ],
+    [
+     "A08",
+     10
+    ],
+    [
+     "A09",
+     11
+    ],
+    [
+     "A10",
+     13
+    ],
+    [
+     "A11",
+     15
+    ],
+    [
+     "A12",
+     17
+    ],
+    [
+     "A13",
+     19
+    ],
+    [
+     "A14",
+     21
+    ],
+    [
+     "A15",
+     23
+    ],
+    [
+     "A16",
+     25
+    ],
+    [
+     "A17",
+     27
+    ],
+    [
+     "A18",
+     28
+    ],
+    [
+     "A19",
+     29
+    ],
+    [
+     "A20",
+     31
+    ],
+    [
+     "A21",
+     32
+    ],
+    [
+     "A22",
+     33
+    ],
+    [
+     "A23",
+     34
+    ],
+    [
+     "A24",
+     35
+    ],
+    [
+     "A25",
+     36
+    ]
+   ],
+   "scan": {
+    "pdf_sha256": "29085b9662453ccd51daea02c10bde124b8e0c91adc712d9d6f3f88c8c92b946",
+    "pdf_pages": 2,
+    "render": "pdftoppm -f 2 -l 2 -r 300 -gray -singlefile -png",
+    "size": [
+     2526,
+     3915
+    ],
+    "pixel_sha256_rgb": "b621ebffffe3f280b33fe029f3f67b924b98f2ead0563f3e995640d49c320a24",
+    "pixel_identical_to_benchmark_image": true
+   },
+   "band_cut_source": {
+    "file": "h01-p002-raw.json",
+    "sha256": "9593676353e2fcd680c20dba37c519dd5c826184806411467796aced00b39f9a"
+   },
+   "bands": [
+    {
+     "id": "F1",
+     "title": "Encabezado",
+     "cut_y": [
+      0,
+      630
+     ],
+     "crop_box": [
+      0,
+      0,
+      2526,
+      650
+     ],
+     "lines": [
+      "A01",
+      "A02",
+      "A03"
+     ],
+     "line_index": [
+      0,
+      1,
+      2
+     ],
+     "pixel_sha256_gray": "bb11e981ce7b32d148a3a53efd27aef602713f7b410a31b2a0ff8625fdb408ca"
+    },
+    {
+     "id": "F2",
+     "title": "Artículo 7",
+     "cut_y": [
+      630,
+      942
+     ],
+     "crop_box": [
+      0,
+      610,
+      2526,
+      962
+     ],
+     "lines": [
+      "A04"
+     ],
+     "line_index": [
+      4
+     ],
+     "pixel_sha256_gray": "876651533e8b0ce90c445a83d202253598bfe7f1f5a650309601bb97187524bd"
+    },
+    {
+     "id": "F3",
+     "title": "Disposición transitoria primera",
+     "cut_y": [
+      942,
+      1289
+     ],
+     "crop_box": [
+      0,
+      922,
+      2526,
+      1309
+     ],
+     "lines": [
+      "A05"
+     ],
+     "line_index": [
+      6
+     ],
+     "pixel_sha256_gray": "664943c4cb8635fab9db468bebc0af92148c5fc2e6402dcf50a7865e9163cafe"
+    },
+    {
+     "id": "F4",
+     "title": "Lista numerada",
+     "cut_y": [
+      1289,
+      1576
+     ],
+     "crop_box": [
+      0,
+      1269,
+      2526,
+      1596
+     ],
+     "lines": [
+      "A06",
+      "A07",
+      "A08",
+      "A09"
+     ],
+     "line_index": [
+      8,
+      9,
+      10,
+      11
+     ],
+     "pixel_sha256_gray": "014feae688bb4060f6c227194b7eeabba7d2d24b8990e524400c7b9b54721d83"
+    },
+    {
+     "id": "F5",
+     "title": "Disposición transitoria segunda",
+     "cut_y": [
+      1576,
+      1895
+     ],
+     "crop_box": [
+      0,
+      1556,
+      2526,
+      1915
+     ],
+     "lines": [
+      "A10"
+     ],
+     "line_index": [
+      13
+     ],
+     "pixel_sha256_gray": "b4cedbccdcefb4c297ff6f5febf5cc3266295e252cff85d20a58c4c84406ba0a"
+    },
+    {
+     "id": "F6",
+     "title": "Disposición final",
+     "cut_y": [
+      1895,
+      2343
+     ],
+     "crop_box": [
+      0,
+      1875,
+      2526,
+      2363
+     ],
+     "lines": [
+      "A11",
+      "A12"
+     ],
+     "line_index": [
+      15,
+      17
+     ],
+     "pixel_sha256_gray": "e30ca546e78eb3abdf767dd50774532fcd770aa638f8d2d315a593965bd3bcbf"
+    },
+    {
+     "id": "F7",
+     "title": "Sanción",
+     "cut_y": [
+      2343,
+      2533
+     ],
+     "crop_box": [
+      0,
+      2323,
+      2526,
+      2553
+     ],
+     "lines": [
+      "A13"
+     ],
+     "line_index": [
+      19
+     ],
+     "pixel_sha256_gray": "d3bf4404cc4734d92f24a5b011fe816dc83dcb2a95a3331617a7a491ef4c59cc"
+    },
+    {
+     "id": "F8",
+     "title": "Remisión y promulgación",
+     "cut_y": [
+      2533,
+      2790
+     ],
+     "crop_box": [
+      0,
+      2513,
+      2526,
+      2810
+     ],
+     "lines": [
+      "A14",
+      "A15"
+     ],
+     "line_index": [
+      21,
+      23
+     ],
+     "pixel_sha256_gray": "1ea0f2e8c3db485c6944d40e128bf36d4299de6236f4b06723dc25573365554e"
+    },
+    {
+     "id": "F9",
+     "title": "Fecha de promulgación",
+     "cut_y": [
+      2790,
+      3018
+     ],
+     "crop_box": [
+      0,
+      2770,
+      2526,
+      3038
+     ],
+     "lines": [
+      "A16"
+     ],
+     "line_index": [
+      25
+     ],
+     "pixel_sha256_gray": "3df2f987abeff272093d114b654ba8ef4e941f875fda9f8c24541afe31327b3a"
+    },
+    {
+     "id": "F10",
+     "title": "Nombre y cargo de la gobernadora",
+     "cut_y": [
+      3018,
+      3594
+     ],
+     "crop_box": [
+      0,
+      2998,
+      2526,
+      3614
+     ],
+     "lines": [
+      "A17",
+      "A18",
+      "A19"
+     ],
+     "line_index": [
+      27,
+      28,
+      29
+     ],
+     "pixel_sha256_gray": "e9978527bf2cdf85d7efcac4e88db2c0a7fcf9802edf996e2926dbda3fb3a213"
+    },
+    {
+     "id": "F11",
+     "title": "Pie de página",
+     "cut_y": [
+      3594,
+      3915
+     ],
+     "crop_box": [
+      0,
+      3574,
+      2526,
+      3915
+     ],
+     "lines": [
+      "A20",
+      "A21",
+      "A22",
+      "A23",
+      "A24",
+      "A25"
+     ],
+     "line_index": [
+      31,
+      32,
+      33,
+      34,
+      35,
+      36
+     ],
+     "pixel_sha256_gray": "c401bafec683443d6544023cd610eecdcfa93d92508796b8a156315a7d2d5db8"
+    }
+   ],
+   "output": {
+    "file": "revision-humana-ley-524-p2.pdf",
+    "sha256": "026a75b7db2f064e7646eaaa568c5575684a605dd2e1b9a25cd58267081dd13c",
+    "bytes": 3223486
+   },
+   "qa": {
+    "pdf_pages": 7,
+    "lines_present_with_id": 25,
+    "lines_total": 25,
+    "mutant_controls_rejected": 25,
+    "wrong_id_controls_rejected": 25,
+    "ocr_only_tokens_checked": 5,
+    "ocr_only_tokens_found": 0,
+    "failing_rows": []
+   }
+  },
+  {
+   "pid": "h02-p001",
+   "law": "523",
+   "page": 1,
+   "prefix": "B",
+   "name": "Ley Departamental N° 523, página 1",
+   "reference": {
+    "text_chars": 2481,
+    "text_sha256": "438ba0fe8e5599df298d4f56b44280fe76f4560d6271685b912f0961ac3d1a3b",
+    "lines_total": 57,
+    "lines_nonempty": 47
+   },
+   "lines": [
+    [
+     "B01",
+     0
+    ],
+    [
+     "B02",
+     1
+    ],
+    [
+     "B03",
+     2
+    ],
+    [
+     "B04",
+     4
+    ],
+    [
+     "B05",
+     5
+    ],
+    [
+     "B06",
+     7
+    ],
+    [
+     "B07",
+     8
+    ],
+    [
+     "B08",
+     10
+    ],
+    [
+     "B09",
+     11
+    ],
+    [
+     "B10",
+     13
+    ],
+    [
+     "B11",
+     14
+    ],
+    [
+     "B12",
+     16
+    ],
+    [
+     "B13",
+     18
+    ],
+    [
+     "B14",
+     19
+    ],
+    [
+     "B15",
+     20
+    ],
+    [
+     "B16",
+     22
+    ],
+    [
+     "B17",
+     23
+    ],
+    [
+     "B18",
+     24
+    ],
+    [
+     "B19",
+     25
+    ],
+    [
+     "B20",
+     26
+    ],
+    [
+     "B21",
+     28
+    ],
+    [
+     "B22",
+     29
+    ],
+    [
+     "B23",
+     30
+    ],
+    [
+     "B24",
+     31
+    ],
+    [
+     "B25",
+     32
+    ],
+    [
+     "B26",
+     33
+    ],
+    [
+     "B27",
+     34
+    ],
+    [
+     "B28",
+     35
+    ],
+    [
+     "B29",
+     36
+    ],
+    [
+     "B30",
+     37
+    ],
+    [
+     "B31",
+     38
+    ],
+    [
+     "B32",
+     39
+    ],
+    [
+     "B33",
+     40
+    ],
+    [
+     "B34",
+     41
+    ],
+    [
+     "B35",
+     42
+    ],
+    [
+     "B36",
+     43
+    ],
+    [
+     "B37",
+     44
+    ],
+    [
+     "B38",
+     45
+    ],
+    [
+     "B39",
+     46
+    ],
+    [
+     "B40",
+     47
+    ],
+    [
+     "B41",
+     49
+    ],
+    [
+     "B42",
+     51
+    ],
+    [
+     "B43",
+     52
+    ],
+    [
+     "B44",
+     53
+    ],
+    [
+     "B45",
+     54
+    ],
+    [
+     "B46",
+     55
+    ],
+    [
+     "B47",
+     56
+    ]
+   ],
+   "scan": {
+    "pdf_sha256": "dd85855e5e0d3134e29998776d7c3eb347d3e1ebde24ef890b37fc0c7c4d7d04",
+    "pdf_pages": 3,
+    "render": "pdftoppm -f 1 -l 1 -r 300 -gray -singlefile -png",
+    "size": [
+     2523,
+     3915
+    ],
+    "pixel_sha256_rgb": "5f811b7ac878ad8597c70a3323d79cd59a10f9102bdbec8feff7ee79986e2924",
+    "pixel_identical_to_benchmark_image": true
+   },
+   "band_cut_source": {
+    "file": "h02-p001-raw.json",
+    "sha256": "fb0d6be4ca4e1b5dadfc12a9f1ee72ee19eb8a0cd34ed305247f1e703fdf717f"
+   },
+   "bands": [
+    {
+     "id": "F1",
+     "title": "Encabezado, número de ley, fecha y gobernadora",
+     "cut_y": [
+      0,
+      1014
+     ],
+     "crop_box": [
+      0,
+      0,
+      2523,
+      1034
+     ],
+     "lines": [
+      "B01",
+      "B02",
+      "B03",
+      "B04",
+      "B05",
+      "B06",
+      "B07"
+     ],
+     "line_index": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      7,
+      8
+     ],
+     "pixel_sha256_gray": "80473c31fb6967e02fe4623d18e9a29d528919850da7808be98d42be04b93398"
+    },
+    {
+     "id": "F2",
+     "title": "Promulgación y título de la ley",
+     "cut_y": [
+      1014,
+      1430
+     ],
+     "crop_box": [
+      0,
+      994,
+      2523,
+      1450
+     ],
+     "lines": [
+      "B08",
+      "B09",
+      "B10",
+      "B11"
+     ],
+     "line_index": [
+      10,
+      11,
+      13,
+      14
+     ],
+     "pixel_sha256_gray": "de325eaae53fcc01f978a3b61bc4f4af1885bc7dae66b8d1de3f87c6c398d7cf"
+    },
+    {
+     "id": "F3",
+     "title": "Artículo 1",
+     "cut_y": [
+      1430,
+      1832
+     ],
+     "crop_box": [
+      0,
+      1410,
+      2523,
+      1852
+     ],
+     "lines": [
+      "B12"
+     ],
+     "line_index": [
+      16
+     ],
+     "pixel_sha256_gray": "1ab5a30c05363975c675d5c3f56fa9bb9af43ccdbc9945d400d59c95d3bac13e"
+    },
+    {
+     "id": "F4",
+     "title": "Título de la tabla y datos de financiamiento",
+     "cut_y": [
+      1832,
+      2341
+     ],
+     "crop_box": [
+      0,
+      1812,
+      2523,
+      2361
+     ],
+     "lines": [
+      "B13",
+      "B14",
+      "B15",
+      "B16",
+      "B17",
+      "B18",
+      "B19",
+      "B20"
+     ],
+     "line_index": [
+      18,
+      19,
+      20,
+      22,
+      23,
+      24,
+      25,
+      26
+     ],
+     "pixel_sha256_gray": "8b2aff990a9875fb188452ec615d9192fed1718d8ad443a3eb5bf88f0d2a58d2"
+    },
+    {
+     "id": "F5",
+     "title": "Tabla de escala salarial",
+     "cut_y": [
+      2341,
+      3430
+     ],
+     "crop_box": [
+      0,
+      2321,
+      2523,
+      3450
+     ],
+     "lines": [
+      "B21",
+      "B22",
+      "B23",
+      "B24",
+      "B25",
+      "B26",
+      "B27",
+      "B28",
+      "B29",
+      "B30",
+      "B31",
+      "B32",
+      "B33",
+      "B34",
+      "B35",
+      "B36",
+      "B37",
+      "B38",
+      "B39",
+      "B40"
+     ],
+     "line_index": [
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47
+     ],
+     "pixel_sha256_gray": "5548aab3b74e3f4182a1d5feda631aa67cb97651f7086a70f2acfd5325c9c66f"
+    },
+    {
+     "id": "F6",
+     "title": "Artículo 2, comienzo",
+     "cut_y": [
+      3430,
+      3664
+     ],
+     "crop_box": [
+      0,
+      3410,
+      2523,
+      3684
+     ],
+     "lines": [
+      "B41"
+     ],
+     "line_index": [
+      49
+     ],
+     "pixel_sha256_gray": "f51983075e3fee2d5bb29ad1df2efd84b9c137c24a701b0251484797c0e8e2f1"
+    },
+    {
+     "id": "F7",
+     "title": "Pie de página",
+     "cut_y": [
+      3664,
+      3915
+     ],
+     "crop_box": [
+      0,
+      3644,
+      2523,
+      3915
+     ],
+     "lines": [
+      "B42",
+      "B43",
+      "B44",
+      "B45",
+      "B46",
+      "B47"
+     ],
+     "line_index": [
+      51,
+      52,
+      53,
+      54,
+      55,
+      56
+     ],
+     "pixel_sha256_gray": "0c92136d2f75a6ba64cbfa1f85b3a10dfbef956a5d9386e34debe925f2f49c63"
+    }
+   ],
+   "output": {
+    "file": "revision-humana-ley-523-p1.pdf",
+    "sha256": "e9c4bc3b6228d6ccf4e7ac9f8fcf74c87e128038c3acf6974e110ed5aecbbd48",
+    "bytes": 3744807
+   },
+   "qa": {
+    "pdf_pages": 7,
+    "lines_present_with_id": 47,
+    "lines_total": 47,
+    "mutant_controls_rejected": 47,
+    "wrong_id_controls_rejected": 47,
+    "ocr_only_tokens_checked": 3,
+    "ocr_only_tokens_found": 0,
+    "failing_rows": []
+   }
+  },
+  {
+   "pid": "h02-p002",
+   "law": "523",
+   "page": 2,
+   "prefix": "C",
+   "name": "Ley Departamental N° 523, página 2",
+   "reference": {
+    "text_chars": 2746,
+    "text_sha256": "56dcbb1029b94ad80a23d43595ce153522959a6fea9128aeb7de5ee0fc800872",
+    "lines_total": 60,
+    "lines_nonempty": 52
+   },
+   "lines": [
+    [
+     "C01",
+     0
+    ],
+    [
+     "C02",
+     1
+    ],
+    [
+     "C03",
+     2
+    ],
+    [
+     "C04",
+     4
+    ],
+    [
+     "C05",
+     6
+    ],
+    [
+     "C06",
+     7
+    ],
+    [
+     "C07",
+     8
+    ],
+    [
+     "C08",
+     10
+    ],
+    [
+     "C09",
+     11
+    ],
+    [
+     "C10",
+     12
+    ],
+    [
+     "C11",
+     13
+    ],
+    [
+     "C12",
+     14
+    ],
+    [
+     "C13",
+     15
+    ],
+    [
+     "C14",
+     16
+    ],
+    [
+     "C15",
+     17
+    ],
+    [
+     "C16",
+     18
+    ],
+    [
+     "C17",
+     19
+    ],
+    [
+     "C18",
+     20
+    ],
+    [
+     "C19",
+     21
+    ],
+    [
+     "C20",
+     22
+    ],
+    [
+     "C21",
+     23
+    ],
+    [
+     "C22",
+     24
+    ],
+    [
+     "C23",
+     25
+    ],
+    [
+     "C24",
+     27
+    ],
+    [
+     "C25",
+     29
+    ],
+    [
+     "C26",
+     30
+    ],
+    [
+     "C27",
+     31
+    ],
+    [
+     "C28",
+     33
+    ],
+    [
+     "C29",
+     34
+    ],
+    [
+     "C30",
+     35
+    ],
+    [
+     "C31",
+     36
+    ],
+    [
+     "C32",
+     37
+    ],
+    [
+     "C33",
+     38
+    ],
+    [
+     "C34",
+     39
+    ],
+    [
+     "C35",
+     40
+    ],
+    [
+     "C36",
+     41
+    ],
+    [
+     "C37",
+     42
+    ],
+    [
+     "C38",
+     43
+    ],
+    [
+     "C39",
+     44
+    ],
+    [
+     "C40",
+     45
+    ],
+    [
+     "C41",
+     46
+    ],
+    [
+     "C42",
+     47
+    ],
+    [
+     "C43",
+     48
+    ],
+    [
+     "C44",
+     49
+    ],
+    [
+     "C45",
+     50
+    ],
+    [
+     "C46",
+     52
+    ],
+    [
+     "C47",
+     54
+    ],
+    [
+     "C48",
+     55
+    ],
+    [
+     "C49",
+     56
+    ],
+    [
+     "C50",
+     57
+    ],
+    [
+     "C51",
+     58
+    ],
+    [
+     "C52",
+     59
+    ]
+   ],
+   "scan": {
+    "pdf_sha256": "dd85855e5e0d3134e29998776d7c3eb347d3e1ebde24ef890b37fc0c7c4d7d04",
+    "pdf_pages": 3,
+    "render": "pdftoppm -f 2 -l 2 -r 300 -gray -singlefile -png",
+    "size": [
+     2523,
+     3918
+    ],
+    "pixel_sha256_rgb": "dd6bf1526aff0547507934c603ba75582235e246c7ba3082e33ced44fa06ff83",
+    "pixel_identical_to_benchmark_image": true
+   },
+   "band_cut_source": {
+    "file": "h02-p002-raw.json",
+    "sha256": "94b8fffe9684dfc25de86c82c87883cb632e7d98ced8decde5e079eb52ab84d0"
+   },
+   "bands": [
+    {
+     "id": "F1",
+     "title": "Encabezado",
+     "cut_y": [
+      0,
+      626
+     ],
+     "crop_box": [
+      0,
+      0,
+      2523,
+      646
+     ],
+     "lines": [
+      "C01",
+      "C02",
+      "C03"
+     ],
+     "line_index": [
+      0,
+      1,
+      2
+     ],
+     "pixel_sha256_gray": "2eb8b3f7b164a687b0705874c883d3dd62313abf891b1833f4cc2eebf31030a7"
+    },
+    {
+     "id": "F2",
+     "title": "Final del Artículo 2",
+     "cut_y": [
+      626,
+      869
+     ],
+     "crop_box": [
+      0,
+      606,
+      2523,
+      889
+     ],
+     "lines": [
+      "C04"
+     ],
+     "line_index": [
+      4
+     ],
+     "pixel_sha256_gray": "1afaf323be87ac3751f00af75df0bc38142943e113f31faf0cca7facf63755d0"
+    },
+    {
+     "id": "F3",
+     "title": "Tabla de la Asamblea Legislativa",
+     "cut_y": [
+      869,
+      1904
+     ],
+     "crop_box": [
+      0,
+      849,
+      2523,
+      1924
+     ],
+     "lines": [
+      "C05",
+      "C06",
+      "C07",
+      "C08",
+      "C09",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C16",
+      "C17",
+      "C18",
+      "C19",
+      "C20",
+      "C21",
+      "C22",
+      "C23"
+     ],
+     "line_index": [
+      6,
+      7,
+      8,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25
+     ],
+     "pixel_sha256_gray": "db1f8cbd099f789666ad174690605d5768a47ae20e10f745703092b51f513c71"
+    },
+    {
+     "id": "F4",
+     "title": "Artículo 3",
+     "cut_y": [
+      1904,
+      2296
+     ],
+     "crop_box": [
+      0,
+      1884,
+      2523,
+      2316
+     ],
+     "lines": [
+      "C24"
+     ],
+     "line_index": [
+      27
+     ],
+     "pixel_sha256_gray": "1e0985433ce2eb8a406dc044889cd901f8e8258dcff8630a87899be0da98f897"
+    },
+    {
+     "id": "F5",
+     "title": "Tabla del Órgano Ejecutivo",
+     "cut_y": [
+      2296,
+      3439
+     ],
+     "crop_box": [
+      0,
+      2276,
+      2523,
+      3459
+     ],
+     "lines": [
+      "C25",
+      "C26",
+      "C27",
+      "C28",
+      "C29",
+      "C30",
+      "C31",
+      "C32",
+      "C33",
+      "C34",
+      "C35",
+      "C36",
+      "C37",
+      "C38",
+      "C39",
+      "C40",
+      "C41",
+      "C42",
+      "C43",
+      "C44",
+      "C45"
+     ],
+     "line_index": [
+      29,
+      30,
+      31,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50
+     ],
+     "pixel_sha256_gray": "0a96ddfab033f9e28f26915c7bf658d398c10829e5e1e6668be5be5c61f86900"
+    },
+    {
+     "id": "F6",
+     "title": "Artículo 4, comienzo",
+     "cut_y": [
+      3439,
+      3667
+     ],
+     "crop_box": [
+      0,
+      3419,
+      2523,
+      3687
+     ],
+     "lines": [
+      "C46"
+     ],
+     "line_index": [
+      52
+     ],
+     "pixel_sha256_gray": "4459f4fd9a0224a7f6fb9c15b2fbeaa87c1f87c8282c371325d7a95af7c557b7"
+    },
+    {
+     "id": "F7",
+     "title": "Pie de página",
+     "cut_y": [
+      3667,
+      3918
+     ],
+     "crop_box": [
+      0,
+      3647,
+      2523,
+      3918
+     ],
+     "lines": [
+      "C47",
+      "C48",
+      "C49",
+      "C50",
+      "C51",
+      "C52"
+     ],
+     "line_index": [
+      54,
+      55,
+      56,
+      57,
+      58,
+      59
+     ],
+     "pixel_sha256_gray": "bb626a4979c7f4c33fff9c1bf34e18ea06dc9c27024183bef51a7bbb8b58e184"
+    }
+   ],
+   "output": {
+    "file": "revision-humana-ley-523-p2.pdf",
+    "sha256": "3f681439f1396b4e2758379a9d415ba51f0ffbf754f119f00f2f4b0b279cefec",
+    "bytes": 4233377
+   },
+   "qa": {
+    "pdf_pages": 7,
+    "lines_present_with_id": 52,
+    "lines_total": 52,
+    "mutant_controls_rejected": 52,
+    "wrong_id_controls_rejected": 52,
+    "ocr_only_tokens_checked": 2,
+    "ocr_only_tokens_found": 0,
+    "failing_rows": []
+   }
+  },
+  {
+   "pid": "h02-p003",
+   "law": "523",
+   "page": 3,
+   "prefix": "D",
+   "name": "Ley Departamental N° 523, página 3",
+   "reference": {
+    "text_chars": 2257,
+    "text_sha256": "2850a6c18c9b85668058fff8b68be20042bee6cd1376e17e7d23bc80304d21e2",
+    "lines_total": 36,
+    "lines_nonempty": 23
+   },
+   "lines": [
+    [
+     "D01",
+     0
+    ],
+    [
+     "D02",
+     1
+    ],
+    [
+     "D03",
+     2
+    ],
+    [
+     "D04",
+     4
+    ],
+    [
+     "D05",
+     6
+    ],
+    [
+     "D06",
+     8
+    ],
+    [
+     "D07",
+     10
+    ],
+    [
+     "D08",
+     12
+    ],
+    [
+     "D09",
+     14
+    ],
+    [
+     "D10",
+     16
+    ],
+    [
+     "D11",
+     18
+    ],
+    [
+     "D12",
+     20
+    ],
+    [
+     "D13",
+     22
+    ],
+    [
+     "D14",
+     24
+    ],
+    [
+     "D15",
+     26
+    ],
+    [
+     "D16",
+     27
+    ],
+    [
+     "D17",
+     28
+    ],
+    [
+     "D18",
+     30
+    ],
+    [
+     "D19",
+     31
+    ],
+    [
+     "D20",
+     32
+    ],
+    [
+     "D21",
+     33
+    ],
+    [
+     "D22",
+     34
+    ],
+    [
+     "D23",
+     35
+    ]
+   ],
+   "scan": {
+    "pdf_sha256": "dd85855e5e0d3134e29998776d7c3eb347d3e1ebde24ef890b37fc0c7c4d7d04",
+    "pdf_pages": 3,
+    "render": "pdftoppm -f 3 -l 3 -r 300 -gray -singlefile -png",
+    "size": [
+     2523,
+     3918
+    ],
+    "pixel_sha256_rgb": "e9ff4f7c1f8e3a4047722f97110d7389d2291118672c64e95390ab58a913d6c6",
+    "pixel_identical_to_benchmark_image": true
+   },
+   "band_cut_source": {
+    "file": "h02-p003-raw.json",
+    "sha256": "8ddb030f98a1c91dc97632dd4754f2f1e9f72b564aeaac27e006bb1f8bf3cfa2"
+   },
+   "bands": [
+    {
+     "id": "F1",
+     "title": "Encabezado",
+     "cut_y": [
+      0,
+      625
+     ],
+     "crop_box": [
+      0,
+      0,
+      2523,
+      645
+     ],
+     "lines": [
+      "D01",
+      "D02",
+      "D03"
+     ],
+     "line_index": [
+      0,
+      1,
+      2
+     ],
+     "pixel_sha256_gray": "25e11f653d490621bbe4e1f8a9c11f0910d85251896eb94fc76fdc5bea056d50"
+    },
+    {
+     "id": "F2",
+     "title": "Final del Artículo 4",
+     "cut_y": [
+      625,
+      803
+     ],
+     "crop_box": [
+      0,
+      605,
+      2523,
+      823
+     ],
+     "lines": [
+      "D04"
+     ],
+     "line_index": [
+      4
+     ],
+     "pixel_sha256_gray": "87e0944845c41023e5023cee7f6fbdfd46c7339b704f9262bd082edcedc57cf2"
+    },
+    {
+     "id": "F3",
+     "title": "Disposición transitoria primera",
+     "cut_y": [
+      803,
+      1251
+     ],
+     "crop_box": [
+      0,
+      783,
+      2523,
+      1271
+     ],
+     "lines": [
+      "D05",
+      "D06"
+     ],
+     "line_index": [
+      6,
+      8
+     ],
+     "pixel_sha256_gray": "1a1ff301765a4b9eb81afc491efb8758cd57452d85b61e44a86123404bf176a1"
+    },
+    {
+     "id": "F4",
+     "title": "Disposición transitoria segunda",
+     "cut_y": [
+      1251,
+      1574
+     ],
+     "crop_box": [
+      0,
+      1231,
+      2523,
+      1594
+     ],
+     "lines": [
+      "D07"
+     ],
+     "line_index": [
+      10
+     ],
+     "pixel_sha256_gray": "d55341e328fd5d612329579e7540e9525760ad7cdae9dd20f60c2f395ab514ba"
+    },
+    {
+     "id": "F5",
+     "title": "Disposición transitoria tercera",
+     "cut_y": [
+      1574,
+      1898
+     ],
+     "crop_box": [
+      0,
+      1554,
+      2523,
+      1918
+     ],
+     "lines": [
+      "D08"
+     ],
+     "line_index": [
+      12
+     ],
+     "pixel_sha256_gray": "0f591cdd60a6cdcbb68e0e8931a3829f7f32c11ea89e9bf5925e0516be7c8177"
+    },
+    {
+     "id": "F6",
+     "title": "Disposición abrogatoria",
+     "cut_y": [
+      1898,
+      2409
+     ],
+     "crop_box": [
+      0,
+      1878,
+      2523,
+      2429
+     ],
+     "lines": [
+      "D09",
+      "D10"
+     ],
+     "line_index": [
+      14,
+      16
+     ],
+     "pixel_sha256_gray": "058da48b71d12e2d2a0b0103c070d397187e4b146e6bc12907a7703b40deeb37"
+    },
+    {
+     "id": "F7",
+     "title": "Sanción",
+     "cut_y": [
+      2409,
+      2600
+     ],
+     "crop_box": [
+      0,
+      2389,
+      2523,
+      2620
+     ],
+     "lines": [
+      "D11"
+     ],
+     "line_index": [
+      18
+     ],
+     "pixel_sha256_gray": "e16f3824bdfe03c6c3daf58f78e1f03996fdd223f5921028c0cd41080f6418b8"
+    },
+    {
+     "id": "F8",
+     "title": "Remisión y promulgación",
+     "cut_y": [
+      2600,
+      2856
+     ],
+     "crop_box": [
+      0,
+      2580,
+      2523,
+      2876
+     ],
+     "lines": [
+      "D12",
+      "D13"
+     ],
+     "line_index": [
+      20,
+      22
+     ],
+     "pixel_sha256_gray": "298b4bff73d67ab80839bd2a6b2fff2a27f990d8f854e3a21add24f1147f36dc"
+    },
+    {
+     "id": "F9",
+     "title": "Fecha de promulgación",
+     "cut_y": [
+      2856,
+      3050
+     ],
+     "crop_box": [
+      0,
+      2836,
+      2523,
+      3070
+     ],
+     "lines": [
+      "D14"
+     ],
+     "line_index": [
+      24
+     ],
+     "pixel_sha256_gray": "b61eaf9502021914786c66d8b272128edca4c4812420085135edd87ce522eeb0"
+    },
+    {
+     "id": "F10",
+     "title": "Nombre y cargo de la gobernadora",
+     "cut_y": [
+      3050,
+      3599
+     ],
+     "crop_box": [
+      0,
+      3030,
+      2523,
+      3619
+     ],
+     "lines": [
+      "D15",
+      "D16",
+      "D17"
+     ],
+     "line_index": [
+      26,
+      27,
+      28
+     ],
+     "pixel_sha256_gray": "24807fe80237975c9f7f4d516793e555b04eada110ee862b7eb2faad84409043"
+    },
+    {
+     "id": "F11",
+     "title": "Pie de página",
+     "cut_y": [
+      3599,
+      3918
+     ],
+     "crop_box": [
+      0,
+      3579,
+      2523,
+      3918
+     ],
+     "lines": [
+      "D18",
+      "D19",
+      "D20",
+      "D21",
+      "D22",
+      "D23"
+     ],
+     "line_index": [
+      30,
+      31,
+      32,
+      33,
+      34,
+      35
+     ],
+     "pixel_sha256_gray": "e71817387dd446fbae73123376889c1d6b7c73b7d6843e7dcd2881069642c8e0"
+    }
+   ],
+   "output": {
+    "file": "revision-humana-ley-523-p3.pdf",
+    "sha256": "5c5c5ff6716720f62a4e84426debe1f04eee2c273577205389ff4082a8eda52c",
+    "bytes": 3194269
+   },
+   "qa": {
+    "pdf_pages": 7,
+    "lines_present_with_id": 23,
+    "lines_total": 23,
+    "mutant_controls_rejected": 23,
+    "wrong_id_controls_rejected": 23,
+    "ocr_only_tokens_checked": 4,
+    "ocr_only_tokens_found": 0,
+    "failing_rows": []
+   }
+  }
+ ],
+ "ocr_only_tokens": {
+  "file_sha256": "c9e8b8f3f9e6dbfde7f57c9af258dc847647df30113f209538928025ed11d2cb",
+  "count_by_page": {
+   "h01-p002": 5,
+   "h02-p001": 3,
+   "h02-p002": 2,
+   "h02-p003": 4
+  },
+  "note": "Lista retenida fuera de Git hasta terminar la revisión, para no mostrar errores del OCR al revisor."
+ },
+ "qa_instrument": "pdftotext -raw (poppler) sobre cada PDF final; cada renglón buscado como «ID + texto» con espacios normalizados; mutantes de un carácter e IDs cruzados deben faltar; tokens exclusivos del OCR deben faltar"
+}
