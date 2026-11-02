@@ -1,6 +1,8 @@
-# 2026-11-02-02 · Planilla A con pase visual IA: 24 de 25 renglones coinciden con el escaneo y la referencia tiene un error en A16, «veintiéis» con tilde donde el impreso no la tiene
+# 2026-11-02-02 · Planilla A con pase visual IA: 24 de 25 renglones coinciden con el escaneo y la referencia tiene un error en A16: pone «veintiséis» con tilde y el impreso dice «veintiseis», sin tilde
 
 **Estado:** pase visual IA hecho, corrección propuesta en A16, falta la confirmación humana. Nada congelado.
+
+**Errata de este recibo:** la primera versión (commit `3adb5ae`) escribió «veintiéis» en el título y en la tabla. La palabra de la referencia es «veintiséis».
 
 ## 1. Pedido
 
@@ -25,10 +27,12 @@ Los 25 renglones, franja por franja, en tiras de 1500 px de ancho (0,75 del orig
 | A14 | Tilde de «Remítase» | con tilde | con tilde | coincide |
 | A15 | Inicial de «Departamento» | mayúscula | mayúscula | coincide |
 | A16 | «Gobernación» | con b | con b | coincide |
-| A16 | Tilde de la penúltima palabra | **sin tilde** | **«veintiéis», con tilde** | **no coincide** |
+| A16 | Tilde del número del año en letras | **«veintiseis», sin tilde** | **«veintiséis», con tilde** | **no coincide** |
 | A20 a A25 | Pie de página completo | «Telf. : 6113312», «Fax : 6113308», «www.aldt.gob», «Tarija - Bolivia», «Calle Sucre Esq. La Madrid», «(Plaza Luis de Fuentes y Vargas)» | igual | coincide |
 
-Resultado: 24 de 25 renglones coinciden. Corrección propuesta, con la convención de respetar lo impreso aunque tenga errores propios: en A16, la penúltima palabra va sin tilde, tal como está impresa.
+Resultado: 24 de 25 renglones coinciden. Corrección propuesta, con la convención de respetar lo impreso aunque tenga errores propios:
+
+> A16: dice «veintiséis», debe decir «veintiseis».
 
 ¿Podía dar rojo? Sí: dio rojo en A16. Las tildes se resuelven a esa escala: en el mismo párrafo se ven la de «días» y la de «Gobernación», y la virgulilla de «años».
 
@@ -51,7 +55,7 @@ A05 título:              (277, 974, 1400, 1034)    x1,35
 A05 monto 17 millones:   (1400, 1103, 2265, 1163)  x1,7
 A10 SIGEP:               (277, 1675, 1150, 1739)   x1,7
 A14 Remítase:            (277, 2566, 560, 2633)    x4
-A16 penúltima palabra:   (277, 2893, 820, 2937)    x2,6
+A16 veintiseis:          (277, 2893, 820, 2937)    x2,6
 A16 Gobernación y días:  (277, 2820, 1400, 2880)   x1,35
 Pie izquierdo:           (277, 3700, 1100, 3915)   x1,6
 Pie derecho:             (1650, 3700, 2526, 3915)  x1,6
