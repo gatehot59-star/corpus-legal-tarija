@@ -1,91 +1,165 @@
-# Recibo: Corpus vendible, evidencia técnica del 11-nov-2026
+# Corpus vendible: evidencia reproducible y corrección de transporte
+
+11 de noviembre de 2026, ART. Recibo del informe docs/auditorias/2026-11-11-01-corpus-vendible-sigc-fuentes-y-bloqueos.md.
 
 ## 1. Pedido
 
-Revisar qué falta para vender Corpus y contrastarlo con sistemas públicos y fuentes útiles para abogados y estudios de Tarija. El informe interpretativo está en docs/auditorias/2026-11-11-01-corpus-vendible-sigc-fuentes-y-bloqueos.md.
+Revisar qué falta para vender Corpus; identificar los sistemas públicos legales utilizados en Tarija, incluida la incorporación de 2026, y recomendar información útil para abogados y estudios. Alcance acotado, no censo exhaustivo, autorización de merge ni implementación.
 
-## 2. Herramientas y máquina
+## 2. Herramientas y máquinas
 
-GitHub, ClickUp y Nexus; brain-env con Python 3.12; SSH de lectura a la VM; HTTP público; navegador efímero sin credenciales; sandbox auxiliar. No se cambió código de producto, base viva, servicio, cuenta, pago ni OCR. No se lanzaron GPU ni Actions. La escritura autorizada es documental.
+GitHub y Nexus; shell brain-env; SSH de sólo lectura a la VM; HTTP público y navegador efímero; sandbox auxiliar para preparar instrumentos. Las pruebas usan funciones capturadas de la revisión desplegada c0e44af31a54bc2f0ba8304fc6572467082b69d6 y fixtures ficticios. Siete archivos fuente se contrastaron con ese commit público. Main inicial: 802540d2b97f44ca6e3084aad456053f984ca4b9.
 
-## 3. Medición y resultado
+No se cambiaron producto, servicios, cuentas, bases vivas ni credenciales. No se ejecutaron OCR, GPU, Actions, cobros, ingestas ni ofertas. Las escrituras externas se limitan al informe, este recibo, Doc y reporte de continuidad. El navegador se cerró; no se dejó ningún trabajo en segundo plano por esta revisión.
 
-En dos fixtures nuevos de 60 documentos, el buscador no encontró doc060 aunque el índice directo sí; doc001 y la consulta inexistente dieron los resultados esperados. La descarga entregó 10.000 de 12.033 caracteres, mientras la lectura recompuesta conservó los 12.033. La página rotulada 2 abrió contenido rotulado 3. Oráculos: rechazaron un resultado eliminado y un carácter perdido. Las bases no cambiaron de hash.
+## 3. Qué se midió
 
-La ejecución del instrumento terminó con exit 0 y estado completed_with_product_failures. Exit 0 significa que el diagnóstico terminó, no que el producto pasó. El ensayo sustituye ORM, autenticación, DTO, transacciones, render y HTTP: no es e2e.
+Dos fixtures nuevos de 60 documentos. Positivo doc001: encontrado. Consulta ausente: vacía. FTS directo doc060: encontrado. Application.search doc060: vacío, FALLA por restringir candidatos a la primera página de 50. Lectura recompuesta: 12.033/12.033 caracteres exactos, PASA. Descarga: 10.000/12.033, FALLA. Desde página 1 el siguiente enlace rotulado 2 muestra página 3, FALLA. Ambos oráculos rechazan los mutantes pertinentes: pérdida de un resultado y eliminación de un carácter. Conexiones cerradas explícitamente; hash físico del fixture conservado antes/después.
 
-## 4. Captura íntegra y reconstrucción
+La corrida diagnóstica salió 0 y su estado es completed_with_product_failures: exit 0 no significa producto aprobado. La prueba sustituye ORM, autenticación, DTO, transacciones, render y transporte; no valida HTTP autenticado de extremo a extremo.
 
-Este archivo usa compresión reversible: zlib + base64 y un diccionario de siete archivos públicos del commit c0e44af31a54bc2f0ba8304fc6572467082b69d6. Cada uno fue comparado byte por byte con la captura de la VM. El diccionario no sustituye una observación por un resumen: permite reconstruir exactamente el JSON original y comprobar su hash.
+## 4. Evidencia cruda y recuperación exacta
 
-- probe.json: 84.373 bytes; SHA256 20898a6a6d6ddefddb3e4e2c0dbefb5a623183aad27c4582fe787f0de81f7af6.
-- core-check.json: 16.826 bytes; SHA256 5849e56eacf3568c25094c2f41bc65973e6bf402325877ec0117333a0de3c3be.
-- core-run.json: 5.166 bytes; SHA256 ed5f433e90de65023f6375da5c80502129e439b2b204b1ae9d0db4c184534bd6.
-- Delta JSON: 46.646 bytes; SHA256 3c8269bb6b8c3846ba8ecffd7e5925b6d623ea616cd09a056252b02dfde9bbb0.
-- Base64 unido, sin saltos: 15.048 caracteres; SHA256 644fedf22323c578ec0d3b7a2c33c6886030069c6e0b0841f0c536deab3ee933.
+El primer commit documental, 13c09d989fa03860a69daf0a334f109808683d7d, preserva correctamente el informe de 21.923 bytes, SHA256 fed88b94d8d75bd7acc1e70fa1c335b0b62c782b9a21e588d72f2f046ee10b9d. Su payload de evidencia sufrió 25 inserciones durante la transferencia manual. Se detectó al recuperarlo; no se atribuye al producto. No se reescribe la historia ni se oculta el error.
 
-La captura excluye contraseñas, tokens, cookies, CSRF, claves, entorno completo y filas de usuarios o informes privados. HTTP conserva texto visible parseado completo y enlaces, no HTML ni cabeceras; en HTTPError conserva estado y mensaje, no cuerpo. La evidencia del navegador y las fuentes públicas están enlazadas en el informe.
+Esta revisión convierte ese objeto histórico inmutable en entrada de una recuperación determinista: quita ocho inserciones conocidas, verifica longitud y SHA256 originales, descomprime el paquete y repone siete fuentes desde el commit público desplegado. No vuelve a medir producción ni modifica el clon. Todas las capturas originales permanecían intactas y se compararon directamente con las recuperadas.
 
-Errores de preparación propios, no del producto: una transferencia base64 inválida abortó antes de ejecutar el instrumento y se repitió en tres bloques con hashes; un comando multilínea fue rechazado por SyntaxError antes de ejecutar; un git push --dry-run devolvió 128 por ausencia de credencial del CLI y no cambió el remoto. La publicación usa la conexión GitHub autorizada, no ese CLI. El primer error y la repetición están además en core-run.json.
+Formato original: corpus-evidence-git-dictionary-v1. El paquete guarda el probe completo salvo siete textos idénticos a fuentes Git, y guarda completos core-check.json y core-run.json. Reponer los textos y serializar json.dumps(ensure_ascii=False, indent=2), sin newline final, recupera probe.json exacto. Los scripts y fixtures están incluidos en las capturas. No se descartaron stdout/stderr del ensayo al comprimir. Las exclusiones de privacidad de la captura son intencionales: secretos, credenciales, filas privadas de cuentas/feedback y causas personales.
 
-## 5. Archivos de esta entrega
+### Identidades exactas
 
-Este recibo y el informe de docs/auditorias/2026-11-11-01-corpus-vendible-sigc-fuentes-y-bloqueos.md se publican juntos. No se publican binarios ni bases de clientes.
+- Base64 publicado inicialmente: 15.073 caracteres, SHA256 30fe012ecdf922078ff87cb8cb58cf512677e18c6964ba4e3154e825b47dee56.
+- Base64 original recuperado: 15.048 caracteres, SHA256 644fedf22323c578ec0d3b7a2c33c6886030069c6e0b0841f0c536deab3ee933.
+- evidence-delta.json: 46.646 bytes, SHA256 3c8269bb6b8c3846ba8ecffd7e5925b6d623ea616cd09a056252b02dfde9bbb0.
+- probe.json: 84.373 bytes, SHA256 20898a6a6d6ddefddb3e4e2c0dbefb5a623183aad27c4582fe787f0de81f7af6.
+- core-check.json: 16.826 bytes, SHA256 5849e56eacf3568c25094c2f41bc65973e6bf402325877ec0117333a0de3c3be.
+- core-run.json: 5.166 bytes, SHA256 ed5f433e90de65023f6375da5c80502129e439b2b204b1ae9d0db4c184534bd6.
+- probe.py: 5.519 bytes, SHA256 bc6f30ee96bc8f3a521f18bf6a2a5deb4494e84eb823e1b97c3427b103cf1f73.
+- check_core.py: 11.731 bytes, SHA256 31dfbac65d400087e4168129b39af66e9dcb03f55ce4f93a583d13b43dc0f194.
+- recover_evidence.py, debajo: 2.997 bytes, SHA256 ef94b6eb4abd97f037d0a3184a8fde11d3c9a0d2cc0b538bb4fb846255bc5a0e, incluyendo newline final.
+
+### Recuperador completo, ejecutado
+
+Requiere Python 3 y un clon que contenga los dos commits nombrados. Guardar exactamente este bloque como recover_evidence.py y pasar la ruta del clon como único argumento. Sólo lee objetos Git y escribe un temporal nuevo; no hace red ni ejecuta las pruebas o el probe recuperados. No usar Python con -O: las aserciones de integridad deben estar habilitadas.
+
+<!-- RECOVERY SCRIPT BEGIN -->
+```python
+"""Recover complete Corpus audit captures from immutable public Git objects.
+No production access, mutations, credentials or network requests are performed.
+The supplied clone must contain the two commits explicitly named below.
+"""
+import base64
+import hashlib
+import json
+import pathlib
+import subprocess
+import sys
+import tempfile
+import zlib
+
+REPO = sys.argv[1]
+TRANSPORT_COMMIT = '13c09d989fa03860a69daf0a334f109808683d7d'
+TRANSPORT_PATH = 'docs/agents/respuestas/2026-11-11-01-corpus-vendible-evidencia.md'
+SOURCE_COMMIT = 'c0e44af31a54bc2f0ba8304fc6572467082b69d6'
+EXPECTED_BASE64 = '644fedf22323c578ec0d3b7a2c33c6886030069c6e0b0841f0c536deab3ee933'
+EXPECTED_DELTA = '3c8269bb6b8c3846ba8ecffd7e5925b6d623ea616cd09a056252b02dfde9bbb0'
+DELETIONS = [(243,244,'O'),(404,410,'tayNNT'),(553,555,'Pr'),(706,707,'P'),(708,711,'JqP'),(738,743,'+T1+T'),(858,863,'mGetd'),(872,874,'Ne')]
+
+def git_bytes(commit, path):
+    """Read a named immutable object without touching the working tree."""
+    return subprocess.check_output(['git','-C',REPO,'show',commit+':'+path])
+
+def checked(raw, expected, size):
+    """Fail closed on either byte length or SHA-256 mismatch."""
+    assert len(raw)==size, ('BYTE_LENGTH',len(raw),size)
+    assert hashlib.sha256(raw).hexdigest()==expected, 'SHA256_MISMATCH'
+    return raw
+
+receipt = git_bytes(TRANSPORT_COMMIT,TRANSPORT_PATH).decode()
+encoded = ''.join(receipt.split('<!-- EVIDENCE BEGIN -->\n',1)[1].split('\n<!-- EVIDENCE END -->',1)[0].split())
+checked(encoded.encode(),'30fe012ecdf922078ff87cb8cb58cf512677e18c6964ba4e3154e825b47dee56',15073)
+for start,end,inserted in reversed(DELETIONS):
+    assert encoded[start:end]==inserted, 'TRANSPORT_EDIT_MISMATCH'
+    encoded=encoded[:start]+encoded[end:]
+checked(encoded.encode(),EXPECTED_BASE64,15048)
+raw_delta=checked(zlib.decompress(base64.b64decode(encoded,validate=True)),EXPECTED_DELTA,46646)
+bundle=json.loads(raw_delta)
+assert bundle['git_dictionary']['commit']==SOURCE_COMMIT
+probe=bundle['probe']['json_without_dictionary_text']
+for entry in bundle['git_dictionary']['files']:
+    raw=checked(git_bytes(SOURCE_COMMIT,entry['path']),entry['sha256'],entry['bytes'])
+    probe['vm']['source_files'][entry['path']]['text']=raw.decode()
+raw_probe=checked(json.dumps(probe,ensure_ascii=False,indent=2).encode(),bundle['probe']['sha256'],bundle['probe']['bytes'])
+output=pathlib.Path(tempfile.mkdtemp(prefix='corpus-evidence-recovered-'))
+(output/'probe.json').write_bytes(raw_probe)
+for entry in bundle['literal_files']:
+    raw=checked(entry['utf8'].encode(),entry['sha256'],entry['bytes'])
+    (output/entry['name']).write_bytes(raw)
+(output/'probe.py').write_text(probe['probe_source'])
+(output/'check_core.py').write_text(json.loads((output/'core-check.json').read_text())['instrument_source'])
+print(json.dumps({'status':'EXACT_RECOVERY','output':str(output),'files':{p.name:{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(output.iterdir())}},indent=2))
+```
+<!-- RECOVERY SCRIPT END -->
+
+### Corrida de recuperación, salida íntegra
+
+Comando exacto: python3 /workspace/corpus-sale-20261111-s19d42t3/recover_evidence.py /workspace/corpus-sale-publish-4244t8l3/repo
+
+returncode: 0. stderr: vacío. stdout:
+
+```json
+{
+  "status": "EXACT_RECOVERY",
+  "output": "/tmp/corpus-evidence-recovered-wnchi_ka",
+  "files": {
+    "check_core.py": {
+      "bytes": 11731,
+      "sha256": "31dfbac65d400087e4168129b39af66e9dcb03f55ce4f93a583d13b43dc0f194"
+    },
+    "core-check.json": {
+      "bytes": 16826,
+      "sha256": "5849e56eacf3568c25094c2f41bc65973e6bf402325877ec0117333a0de3c3be"
+    },
+    "core-run.json": {
+      "bytes": 5166,
+      "sha256": "ed5f433e90de65023f6375da5c80502129e439b2b204b1ae9d0db4c184534bd6"
+    },
+    "probe.json": {
+      "bytes": 84373,
+      "sha256": "20898a6a6d6ddefddb3e4e2c0dbefb5a623183aad27c4582fe787f0de81f7af6"
+    },
+    "probe.py": {
+      "bytes": 5519,
+      "sha256": "bc6f30ee96bc8f3a521f18bf6a2a5deb4494e84eb823e1b97c3427b103cf1f73"
+    }
+  }
+}
+```
+
+Comparación directa adicional contra las capturas originales, sin depender del hash declarado por el recuperador:
+
+```json
+{"probe.json": true, "core-check.json": true, "core-run.json": true}
+```
+
+Se conservaron errores propios: transferencia inicial del instrumento de prueba rechazada antes de ejecutarlo; repetición por porciones verificada; preparación multilínea rechazada antes de ejecución; push CLI sin credencial rechazado sin cambio remoto; primer payload documental con 25 inserciones detectadas; un intento de transferir el recuperador con zlib inválido, sin ejecución. La transferencia corregida verificó el SHA del script y produjo la corrida arriba. Ninguno de esos errores se presenta como fallo de Corpus.
+
+## 5. Archivos generados y cierre
+
+Informe: docs/auditorias/2026-11-11-01-corpus-vendible-sigc-fuentes-y-bloqueos.md. Evidencia: este archivo, con sus capturas completas recuperables desde objetos inmutables existentes en la historia. No se commitearon binarios derivados ni bases sensibles. Este commit sólo corrige el recibo propio; el informe original permanece sin cambios.
+
+Gate I: PASA para los casos aislados declarados; los oráculos detectaron las violaciones pertinentes. Gate II: PASA para el informe acotado. Gate III: el informe remoto y las capturas originales ya se recuperaron y compararon; la última lectura de esta corrección, el Doc público y el reporte Nexus se registran en el cierre documental. No confundir éxito del recuperador con aprobación del producto.
 
 ## 6. NO MEDIDO
 
-Autenticación e2e nueva, alcance real por usuario, seguridad integral, restauración, carga/SLA, vigencia jurídica total, ventas y margen. La misma instancia operó y revisó; no se declara revisión externa independiente.
-
-## Lector del paquete
-
-Guardar este bloque como recover.py y ejecutarlo con dos argumentos: ruta de este recibo y ruta de un clon del repositorio que contenga el commit del diccionario. Es sólo lectura sobre ese clon. Genera una carpeta temporal nueva con las capturas exactas y el instrumento. Sus hashes deben coincidir con los anteriores.
-
-```python
-import base64, hashlib, json, pathlib, subprocess, sys, tempfile, zlib
-receipt = pathlib.Path(sys.argv[1]).read_text()
-encoded = ''.join(receipt.split('<!-- EVIDENCE BEGIN -->\n', 1)[1].split('\n<!-- EVIDENCE END -->', 1)[0].split())
-assert len(encoded) == 15048
-assert hashlib.sha256(encoded.encode()).hexdigest() == '644fedf22323c578ec0d3b7a2c33c6886030069c6e0b0841f0c536deab3ee933'
-data = zlib.decompress(base64.b64decode(encoded, validate=True))
-assert hashlib.sha256(data).hexdigest() == '3c8269bb6b8c3846ba8ecffd7e5925b6d623ea616cd09a056252b02dfde9bbb0'
-bundle = json.loads(data)
-probe = bundle['probe']['json_without_dictionary_text']
-for item in bundle['git_dictionary']['files']:
-    raw = subprocess.check_output(['git', '-C', sys.argv[2], 'show', bundle['git_dictionary']['commit'] + ':' + item['path']])
-    assert len(raw) == item['bytes']
-    assert hashlib.sha256(raw).hexdigest() == item['sha256']
-    probe['vm']['source_files'][item['path']]['text'] = raw.decode('utf-8')
-raw_probe = json.dumps(probe, ensure_ascii=False, indent=2).encode()
-assert len(raw_probe) == bundle['probe']['bytes']
-assert hashlib.sha256(raw_probe).hexdigest() == bundle['probe']['sha256']
-output = pathlib.Path(tempfile.mkdtemp(prefix='corpus-evidence-recovered-'))
-(output / 'probe.json').write_bytes(raw_probe)
-for item in bundle['literal_files']:
-    raw = item['utf8'].encode()
-    assert len(raw) == item['bytes'] and hashlib.sha256(raw).hexdigest() == item['sha256']
-    (output / item['name']).write_bytes(raw)
-(output / 'probe.py').write_text(probe['probe_source'])
-(output / 'check_core.py').write_text(json.loads((output / 'core-check.json').read_text())['instrument_source'])
-print(json.dumps({'recovered': str(output), 'files': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(output.iterdir())}}, indent=2))
-```
-
-## Paquete
-
-<!-- EVIDENCE BEGIN -->
-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
-<!-- EVIDENCE END -->
-
-## Reconsulta del despliegue
-
-2026-11-12T02:30:30.282376+00:00, equivalente a 11-nov ART. Comando remoto: git -C /opt/corpus-django-staging rev-parse HEAD. Returncode: 0. Stdout: c0e44af31a54bc2f0ba8304fc6572467082b69d6 seguido de salto de línea. Stderr: Warning: Permanently added 'corpus-vm.icca-engine.com' (ED25519) to the list of known hosts.
+Integración autenticada de Corpus, seguridad integral, carga/SLA, restauración, exactitud/vigencia de toda la colección, número de usuarios afectados, demanda/ventas/costes, migración completa de sistemas judiciales, estado autenticado SIGC/ROMA/Éforo. No se acredita una revisión por otro operador. No se autorizan arreglos, merge, despliegue ni sustitución del OCR.
 
 --- METODO TITAN ---
-Accion delicada: NO
-Modo aplicado: TITAN FULL, evidencia de revisión acotada
-Rubrica: la del informe, 37/40; no certifica producto
-Review externo: no realizado
-Instrumento: check_core.py, SHA256 31dfbac65d400087e4168129b39af66e9dcb03f55ce4f93a583d13b43dc0f194; comandos y salidas completos en el paquete
-Maquina: brain-env, VM en lectura y navegador efímero
-Artefactos: este recibo y el informe publicados juntos; Doc y Nexus registrados al cierre
+Accion delicada: NO; corrección documental propia, sin producto.
+Modo aplicado: TITAN FULL, revisión acotada.
+Rubrica: informe 37/40 -> 92,5/100, no madurez del producto.
+N/A declarados: 60 puntos de criterios de producto.
+Review externo: no realizado; mismo GPT-6 Astra en funciones de revisión y verificación.
+Instrumento: probe.py, check_core.py y recover_evidence.py ejecutados; capturas completas recuperables arriba.
+Maquina: brain-env; VM de lectura; navegador efímero; sandbox auxiliar.
+Artefactos: informe Git + este recibo + Doc público y continuidad Nexus en el cierre.
